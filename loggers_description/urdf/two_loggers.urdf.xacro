@@ -1,0 +1,166 @@
+<?xml version="1.0" ?>
+
+<robot name="logger" xmlns:xacro="https://www.ros.org/wiki/xacro" >
+    
+  <!-- Constants for robot dimensions -->
+  <xacro:property name="PI" value="3.1415926535897931"/>
+
+  <!-- Import all Gazebo-customization elements, including Gazebo colors -->
+  <xacro:include filename="$(find loggers_description)/urdf/single_logger.gazebo" />
+  <!-- Import Rviz colors -->
+  <xacro:include filename="$(find loggers_description)/urdf/materials.xacro" />
+
+  <!-- Used for fixing robot to Gazebo 'base_link' -->
+  <!-- <link name="world"/> -->
+
+  <!-- <joint name="joint_world_chassis" type="planar"> -->
+  <!--   <parent link="world"/> -->
+  <!--   <child link="link_chassis"/> -->
+  <!-- </joint> -->
+
+  <link name="link_chassis_1">
+    <collision>
+      <geometry>
+        <box size="0.5 0.3 0.07"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.5 0.3 0.07"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <inertial>
+      <mass value="2"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="0.01582" ixy="0" ixz="0" iyy="0.04248" iyz="0" izz="0.05667"/>
+    </inertial>
+  </link>
+
+  <joint name="joint_chassis_caster_1" type="fixed">
+    <parent link="link_chassis_1"/>
+    <child link="link_caster_1"/>
+  </joint>
+        
+  <link name="link_caster_1">
+    <collision>
+      <origin rpy=" 0 0 0" xyz="0.2 0 -0.05"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>0</mu>
+            <mu2>0</mu2>
+            <slip1>1.0</slip1>
+            <slip2>1.0</slip2>
+          </ode>
+        </friction>
+      </surface>
+    </collision>
+    <visual>
+      <origin rpy=" 0 0 0" xyz="0.2 0 -0.05"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <mass value="0.01"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="joint_chassis_rwheel_1" type="continuous">
+    <origin rpy="0 0 0" xyz="-0.05 0.15 0"/>
+    <child link="link_right_wheel_1" />
+    <parent link="link_chassis_1"/>
+    <axis rpy="0 0 0" xyz="0 1 0"/>
+    <!-- <limit effort="10000" velocity="1000"/> -->
+    <!-- <joint_properties damping="1.0" friction="1.0" /> -->
+  </joint>  
+
+  <link name="link_right_wheel_1">    
+    <inertial>
+      <mass value="0.01"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+    <collision>
+      <origin rpy="0 ${PI/2} ${PI/2}" xyz="0 0 0" />
+      <geometry>
+        <cylinder length="0.04" radius="0.1"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 ${PI/2} ${PI/2}" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.04" radius="0.1"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+  </link>
+          
+  <joint name="joint_chassis_lwheel_1" type="continuous">
+    <origin rpy="0 0 0" xyz="-0.05 -0.15 0"/>
+    <child link="link_left_wheel_1" />
+    <parent link="link_chassis_1"/>
+    <axis rpy="0 0 0" xyz="0 1 0"/>
+    <!-- <limit effort="10000" velocity="1000"/> -->
+    <!-- <joint_properties damping="1.0" friction="1.0" /> -->
+  </joint>    
+    
+  <link name="link_left_wheel_1">    
+    <collision>
+      <origin rpy="0 ${PI/2} ${PI/2}" xyz="0 0 0" />
+      <geometry>
+        <cylinder length="0.04" radius="0.1"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 ${PI/2} ${PI/2}" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.04" radius="0.1"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <inertial>
+      <mass value="0.01"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="joint_chassis_hat_1" type="continuous">
+    <origin rpy="0 0 0" xyz="0 0 0.04"/>
+    <child link="link_hat_1" />
+    <parent link="link_chassis_1"/>
+    <axis rpy="0 0 0" xyz="0 0 1"/>
+    <!-- <limit effort="10000" velocity="1000"/> -->
+    <!-- <joint_properties damping="1.0" friction="1.0" /> -->
+  </joint>    
+
+  <link name="link_hat_1">
+    <collision>
+      <geometry>
+        <cylinder length="0.1" radius="0.02"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.1" radius="0.02"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <inertial>
+      <mass value="2"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  
+</robot>
