@@ -4,13 +4,6 @@
     
   <!-- Constants for robot dimensions -->
   <xacro:property name="PI" value="3.1415926535897931"/>
-  <xacro:property name="mass" value="1" /> <!-- arbitrary value for mass -->
-  <xacro:property name="width" value="0.1" /> <!-- Square dimensions (widthxwidth) of beams -->
-  <xacro:property name="height1" value="2" /> <!-- Link 1 -->
-  <xacro:property name="height2" value="1" /> <!-- Link 2 -->
-  <xacro:property name="height3" value="1" /> <!-- Link 3 -->
-  <xacro:property name="camera_link" value="0.05" /> <!-- Size of square 'camera' box -->
-  <xacro:property name="axel_offset" value="0.05" /> <!-- Space btw top of beam and the each joint -->
 
   <!-- Import all Gazebo-customization elements, including Gazebo colors -->
   <xacro:include filename="$(find loggers_description)/urdf/single_logger.gazebo" />
@@ -20,7 +13,7 @@
   <!-- Used for fixing robot to Gazebo 'base_link' -->
   <link name="world"/>
 
-  <joint name="fixed" type="planar">
+  <joint name="joint_world_chassis" type="floating">
     <parent link="world"/>
     <child link="link_chassis"/>
   </joint>
@@ -72,6 +65,7 @@
       <geometry>
         <sphere radius="0.05"/>
       </geometry>
+      <material name="black"/>
     </visual>
   </link>
 
@@ -90,51 +84,21 @@
       <origin rpy="0 1.5707 1.5707" xyz="0 0 0"/>
       <inertia ixx="0.00052666666" ixy="0" ixz="0" iyy="0.00052666666" iyz="0" izz="0.001"/>
     </inertial>
-    
     <collision name="link_right_wheel_collision">
       <origin rpy="0 1.5707 1.5707" xyz="0 0 0" />
       <geometry>
         <cylinder length="0.04" radius="0.1"/>
       </geometry>
     </collision>
-    
     <visual name="link_right_wheel_visual">
       <origin rpy="0 1.5707 1.5707" xyz="0 0 0"/>
       <geometry>
         <cylinder length="0.04" radius="0.1"/>
-      </geometry>      
-    </visual>
-    
-  </link>
-    
-  <!--   Joint for right wheel  -->
-      
-  <!-- Left Wheel link -->
-    
-  <link name="link_left_wheel">    
-    <inertial>
-      <mass value="0.2"/>
-      <origin rpy="0 1.5707 1.5707" xyz="0 0 0"/>
-      <inertia ixx="0.00052666666" ixy="0" ixz="0" iyy="0.00052666666" iyz="0" izz="0.001"/>
-    </inertial>
-    
-    <collision name="link_left_wheel_collision">
-      <origin rpy="0 1.5707 1.5707" xyz="0 0 0" />
-      <geometry>
-        <cylinder length="0.04" radius="0.1"/>
       </geometry>
-    </collision>
-    
-    <visual name="link_left_wheel_visual">
-      <origin rpy="0 1.5707 1.5707" xyz="0 0 0"/>
-      <geometry>
-        <cylinder length="0.04" radius="0.1"/>
-      </geometry>      
+      <material name="orange"/>
     </visual>
-    
   </link>
-    
-  <!--   Joint for right wheel  -->
+          
   <joint name="joint_left_wheel" type="continuous">
     <origin rpy="0 0 0" xyz="-0.05 -0.15 0"/>
     <child link="link_left_wheel" />
@@ -143,5 +107,26 @@
     <limit effort="10000" velocity="1000"/>
     <joint_properties damping="1.0" friction="1.0" />
   </joint>    
-  
+    
+  <link name="link_left_wheel">    
+    <collision name="link_left_wheel_collision">
+      <origin rpy="0 1.5707 1.5707" xyz="0 0 0" />
+      <geometry>
+        <cylinder length="0.04" radius="0.1"/>
+      </geometry>
+    </collision>
+    <visual name="link_left_wheel_visual">
+      <origin rpy="0 1.5707 1.5707" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.04" radius="0.1"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <inertial>
+      <mass value="0.2"/>
+      <origin rpy="0 1.5707 1.5707" xyz="0 0 0"/>
+      <inertia ixx="0.00052666666" ixy="0" ixz="0" iyy="0.00052666666" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+      
 </robot>
