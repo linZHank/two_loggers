@@ -11,12 +11,12 @@
   <xacro:include filename="$(find loggers_description)/urdf/materials.xacro" />
 
   <!-- Used for fixing robot to Gazebo 'base_link' -->
-  <link name="world"/>
+  <!-- <link name="world"/> -->
 
-  <joint name="joint_world_chassis" type="floating">
-    <parent link="world"/>
-    <child link="link_chassis"/>
-  </joint>
+  <!-- <joint name="joint_world_chassis" type="planar"> -->
+  <!--   <parent link="world"/> -->
+  <!--   <child link="link_chassis"/> -->
+  <!-- </joint> -->
 
   <link name="link_chassis">
     <collision name="collision_chassis">
@@ -52,8 +52,8 @@
       <surface>
         <friction>
           <ode>
-            <mu>0</mu>
-            <mu2>0</mu2>
+            <mu>0.1</mu>
+            <mu2>0.1</mu2>
             <slip1>1.0</slip1>
             <slip2>1.0</slip2>
           </ode>

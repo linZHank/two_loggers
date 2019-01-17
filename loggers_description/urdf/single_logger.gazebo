@@ -4,7 +4,7 @@
   <!-- differential_drive_controller -->
   <gazebo>
     <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
-      <legacyMode>false</legacyMode>
+      <legacyMode>true</legacyMode>
       <alwaysOn>true</alwaysOn>
       <updateRate>40</updateRate>
       <leftJoint>joint_left_wheel</leftJoint>
@@ -20,33 +20,32 @@
     </plugin>
   </gazebo>
 
-  <gazebo reference="left_wheel_link">
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-    <kp>1000000.0</kp>
-    <kd>100.0</kd>
-    <minDepth>0.001</minDepth>
-    <maxVel>1.0</maxVel>
+  <gazebo reference="link_left_wheel">
+    <mu1>0.95</mu1>
+    <mu2>0.95</mu2>
+    <slip1>0.1</slip1>
+    <slip2>0.1</slip2>
+    <material>Gazebo/Orange</material>
   </gazebo>
 
-  <gazebo reference="right_wheel_link">
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-    <kp>1000000.0</kp>
-    <kd>100.0</kd>
-    <minDepth>0.001</minDepth>
-    <maxVel>1.0</maxVel>
+  <gazebo reference="link_right_wheel">
+    <mu1>.95</mu1>
+    <mu2>.95</mu2>
+    <slip1>0.1</slip1>
+    <slip2>0.1</slip2>
+    <material>Gazebo/Orange</material>
   </gazebo>
 
   <gazebo reference="caster_front">
-    <mu1>0.0</mu1>
-    <mu2>0.0</mu2>
-    <slip1>1.0</slip1>
-    <slip2>1.0</slip2>
-    <!-- <kp>1000000.0</kp> -->
-    <!-- <kd>100.0</kd> -->
-    <minDepth>0.001</minDepth>
-    <maxVel>1.0</maxVel>
+    <mu1>0.1</mu1>
+    <mu2>0.1</mu2>
+    <slip1>0.9</slip1>
+    <slip2>0.9</slip2>
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <gazebo reference="link_chassis">
+    <material>Gazebo/Blue</material>
   </gazebo>
 
 </robot>
