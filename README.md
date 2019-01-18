@@ -5,7 +5,7 @@
 2. [ROS-Kinetic](http://wiki.ros.org/kinetic), `ros-kinetic-desktop-full`
 3. (Optional, but recommend)[catkin-command-line-tools](https://catkin-tools.readthedocs.io/en/latest/)
 
-## 
+## How to Use
 - Create a ros workspace, refer to this [tutorial](http://wiki.ros.org/catkin/Tutorials/create_a_workspace)
 Assume your workspace is at `~/ros_ws/`
 - 
