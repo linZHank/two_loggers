@@ -15,15 +15,15 @@ from geometry_msgs.msg import Pose, Twist
 
 # Register crib env 
 register(
-  id='CribNav-v0',
-  entry_point='envs.crib_nav_task_env:CribNavTaskEnv')
+  id='SoloEscape-v0',
+  entry_point='envs.logger_escape_task_env:SoloEscapeTaskEnv')
 
 
-class CribNavTaskEnv(TurtlebotRobotEnv):
+class SoloEscapeTaskEnv(LoggersRobotEnv):
   def __init__(self):
     """
-    This task-env is designed for TurtleBot navigating to a random placed goal
-    in world of walled crib. Action and state space will be both set to continuous. 
+    This task-env is designed for a mobile robot(Logger) escape a walled cell 
+    through the only exit. Action and state space will be both set to continuous. 
     """
     # action limits
     self.max_linear_speed = .8
@@ -65,31 +65,28 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     self.info = {}
     # Set model state
     self.set_robot_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
-    self.set_pin_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
     # self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
     self._episode_done = False
     # Here we will add any init functions prior to starting the MyRobotEnv
-    super(CribNavTaskEnv, self).__init__()
+    super(SoloEscapeTaskEnv, self).__init__()
 
   def _set_init(self):
     """ 
     Set initial condition for simulation
-      1. Set turtlebot at a random pose inside crib by publishing /gazebo/set_model_state topic
-      2. Set a goal point inside crib for turtlebot to navigate towards
+      Set Logger at a random pose inside cell by publishing /gazebo/set_model_state topic
     Returns: 
       init_position: array([x, y]) 
-      goal_position: array([x, y])      
     """
     rospy.logdebug("Start initializing robot...")
     self.current_position = self.init_position
     # set turtlebot inside crib, away from crib edges
-    mag = random.uniform(0, 1) # robot vector magnitude
+    mag = random.uniform(0, 4) # robot vector magnitude
     ang = random.uniform(-math.pi, math.pi) # robot vector orientation
     x = mag * math.cos(ang)
     y = mag * math.sin(ang)
     w = random.uniform(-1.0, 1.0)    
     robot_state = ModelState()
-    robot_state.model_name = "mobile_base"
+    robot_state.model_name = "logger"
     robot_state.pose.position.x = x
     robot_state.pose.position.y = y
     robot_state.pose.position.z = 0
@@ -97,64 +94,37 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     robot_state.pose.orientation.y = 0
     robot_state.pose.orientation.z = math.sqrt(1 - w**2)
     robot_state.pose.orientation.w = w
-    robot_state.reference_frame = "world"
-    
+    robot_state.reference_frame = "world"  
     self.init_position = np.array([x, y])
-    self.previous_position = self.init_position
 
     # set goal point using pole coordinate
-    goal_r = random.uniform(0, 4.8) # goal vector magnitude
-    goal_theta = random.uniform(-math.pi, math.pi) # goal vector orientation
-    goal_x = goal_r * math.cos(goal_theta)
-    goal_y = goal_r * math.sin(goal_theta)
-    self.goal_position = np.array([goal_x, goal_y])
-    # reset goal if it too close to bot's original position
-    while np.linalg.norm(self.goal_position - self.init_position) <= 0.5:
-      rospy.logerr("Goal was set too close to the robot, reset the goal...")
-      goal_r = random.uniform(0, 4.8) # goal vector magnitude
-      goal_theta = random.uniform(-math.pi, math.pi) # goal vector orientation
-      goal_x = goal_r * math.cos(goal_theta)
-      goal_y = goal_r * math.sin(goal_theta)
-      self.goal_position = np.array([goal_x, goal_y])
-    # set pin's model state
-    pin_state = ModelState()
-    pin_state.model_name = "pin"
-    pin_state.pose.position.x = goal_x
-    pin_state.pose.position.y = goal_y
-    pin_state.pose.position.z = 0
-    pin_state.reference_frame = "world"
-    # publish model_state to set bot
-    rate = rospy.Rate(100)
     for _ in range(10):
       self.set_robot_state_publisher.publish(robot_state)
-      self.set_pin_state_publisher.publish(pin_state)
       rate.sleep()
     
     rospy.logwarn("Robot was initiated as {}".format(self.init_position))
-    rospy.logwarn("Goal point was set @ {}".format(self.goal_position))
     # Episode cannot done
     self._episode_done = False
     # Give the system a little time to finish initialization
-    rospy.logdebug("Finish initialize robot.")
+    rospy.logdebug("Finished initialize robot.")
     
-    return self.init_position, self.goal_position
+    return self.init_position
     
   def _take_action(self, action):
     """
-    Set linear and angular speed for Turtlebot and execute.
+    Drive the Logger with differential driving controller.
     Args:
-      action: 2-d numpy array.
+      action: numpy array([linear_speed, angular_speed])
     """
-    rospy.logdebug("TurtleBot2 Base Twist Cmd>>\nlinear: {}\nangular{}".format(action[0], action[1]))
     cmd_vel = Twist()
     cmd_vel.linear.x = action[0]
     cmd_vel.angular.z = action[1]
     self._check_publishers_connection()
     rate = rospy.Rate(100)
+    # publish /cmd_vel for 0.1s at 100 Hz
     for _ in range(10):
-      self._cmd_vel_pub.publish(cmd_vel)
-      rospy.logdebug("cmd_vel: \nlinear: {}\nangular{}".format(cmd_vel.linear.x,
-                                                               cmd_vel.angular.z))
+      self._cmd_vel_pub.publish(cmd_vel) # refer to loggers_robot_env
+      rospy.logdebug("cmd_vel: {}".format(cmd_vel))
       rate.sleep()
 
   def _get_observation(self):
@@ -163,12 +133,12 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     Return:
       observation: [x, y, v_x, v_y, cos(yaw), sin(yaw), yaw_dot]
     """
-    rospy.logdebug("Start Get Observation ==>")
-    model_states = self.get_model_states() # refer to turtlebot_robot_env
-    # update previous position
+    rospy.logdebug("Start Getting Observation ==>")
     self.previous_position = self.current_position    
+    model_states = self.get_model_states() # refer to loggers_robot_env
+    # update previous position
     rospy.logdebug("model_states: {}".format(model_states))
-    x = model_states.pose[-1].position.x # turtlebot was the last model in model_states
+    x = model_states.pose[-1].position.x # logger was the last model in model_states
     y = model_states.pose[-1].position.y
     self.current_position = np.array([x, y])
     v_x = model_states.twist[-1].linear.x
@@ -196,9 +166,8 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     """
     self.info = {
       "init_position": self.init_position,
-      "goal_position": self.goal_position,
       "current_position": self.current_position,
-      "previous_position": self.previous_position
+      "previous_position": self.previous_position,
     }
     
     return self.info
@@ -210,19 +179,19 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     return self._episode_done
 
   def _compute_reward(self):
-    if sum(np.absolute(self.current_position)>4.8): # turtlebot close to edge
+    if sum(np.absolute(self.current_position)>4.6): # turtlebot close to edge
       reward = 0
       self._episode_done = True
-      rospy.logwarn("Turtlebot is too close to the edge, task will be reset...")
-    elif np.linalg.norm(self.current_position-self.goal_position) <= 0.2: # turtle bot close to goal
-      reward = 1
-      self._episode_done = True
-      rospy.logwarn("\n!!!\nTurtlebot reached destination\n!!!")
-    else:
+      rospy.logwarn("Logger is too close to the edge, task will be reset!")
+    elif self.current_position[1] <= 6: # turtle bot close to goal
       reward = 0
       self._episode_done = False
-      rospy.logwarn("TurtleBot is working on its way to goal @ {}...".format(self.goal_position))
-    rospy.logdebug("Compute reward done. \nreward = {}".format(reward))
+      rospy.logwarn("Logger is working on its way to escape...")
+    else:
+      reward = 1
+      self._episode_done = True
+      rospy.logwarn("\n!!!\nLogger Escaped !\n!!!")
+    rospy.logdebug("Reward in current step = {}".format(reward))
     
     return reward
 

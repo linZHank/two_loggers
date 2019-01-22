@@ -4,7 +4,7 @@
   <!-- differential_drive_controller -->
   <gazebo>
     <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
-      <legacyMode>true</legacyMode>
+      <legacyMode>false</legacyMode>
       <alwaysOn>true</alwaysOn>
       <updateRate>40</updateRate>
       <leftJoint>joint_chassis_leftwheel</leftJoint>
