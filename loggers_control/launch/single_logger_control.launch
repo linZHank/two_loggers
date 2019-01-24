@@ -1,0 +1,19 @@
+<launch>
+
+  <!-- ros_control rrbot launch file -->
+  <include file="$(find loggers_gazebo)/launch/single_logger_world.launch" />
+  
+  <!-- Load joint controller configurations from YAML file to parameter server -->
+  <rosparam file="$(find loggers_control)/config/single_logger_control.yaml" command="load"/>
+
+  <!-- load the controllers -->
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+    output="screen" ns="/logger" args="chassis_drive_controller joint_state_controller"/>
+
+  <!-- convert joint states to TF transforms for rviz, etc -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
+    respawn="false" output="screen">
+    <remap from="/joint_states" to="/logger/joint_states" />
+  </node>
+  
+</launch>

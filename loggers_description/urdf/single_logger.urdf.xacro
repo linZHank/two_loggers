@@ -10,13 +10,13 @@
   <!-- Import Rviz colors -->
   <xacro:include filename="$(find loggers_description)/urdf/materials.xacro" />
 
-  <!-- Used for fixing robot to Gazebo 'base_link' -->
-  <link name="world"/>
+  Used for fixing robot to Gazebo 'base_link'
+  <!-- <link name="world"/> -->
 
-  <joint name="joint_world_chassis" type="floating">
-    <parent link="world"/>
-    <child link="link_chassis"/>
-  </joint>
+  <!-- <joint name="joint_world_chassis" type="planar"> -->
+  <!--   <parent link="world"/> -->
+  <!--   <child link="link_chassis"/> -->
+  <!-- </joint> -->
 
   <link name="link_chassis">
     <visual>
@@ -61,9 +61,9 @@
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.01"/>
+      <mass value="0.02"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
     </inertial>
   </link>
 
@@ -89,9 +89,9 @@
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.01"/>
+      <mass value="0.02"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
     </inertial>
   </link>
 
@@ -117,7 +117,7 @@
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.02"/>
+      <mass value="0.04"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
     </inertial>
@@ -207,5 +207,27 @@
       <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
     </inertial>
   </link>
-      
+
+  <transmission name="trans_leftwheel">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_chassis_leftwheel">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor_leftwheel">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="trans_rightwheel">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_chassis_rightwheel">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor_rightwheel">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
 </robot>

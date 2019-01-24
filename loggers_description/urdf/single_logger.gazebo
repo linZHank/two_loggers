@@ -1,38 +1,44 @@
 <?xml version="1.0"?>
 <robot>
 
-  <!-- differential_drive_controller -->
+  <!-- ros_control plugin -->
   <gazebo>
-    <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
-      <legacyMode>false</legacyMode>
-      <alwaysOn>true</alwaysOn>
-      <updateRate>40</updateRate>
-      <leftJoint>joint_chassis_leftwheel</leftJoint>
-      <rightJoint>joint_chassis_rightwheel</rightJoint>
-      <wheelSeparation>0.4</wheelSeparation>
-      <wheelDiameter>0.2</wheelDiameter>
-      <wheelTorque>0.1</wheelTorque>
-      <!--wheelAcceleration>${wheel_accel}</wheelAcceleration-->
-      <commandTopic>cmd_vel</commandTopic>
-      <odometryTopic>odom</odometryTopic>
-      <odometryFrame>odom</odometryFrame>
-      <robotBaseFrame>link_chassis</robotBaseFrame>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/logger</robotNamespace>
+      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
     </plugin>
   </gazebo>
 
+  <!-- differential_drive_controller -->
+  <!-- <gazebo> -->
+  <!--   <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so"> -->
+  <!--     <legacyMode>false</legacyMode> -->
+  <!--     <alwaysOn>true</alwaysOn> -->
+  <!--     <updateRate>40</updateRate> -->
+  <!--     <leftJoint>joint_chassis_leftwheel</leftJoint> -->
+  <!--     <rightJoint>joint_chassis_rightwheel</rightJoint> -->
+  <!--     <wheelSeparation>0.4</wheelSeparation> -->
+  <!--     <wheelDiameter>0.2</wheelDiameter> -->
+  <!--     <wheelTorque>0.1</wheelTorque> -->
+  <!--     <!-\-wheelAcceleration>${wheel_accel}</wheelAcceleration-\-> -->
+  <!--     <commandTopic>cmd_vel</commandTopic> -->
+  <!--     <odometryTopic>odom</odometryTopic> -->
+  <!--     <odometryFrame>odom</odometryFrame> -->
+  <!--     <robotBaseFrame>link_chassis</robotBaseFrame> -->
+  <!--   </plugin> -->
+  <!-- </gazebo> -->
+
   <gazebo reference="link_left_wheel">
-    <mu1>1</mu1>
-    <mu2>1</mu2>
-    <slip1>0</slip1>
-    <slip2>0</slip2>
+    <mu1>100000</mu1>
+    <mu2>100000</mu2>
+    <minDepth>0.001</minDepth>
     <material>Gazebo/Wood</material>
   </gazebo>
 
   <gazebo reference="link_right_wheel">
-    <mu1>1</mu1>
-    <mu2>1</mu2>
-    <slip1>0</slip1>
-    <slip2>0</slip2>
+    <mu1>100000</mu1>
+    <mu2>100000</mu2>
+    <minDepth>0.001</minDepth>
     <material>Gazebo/Wood</material>
   </gazebo>
 
@@ -49,10 +55,9 @@
     <!-- <mu2>0</mu2> -->
     <!-- <slip1>1</slip1> -->
     <!-- <slip2>1</slip2> -->
-    <mu1>1</mu1>
-    <mu2>1</mu2>
-    <slip1>0</slip1>
-    <slip2>0</slip2>
+    <mu1>10000</mu1>
+    <mu2>10000</mu2>
+    <minDepth>0.001</minDepth>
     <material>Gazebo/DarkGrey</material>
   </gazebo>
 
