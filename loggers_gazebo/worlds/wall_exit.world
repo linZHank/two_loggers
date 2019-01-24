@@ -82,7 +82,7 @@
     </spherical_coordinates>
     <model name='grey_wall_10'>
       <link name='link'>
-        <pose frame=''>5.5 0 0 0 -0 1.5708</pose>
+        <pose frame=''>5.5 0 0.4 0 -0 1.5708</pose>
         <inertial>
           <mass>10</mass>
           <pose frame=''>0 0 0 0 -0 0</pose>
@@ -184,7 +184,7 @@
     </model>
     <model name='grey_wall_10_clone'>
       <link name='link'>
-        <pose frame=''>0 5.5 0 0 -0 0</pose>
+        <pose frame=''>0 5.5 0.4 0 -0 0</pose>
         <inertial>
           <mass>10</mass>
           <pose frame=''>0 0 0 0 -0 0</pose>
@@ -286,7 +286,7 @@
     </model>
     <model name='grey_wall_10_clone_0'>
       <link name='link'>
-	<pose frame=''>-5.5 0 0 0 -0 1.5708</pose>
+	<pose frame=''>-5.5 0 0.4 0 -0 1.5708</pose>
         <inertial>
           <mass>10</mass>
           <pose frame=''>0 0 0 0 -0 0</pose>
@@ -388,7 +388,7 @@
     </model>
     <model name='grey_wall_10_clone_1'>
       <link name='link'>
-	<pose frame=''>6 -5.5 0 0 -0 0</pose>
+	<pose frame=''>6 -5.5 0.4 0 -0 0</pose>
         <inertial>
           <mass>10</mass>
           <pose frame=''>0 0 0 0 -0 0</pose>
@@ -490,7 +490,7 @@
     </model>
     <model name='grey_wall_10_clone_2'>
       <link name='link'>
-	<pose frame=''>-6 -5.5 0 0 -0 0</pose>
+	<pose frame=''>-6 -5.5 0.4 0 -0 0</pose>
         <inertial>
           <mass>10</mass>
           <pose frame=''>0 0 0 0 -0 0</pose>
@@ -592,7 +592,7 @@
     </model>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose frame=''>-0.726515 -24.861 20.7561 0 0.923642 1.56019</pose>
+        <pose frame=''>-0.726515 -16.861 16.7561 0 0.923642 1.56019</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>

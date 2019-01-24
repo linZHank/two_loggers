@@ -132,8 +132,9 @@
     </inertial>
   </link>
 
-  <joint name="joint_chassis1_hat1" type="continuous">
+  <joint name="joint_chassis1_hat1" type="revolute">
     <origin rpy="0 0 0" xyz="0.0 0 0.05"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
     <child link="link_hat_1" />
     <parent link="link_chassis_1"/>
     <axis rpy="0 0 0" xyz="0 0 1"/>
@@ -160,10 +161,11 @@
     </inertial>
   </link>
 
-  <joint name="joint_hat1_log" type="fixed">
+  <joint name="joint_hat1_log" type="continuous">
     <parent link="link_hat_1"/>
     <child link="link_log"/>
-    <origin rpy="0 0 0" xyz="0 0 0.08"/>    
+    <origin rpy="0 0 0" xyz="0 0 0.08"/>
+    <axis rpy="0 0 0" xyz="0 0 1"/>
   </joint>
 
   <link name="link_log">
@@ -187,10 +189,11 @@
     </inertial>
   </link>
 
-  <joint name="joint_log_hat2" type="fixed">
+  <joint name="joint_log_hat2" type="continuous">
     <parent link="link_log"/>
     <child link="link_hat_2"/>
-    <origin rpy="0 0 0" xyz="0 1.6 0"/>    
+    <origin rpy="0 0 0" xyz="0 1.6 0"/>
+    <axis rpy="0 0 0" xyz="0 0 1"/>
   </joint>
 
   <link name="link_hat_2">
@@ -214,11 +217,11 @@
     </inertial>
   </link>
 
-  <joint name="joint_chassis2_hat2" type="continuous">
+  <joint name="joint_chassis2_hat2" type="revolute">
     <origin rpy="0 0 0" xyz="0.0 0 -0.08"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
     <parent link="link_hat_2" />
     <child link="link_chassis_2"/>
-    <axis rpy="0 0 0" xyz="0 0 1"/>
   </joint>
   
   <link name="link_chassis_2">

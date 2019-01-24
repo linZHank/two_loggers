@@ -10,7 +10,7 @@
   <!-- Import Rviz colors -->
   <xacro:include filename="$(find loggers_description)/urdf/materials.xacro" />
 
-  Used for fixing robot to Gazebo 'base_link'
+  <!-- Used for fixing robot to Gazebo 'base_link' -->
   <!-- <link name="world"/> -->
 
   <!-- <joint name="joint_world_chassis" type="planar"> -->
@@ -38,71 +38,16 @@
       <inertia ixx="0.0083" ixy="0" ixz="0" iyy="0.0283" iyz="0" izz="0.0333"/>
     </inertial>
   </link>
- 
-  <joint name="joint_chassis_casterroll" type="continuous">
+
+  <joint name="joint_chassis_caster" type="revolute">
     <parent link="link_chassis"/>
-    <child link="link_caster_roll"/>
+    <child link="link_caster"/>
     <origin rpy="0 0 0" xyz="0.15 0 -0.05"/>
-    <axis xyz="1 0 0"/>
-  </joint>
-        
-  <link name="link_caster_roll">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <sphere radius="0.00000001"/>
-      </geometry>
-      <material name="white"/>
-    </visual>
-    <collision>
-      <origin rpy=" 0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <sphere radius="0.00000001"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.02"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
-    </inertial>
-  </link>
-
-  <joint name="joint_casterroll_casterpitch" type="continuous">
-    <parent link="link_caster_roll"/>
-    <child link="link_caster_pitch"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <axis xyz="0 1 0"/>
-  </joint>
-        
-  <link name="link_caster_pitch">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <sphere radius="0.00000001"/>
-      </geometry>
-      <material name="white"/>
-    </visual>
-    <collision>
-      <origin rpy=" 0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <sphere radius="0.00000001"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.02"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
-    </inertial>
-  </link>
-
-  <joint name="joint_casterpitch_casteryaw" type="continuous">
-    <parent link="link_caster_pitch"/>
-    <child link="link_caster_yaw"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <limit effort="0" velocity="0" lower="0" upper="0" />
     <axis xyz="0 0 1"/>
   </joint>
         
-  <link name="link_caster_yaw">
+  <link name="link_caster">
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -115,11 +60,21 @@
       <geometry>
         <sphere radius="0.04"/>
       </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>0</mu>
+            <mu2>0</mu2>
+            <slip1>1.0</slip1>
+            <slip2>1.0</slip2>
+          </ode>
+        </friction>
+      </surface>
     </collision>
     <inertial>
-      <mass value="0.04"/>
+      <mass value="0.02"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
     </inertial>
   </link>
 
@@ -207,27 +162,5 @@
       <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
     </inertial>
   </link>
-
-  <transmission name="trans_leftwheel">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="joint_chassis_leftwheel">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="motor_leftwheel">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-
-  <transmission name="trans_rightwheel">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="joint_chassis_rightwheel">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="motor_rightwheel">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-
+      
 </robot>
