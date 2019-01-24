@@ -3,6 +3,7 @@ import rospy
 import gym # https://github.com/openai/gym/blob/master/gym/core.py
 from gym.utils import seeding
 from gazebo_connection import GazeboConnection
+from controllers_connection import ControllersConnection
 
 class GymGazeboEnv(gym.Env):
   """
@@ -13,13 +14,20 @@ class GymGazeboEnv(gym.Env):
     2)If the simulation was running already for some reason, we need to reset the controlers.
       This has to do with the fact that some plugins with tf, dont understand the reset of the simulation and need to be reseted to work properly.
   """
-  def __init__(self, start_init_physics_parameters=True, reset_world_or_sim="WORLD"):
+  def __init__(self,
+               robot_name_space,
+               controllers_list,
+               reset_controls,
+               start_init_physics_parameters,
+               reset_world_or_sim):
     # To reset Simulations
     rospy.logdebug("START GymGazeboEnv...")
     self.gazebo = GazeboConnection(
-      start_init_physics_parameters=True,
-      reset_world_or_sim="WORLD"
+      start_init_physics_parameters,
+      reset_world_or_sim
     )
+    self.controllers_object = ControllersConnection(namespace=robot_name_space, controllers_list=controllers_list)
+    self.reset_controls = reset_controls
     self.seed()
     rospy.logdebug("END init RobotGazeboEnv")
 
@@ -69,15 +77,33 @@ class GymGazeboEnv(gym.Env):
     """Resets a simulation
     """
     rospy.logdebug("START robot gazebo _reset_sim")
-    self.gazebo.unpauseSim()
-    self.gazebo.resetSim()
-    self._set_init()
-    self.gazebo.pauseSim()
-    self.gazebo.unpauseSim()
-    self._check_all_systems_ready()
-    self.gazebo.pauseSim()
-    rospy.logdebug("END robot gazebo _reset_sim")
-    
+    if self.reset_controls :
+      rospy.logdebug("RESET CONTROLLERS")
+      self.gazebo.unpauseSim()
+      self.gazebo.resetSim()
+      self.gazebo.pauseSim()
+      self.gazebo.unpauseSim()
+      self._set_init()
+      self.gazebo.pauseSim()
+      self.gazebo.unpauseSim()
+      self.controllers_object.reset_controllers()
+      self.gazebo.pauseSim()
+      self.gazebo.unpauseSim()
+      self._check_all_systems_ready()
+      self.gazebo.pauseSim()
+    else:
+      rospy.debug("DONT RESET CONTROLLERS")
+      self.gazebo.unpauseSim()
+      self.gazebo.resetSim()
+      self.gazebo.pauseSim()
+      self.gazebo.unpauseSim()
+      self._set_init()
+      self.gazebo.pauseSim()
+      self.gazebo.unpauseSim()
+      self._check_all_systems_ready()
+      self.gazebo.pauseSim()
+      rospy.logdebug("END robot gazebo _reset_sim")
+      
     return True
   
   def _set_init(self):

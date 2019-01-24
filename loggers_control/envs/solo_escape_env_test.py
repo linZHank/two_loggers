@@ -19,11 +19,11 @@ rospy.init_node('env_test', anonymous=True, log_level=rospy.DEBUG)
 env = gym.make('SoloEscape-v0')
 
 # test env with random sampled actions
-for episode in range(100):
+for episode in range(16):
   state, info = env.reset()
   done = False
-  for step in range(16):
-    action = env.action_space.sample()
+  for step in range(64):
+    action = np.array([-4, 0]) # env.action_space.sample()
     next_state, reward, done, info = env.step(action)
     print("Episode : {}, Step: {}, \nCurrent position: {}, Reward: {:.4f}".format(
       episode,
