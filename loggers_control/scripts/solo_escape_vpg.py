@@ -8,6 +8,9 @@ Inspired by: https://github.com/openai/spinningup/blob/master/spinup/examples/pg
 """
 from __future__ import absolute_import, division, print_function
 
+import sys
+sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/scripts/envs")
+
 import numpy as np
 import tensorflow as tf
 import gym
@@ -18,7 +21,8 @@ import time
 import datetime
 import matplotlib.pyplot as plt
 
-from utils import bcolors, obs_to_state
+from solo_escape_task_env import SoloEscapeEnv
+from utils import bcolors
 
 
 def mlp(x, sizes, activation=tf.tanh, output_activation=None):
@@ -27,80 +31,110 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
     x = tf.layers.dense(x, units=size, activation=activation)
   return tf.layers.dense(x, units=sizes[-1], activation=output_activation)
 
-def train_one_episode(batch_size):
-  # make some empty lists for one episode.
-  batch_states = [] # for states
-  batch_actions = [] # for actions
-  batch_rtaus = [] # for weights R(tau)
-  batch_returns = [] # for measuring episode returns
-  batch_lengths = [] # for measuring episode lenghts
-  # reset episode-specific variables
-  obs = env_reset() # first observation comes from starting distribution (NEED WRITE IN: solo_escape_utils)
-  state = obs_to_state(obs) # convert observation into state (NEED WRITE IN: solo_escape_utils)
-  done = False # signal from environment that episode is over
-  episode_rewards = [] # list for rewards accrued throughout the episode
-  # collect experience by acting in the environment with current policy
-  while True:
-    batch_states.append(state)
-    # act in the environment
-    action_id = sess.run(action_id, feed_dict={state_ph: state.reshape(1,-1)})[0]
-    obs, rew, done, info = env_step(action_id) # (NEED WRITE IN: solo_escape_utils)
-    state = obs_to_state(obs)
-    # save action, reward
-    batch_acts.append(action_id)
-    episode_rewards.append(rew)
-    if done:
-      # if episode is over, record info about episode
-      episode_return, episode_length = sum(episode_rewards), len(episode_rewards)
-      batch_returns.append(episode_return)
-      batch_lengths.append(episode_length)
-      # the weight for each logprob(a|s) is R(tau)
-      batch_rtaus += [episode_return] * ep_length
-      # reset episode-specific variables
-      obs, done, episode_rewards = env.reset(), False, []
-      # end experience loop if we have enough of it
-      if len(batch_states) > batch_size:
-        break
-  # take a single policy gradient update step
-  batch_loss, _ = sess.run([loss, train_op],
-                           feed_dict={
-                            state_ph: np.array(batch_states),
-                            action_ph: np.array(batch_actions),
-                            rtaus_ph: np.array(batch_rtaus)
-                           })
-  return batch_loss, batch_returns, batch_lengths
+def train(agent, hidden_sizes=[32], learning_rate=1e-2, num_episodes=50, num_steps=64, batch_size=10000):
+  dim_state = len(agent.observation) # (x,y,vx,vy,costheta,sintheta,thetadot)
+  num_actions = 2
+  # make core of policy network
+  states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
+  logits = mlp(states_ph, sizes=hidden_sizes+[num_actions])
+  # make action selection op (outputs int actions, sampled from policy)
+  actions_id = tf.squeeze(tf.multinomial(logits=logits,num_samples=1), axis=1)
+  # make loss function whose gradient, for the right data, is policy gradient
+  rtaus_ph = tf.placeholder(shape=(None,), dtype=tf.float32)
+  actid_ph = tf.placeholder(shape=(None,), dtype=tf.int32)
+  action_masks = tf.one_hot(actid_ph, num_actions)
+  log_probs = tf.reduce_sum(action_masks * tf.nn.log_softmax(logits), axis=1)
+  loss = -tf.reduce_mean(rtaus_ph * log_probs)
+  # make train op
+  train_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+  # start a session
+  sess = tf.InteractiveSession()
+  sess.run(tf.global_variables_initializer())
+  saver = tf.train.Saver()
   
+  # for training policy
+  def train_one_episode():
+    # make some empty lists for logging.
+    batch_states = [] # for observations
+    batch_actions = [] # for actions
+    batch_rtaus = [] # for R(tau) weighting in policy gradient
+    batch_returns = [] # for measuring episode returns
+    batch_lengths = [] # for measuring episode lengths
+    # reset episode-specific variables
+    state, _ = agent.env_reset()       # first obs comes from starting distribution
+    done = False            # signal from environment that episode is over
+    ep_rewards = []            # list for rewards accrued throughout ep
+    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6]))
+    for st in range(num_steps):
+      # save obs
+      batch_states.append(state.copy())
+      # act in the environment
+      action_id = sess.run(actions_id, {states_ph: state.reshape(1,-1)})[0]
+      if action_id:
+        action = np.array([.8, np.pi/3])
+      else:
+        action = np.array([.8, -np.pi/3])
+      state, rew, done, info = agent.env_step(action)
+      # add small reward if bot getting closer to exit
+      dist = np.linalg.norm(state[:2]-np.array([0,-6]))
+      rew += dist_0-dist-dist/100
+      # save action, reward
+      batch_actions.append(action_id)
+      ep_rewards.append(rew)
+      # update bot's distance to exit
+      dist_0 = dist
+      rospy.loginfo("Episode: {}, Step: {} \naction: {}, state: {}, reward: {}, done: {}".format(
+        ep,
+        st,
+        action,
+        state,
+        rew,
+        done
+      ))
+      if done or len(batch_states)>batch_size:
+        break
+    # if episode is over, record info about episode
+    ep_return, ep_length = sum(ep_rewards), len(ep_rewards)
+    batch_returns.append(ep_return)
+    batch_lengths.append(ep_length)
+    # the weight for each logprob(a|s) is R(tau)
+    batch_rtaus += [ep_return] * ep_length
+    # if len(batch_states) > batch_size:
+    #   break
+    # take a single policy gradient update step
+    batch_loss, _ = sess.run([loss, train_op],
+                             feed_dict={
+                               states_ph: np.array(batch_states),
+                               actid_ph: np.array(batch_actions),
+                               rtaus_ph: np.array(batch_rtaus)
+                             })
+    return batch_loss, batch_returns, batch_lengths
+  
+  # training loop
+  for ep in range(num_episodes):
+    batch_loss, batch_returns, batch_lengths = train_one_episode()
+    print('epoch: %3d \t loss: %.3f \t return: %.3f \t ep_len: %.3f'%
+                (ep, batch_loss, np.mean(batch_returns), np.mean(batch_lengths)))
+    save_path = saver.save(sess, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model/model.ckpt")
+    rospy.loginfo("Model saved in path : {}".format(save_path))
+    rospy.logerr("Success Count: {}".format(agent.success_count))
+  plt.plot(batch_returns)
+  plt.show()
+  
+  
+
 if __name__ == "__main__":
-  rospy.init_node("crib_nav_vpg", anonymous=True, log_level=rospy.WARN)
-  # make environment, check spaces
+  rospy.init_node("solo_escape_vpg", anonymous=True, log_level=rospy.INFO)
+  # make an instance from env class
+  escaper = SoloEscapeEnv()
+  # make hyper-parameters
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 2
   hidden_sizes = [32]
-  num_epochs = 50
-  lr = 1e-2
-  batch_size = 5000
+  num_episodes = 128
+  num_steps = 256
+  learning_rate = 1e-4
+  batch_size = 40000
   # make core of policy network
-  state_ph = tf.placeholder(shape=(None, statespace_dim), dtype=tf.float32)
-  logits = mlp(state_ph, sizes=hidden_sizes+[actionspace_dim])
-  # make action selection op (outputs int actions, sampled from policy)
-  action_id = tf.squeeze(tf.multinomial(logits=logits,num_samples=1), axis=1)
-  # make loss function whose gradient, for the right data, is policy gradient
-  rtaus_ph = tf.placeholder(shape=(None,), dtype=tf.float32)
-  action_ph = tf.placeholder(shape=(None,), dtype=tf.int32)
-  action_masks = tf.one_hot(action_ph, actionspace_dim)
-  log_probs = tf.reduce_sum(action_masks * tf.nn.log_softmax(logits), axis=1)
-  loss = -tf.reduce_mean(return_ph * log_probs)
-  # make train op
-  train_op = tf.train.AdamOptimizer(learning_rate=lr).minimize(loss)
-  # start a tf session
-  sess = tf.InteractiveSession()
-  sess.run(tf.global_variables_initializer())
-  # training loop
-  for i in range(num_epochs):
-    batch_loss, batch_returns, batch_lengths = train_one_epoch(batch_size)
-    print(
-      "epoch: {:3d}\t loss: {:.3f}\t return: {:.3f}\t ep_len: {:.3f}".format(
-        i, batch_loss, np.mean(batch_returns), np.mean(batch_lengths)
-      )
-    )
-  
+  train(agent=escaper, learning_rate=learning_rate, num_episodes=num_episodes,
+        num_steps=num_steps, batch_size=batch_size)

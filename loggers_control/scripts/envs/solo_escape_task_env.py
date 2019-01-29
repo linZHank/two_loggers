@@ -23,11 +23,13 @@ class SoloEscapeEnv(object):
   """
   def __init__(self):
     # init simulation parameters
-    self.rate = rospy.Rate(10)
+    self.rate = rospy.Rate(100)
     # init environment parameters
     self.observation = np.array([0., 0., 0., 0., 1., 0., 0.]) # x,y,v_x,v_y,cos_theta,sin_theta, theta_dot
+    self.action = np.zeros(2)
     self.reward = 0
     self._episode_done = False
+    self.success_count = 0
     # init env info
     self.init_pose = np.zeros(3) # x, y, theta
     self.prev_pose = np.zeros(3)
@@ -135,6 +137,7 @@ class SoloEscapeEnv(object):
       action: 2-d numpy array.
     """
     rospy.logdebug("Start Taking Action....")
+    self.action = action
     cmd_vel = Twist()
     cmd_vel.linear.x = action[0]
     cmd_vel.angular.z = action[1]
@@ -180,18 +183,35 @@ class SoloEscapeEnv(object):
       reward: reward in current step
     """
     rospy.logdebug("Start Computing Reward....")
-    if sum(np.absolute(self.curr_pose[:2])>4.6): # logger close to cell edge
+    if self.curr_pose[1] < -6:
+      reward = 1
+      self.success_count += 1
+      self._episode_done = True
+      rospy.logerr("\n!!!\nLogger Escaped !\n!!!")
+    elif self.curr_pose[0] > 4.75:
       reward = 0
       self._episode_done = True
-      rospy.logwarn("Logger is too close to the edge, task will be reset!")
-    elif self.curr_pose[1] <= 6: # logger still in cell
+      rospy.logwarn("Logger is too close to east wall, task will be reset!")
+    elif self.curr_pose[0] < -4.75:
+      reward = 0
+      self._episode_done = True
+      rospy.logwarn("Logger is too close to west wall, task will be reset!")
+    elif self.curr_pose[1] > 4.75:
+      reward = 0
+      self._episode_done = True
+      rospy.logwarn("Logger is too close to north wall, task will be reset!")
+    elif self.curr_pose[1] < -4.75 and np.absolute(self.curr_pose[0])>1:
+      reward = 0
+      self._episode_done = True
+      rospy.logwarn("Logger is too close to south wall, task will be reset!")
+    elif self.curr_pose[1] < -5 and np.absolute(self.curr_pose[0])>0.75:
+      reward = 0
+      self._episode_done = True
+      rospy.logwarn("Logger is too close to door, task will be reset!")
+    else:
       reward = 0
       self._episode_done = False
-      rospy.logwarn("Logger is working on its way to escape...")
-    else: # logger escaped
-      reward = 1
-      self._episode_done = True
-      rospy.logwarn("\n!!!\nLogger Escaped !\n!!!")
+      rospy.loginfo("Logger is working on its way to escape...")
     self.reward = reward
     rospy.logdebug("Stepwise Reward Computed ===> {}".format(reward))
     
