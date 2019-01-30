@@ -184,7 +184,7 @@ class SoloEscapeEnv(object):
     """
     rospy.logdebug("Start Computing Reward....")
     if self.curr_pose[1] < -6:
-      reward = 1
+      reward = 1024
       self.success_count += 1
       self._episode_done = True
       rospy.logerr("\n!!!\nLogger Escaped !\n!!!")

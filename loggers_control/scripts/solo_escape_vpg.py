@@ -31,7 +31,7 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
     x = tf.layers.dense(x, units=size, activation=activation)
   return tf.layers.dense(x, units=sizes[-1], activation=output_activation)
 
-def train(agent, hidden_sizes=[32], learning_rate=1e-2, num_episodes=50, num_steps=64, batch_size=10000):
+def train(agent, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_steps=64, batch_size=10000):
   dim_state = len(agent.observation) # (x,y,vx,vy,costheta,sintheta,thetadot)
   num_actions = 2
   # make core of policy network
@@ -77,7 +77,7 @@ def train(agent, hidden_sizes=[32], learning_rate=1e-2, num_episodes=50, num_ste
       state, rew, done, info = agent.env_step(action)
       # add small reward if bot getting closer to exit
       dist = np.linalg.norm(state[:2]-np.array([0,-6]))
-      rew += dist_0-dist-dist/100
+      # rew += (dist_0-dist)/10-dist/100
       # save action, reward
       batch_actions.append(action_id)
       ep_rewards.append(rew)
@@ -111,14 +111,16 @@ def train(agent, hidden_sizes=[32], learning_rate=1e-2, num_episodes=50, num_ste
     return batch_loss, batch_returns, batch_lengths
   
   # training loop
+  acc_returns = []
   for ep in range(num_episodes):
     batch_loss, batch_returns, batch_lengths = train_one_episode()
     print('epoch: %3d \t loss: %.3f \t return: %.3f \t ep_len: %.3f'%
                 (ep, batch_loss, np.mean(batch_returns), np.mean(batch_lengths)))
+    acc_returns.append(batch_returns)
     save_path = saver.save(sess, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model/model.ckpt")
     rospy.loginfo("Model saved in path : {}".format(save_path))
     rospy.logerr("Success Count: {}".format(agent.success_count))
-  plt.plot(batch_returns)
+  plt.plot(acc_returns)
   plt.show()
   
   
@@ -130,11 +132,11 @@ if __name__ == "__main__":
   # make hyper-parameters
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 2
-  hidden_sizes = [32]
-  num_episodes = 128
+  hidden_sizes = [128]
+  num_episodes = 1024
   num_steps = 256
-  learning_rate = 1e-4
-  batch_size = 40000
+  learning_rate = 1e-3
+  batch_size = 80000
   # make core of policy network
   train(agent=escaper, learning_rate=learning_rate, num_episodes=num_episodes,
         num_steps=num_steps, batch_size=batch_size)
