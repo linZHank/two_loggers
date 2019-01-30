@@ -76,8 +76,8 @@ def train(agent, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_ste
         action = np.array([.8, -np.pi/3])
       state, rew, done, info = agent.env_step(action)
       # add small reward if bot getting closer to exit
-      dist = np.linalg.norm(state[:2]-np.array([0,-6]))
-      # rew += (dist_0-dist)/10-dist/100
+      dist = np.linalg.norm(state[:2]-np.array([0,-1000]))
+      rew += dist_0-dist
       # save action, reward
       batch_actions.append(action_id)
       ep_rewards.append(rew)
@@ -133,10 +133,10 @@ if __name__ == "__main__":
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 2
   hidden_sizes = [128]
-  num_episodes = 1024
-  num_steps = 256
+  num_episodes = 64
+  num_steps = 4096
   learning_rate = 1e-3
-  batch_size = 80000
+  batch_size = 5000
   # make core of policy network
   train(agent=escaper, learning_rate=learning_rate, num_episodes=num_episodes,
         num_steps=num_steps, batch_size=batch_size)
