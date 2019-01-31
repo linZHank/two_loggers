@@ -31,9 +31,7 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
     x = tf.layers.dense(x, units=size, activation=activation)
   return tf.layers.dense(x, units=sizes[-1], activation=output_activation)
 
-def train(agent, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_steps=64, batch_size=10000):
-  dim_state = len(agent.observation) # (x,y,vx,vy,costheta,sintheta,thetadot)
-  num_actions = 2
+def train(agent, dim_state=7, num_actions=3, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_steps=64, batch_size=10000):
   # make core of policy network
   states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
   logits = mlp(states_ph, sizes=hidden_sizes+[num_actions])
@@ -48,7 +46,7 @@ def train(agent, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_ste
   # make train op
   train_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
   # start a session
-  sess = tf.InteractiveSession()
+  sess = tf.Session()
   sess.run(tf.global_variables_initializer())
   saver = tf.train.Saver()
   
@@ -64,20 +62,23 @@ def train(agent, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_ste
     state, _ = agent.env_reset()       # first obs comes from starting distribution
     done = False            # signal from environment that episode is over
     ep_rewards = []            # list for rewards accrued throughout ep
-    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6]))
+    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.05]))
     for st in range(num_steps):
       # save obs
       batch_states.append(state.copy())
       # act in the environment
       action_id = sess.run(actions_id, {states_ph: state.reshape(1,-1)})[0]
-      if action_id:
-        action = np.array([.8, np.pi/3])
-      else:
-        action = np.array([.8, -np.pi/3])
+      if action_id == 0: # go straight
+        action = np.array([.5, 0])
+      elif action_id == 1: # turn left
+        action = np.array([0, 1.0])
+      else: # turn right
+        action = np.array([0, -1.0])
       state, rew, done, info = agent.env_step(action)
       # add small reward if bot getting closer to exit
-      dist = np.linalg.norm(state[:2]-np.array([0,-1000]))
-      rew += dist_0-dist
+      dist = np.linalg.norm(state[:2]-np.array([0,-6.05]))
+      # adjust reward based on relative distance to the exit
+      rew += (dist_0-dist)/num_steps
       # save action, reward
       batch_actions.append(action_id)
       ep_rewards.append(rew)
@@ -131,12 +132,13 @@ if __name__ == "__main__":
   escaper = SoloEscapeEnv()
   # make hyper-parameters
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
-  actionspace_dim = 2
-  hidden_sizes = [128]
-  num_episodes = 64
-  num_steps = 4096
-  learning_rate = 1e-3
+  actionspace_dim = 3
+  hidden_sizes = [64]
+  num_episodes = 128
+  num_steps = 1024
+  learning_rate = 1e-6
   batch_size = 5000
   # make core of policy network
-  train(agent=escaper, learning_rate=learning_rate, num_episodes=num_episodes,
+  train(agent=escaper, dim_state = statespace_dim, num_actions=actionspace_dim,
+        learning_rate=learning_rate, num_episodes=num_episodes,
         num_steps=num_steps, batch_size=batch_size)
