@@ -136,7 +136,7 @@ if __name__ == "__main__":
   hidden_sizes = [64]
   num_episodes = 128
   num_steps = 1024
-  learning_rate = 1e-6
+  learning_rate = 1e-4
   batch_size = 5000
   # make core of policy network
   train(agent=escaper, dim_state = statespace_dim, num_actions=actionspace_dim,
