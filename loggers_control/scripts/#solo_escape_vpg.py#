@@ -80,7 +80,6 @@ def train(agent, dim_state=7, num_actions=3, hidden_sizes=[32], learning_rate=1e
       # adjust reward based on relative distance to the exit
       if done:
         rew *= num_steps
-        break
       else:
         rew += rew*num_steps
       # save action, reward

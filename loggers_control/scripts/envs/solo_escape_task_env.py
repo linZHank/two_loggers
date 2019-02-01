@@ -184,28 +184,28 @@ class SoloEscapeEnv(object):
     """
     rospy.logdebug("Start Computing Reward....")
     if self.curr_pose[1] < -6:
-      reward = 1024
+      reward = 1
       self.success_count += 1
       self._episode_done = True
       rospy.logerr("\n!!!\nLogger Escaped !\n!!!")
     elif self.curr_pose[0] > 4.75:
-      reward = 0
+      reward = -0.01
       self._episode_done = True
       rospy.logwarn("Logger is too close to east wall, task will be reset!")
     elif self.curr_pose[0] < -4.75:
-      reward = 0
+      reward = -0.01
       self._episode_done = True
       rospy.logwarn("Logger is too close to west wall, task will be reset!")
     elif self.curr_pose[1] > 4.75:
-      reward = 0
+      reward = -0.01
       self._episode_done = True
       rospy.logwarn("Logger is too close to north wall, task will be reset!")
-    elif self.curr_pose[1] < -4.75 and np.absolute(self.curr_pose[0])>1:
-      reward = 0
+    elif -4.99<self.curr_pose[1]<-4.75 and np.absolute(self.curr_pose[0])>1:
+      reward = -0.01
       self._episode_done = True
       rospy.logwarn("Logger is too close to south wall, task will be reset!")
     elif self.curr_pose[1] < -5 and np.absolute(self.curr_pose[0])>0.75:
-      reward = 0
+      reward = 0.02
       self._episode_done = True
       rospy.logwarn("Logger is too close to door, task will be reset!")
     else:
