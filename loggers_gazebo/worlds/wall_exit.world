@@ -592,7 +592,7 @@
     </model>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose frame=''>-0.726515 -16.861 16.7561 0 0.923642 1.56019</pose>
+        <pose frame=''>0 12 12 0 0.8 -1.57080</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>

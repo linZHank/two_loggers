@@ -34,6 +34,7 @@ class SoloEscapeEnv(object):
     self.init_pose = np.zeros(3) # x, y, theta
     self.prev_pose = np.zeros(3)
     self.curr_pose = np.zeros(3)
+    self.status = "trapped"
     # init services
     self.reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
     self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
@@ -186,32 +187,39 @@ class SoloEscapeEnv(object):
     if self.curr_pose[1] < -6:
       reward = 1
       self.success_count += 1
+      self.status = "escaped"
       self._episode_done = True
       rospy.logerr("\n!!!\nLogger Escaped !\n!!!")
     elif self.curr_pose[0] > 4.75:
-      reward = -0.01
+      reward = -0.
+      self.status = "east"
       self._episode_done = True
-      rospy.logwarn("Logger is too close to east wall, task will be reset!")
+      rospy.logwarn("Logger is too close to east wall!")
     elif self.curr_pose[0] < -4.75:
-      reward = -0.01
+      reward = -0.
+      self.status = "west"
       self._episode_done = True
-      rospy.logwarn("Logger is too close to west wall, task will be reset!")
+      rospy.logwarn("Logger is too close to west wall!")
     elif self.curr_pose[1] > 4.75:
-      reward = -0.01
+      reward = -0.
+      self.status = "north"
       self._episode_done = True
-      rospy.logwarn("Logger is too close to north wall, task will be reset!")
+      rospy.logwarn("Logger is too close to north wall!")
     elif -4.99<self.curr_pose[1]<-4.75 and np.absolute(self.curr_pose[0])>1:
-      reward = -0.01
+      reward = -0.
+      self.status = "south"
       self._episode_done = True
-      rospy.logwarn("Logger is too close to south wall, task will be reset!")
+      rospy.logwarn("Logger is too close to south wall!")
     elif self.curr_pose[1] < -5 and np.absolute(self.curr_pose[0])>0.75:
-      reward = 0.02
+      reward = 0.
+      self.status = "door"
       self._episode_done = True
-      rospy.logwarn("Logger is too close to door, task will be reset!")
+      rospy.logwarn("Logger is stuck at the door!")
     else:
-      reward = 0
+      reward = -0.
+      self.status = "trapped"
       self._episode_done = False
-      rospy.loginfo("Logger is working on its way to escape...")
+      rospy.loginfo("Logger is trapped in the cell...")
     self.reward = reward
     rospy.logdebug("Stepwise Reward Computed ===> {}".format(reward))
     
@@ -226,7 +234,8 @@ class SoloEscapeEnv(object):
     self.info = {
       "initial_pose": self.init_pose,
       "current_pose": self.curr_pose,
-      "previous_pose": self.prev_pose
+      "previous_pose": self.prev_pose,
+      "status": self.status
     }
     rospy.logdebug("Information Posted ===> {}".format(self.info))
     

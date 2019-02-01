@@ -62,7 +62,7 @@ def train(agent, dim_state=7, num_actions=3, hidden_sizes=[32], learning_rate=1e
     state, _ = agent.env_reset()       # first obs comes from starting distribution
     done = False            # signal from environment that episode is over
     ep_rewards = []            # list for rewards accrued throughout ep
-    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.05]))
+    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.02]))
     for st in range(num_steps):
       # save obs
       batch_states.append(state.copy())
@@ -76,13 +76,14 @@ def train(agent, dim_state=7, num_actions=3, hidden_sizes=[32], learning_rate=1e
         action = np.array([0, -1.0])
       state, rew, done, info = agent.env_step(action)
       # add small reward if bot getting closer to exit
-      dist = np.linalg.norm(state[:2]-np.array([0,-6.05]))
+      dist = np.linalg.norm(state[:2]-np.array([0,-6.02]))
       # adjust reward based on relative distance to the exit
-      if done:
+      if info["status"] == "escaped":
         rew *= num_steps
-        break
+      elif info["status"] == "door":
+        rew += 0.01/(state[1]+6.02)*num_steps
       else:
-        rew += rew*num_steps
+        rew += (dist_0-dist)
       # save action, reward
       batch_actions.append(action_id)
       ep_rewards.append(rew)
@@ -96,7 +97,7 @@ def train(agent, dim_state=7, num_actions=3, hidden_sizes=[32], learning_rate=1e
         rew,
         done
       ))
-      if done or len(batch_states)>batch_size:
+      if done or len(batch_states) > batch_size:
         break
     # if episode is over, record info about episode
     ep_return, ep_length = sum(ep_rewards), len(ep_rewards)
@@ -116,16 +117,16 @@ def train(agent, dim_state=7, num_actions=3, hidden_sizes=[32], learning_rate=1e
     return batch_loss, batch_returns, batch_lengths
   
   # training loop
-  acc_returns = []
+  sedimentary_returns = []
   for ep in range(num_episodes):
     batch_loss, batch_returns, batch_lengths = train_one_episode()
     print('epoch: %3d \t loss: %.3f \t return: %.3f \t ep_len: %.3f'%
                 (ep, batch_loss, np.mean(batch_returns), np.mean(batch_lengths)))
-    acc_returns.append(batch_returns)
+    sedimentary_returns.append(batch_returns)
     save_path = saver.save(sess, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model/model.ckpt")
     rospy.loginfo("Model saved in path : {}".format(save_path))
     rospy.logerr("Success Count: {}".format(agent.success_count))
-  plt.plot(acc_returns)
+  plt.plot(sedimentary_returns)
   plt.show()
   
   
@@ -140,7 +141,7 @@ if __name__ == "__main__":
   hidden_sizes = [64]
   num_episodes = 128
   num_steps = 1024
-  learning_rate = 1e-4
+  learning_rate = 1e-3
   batch_size = 5000
   # make core of policy network
   train(agent=escaper, dim_state = statespace_dim, num_actions=actionspace_dim,
