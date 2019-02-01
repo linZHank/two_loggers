@@ -10,7 +10,7 @@
   <!-- Import Rviz colors -->
   <xacro:include filename="$(find loggers_description)/urdf/materials.xacro" />
 
-  Used for fixing robot to Gazebo 'base_link'
+  <!-- Used for fixing robot to Gazebo 'base_link' -->
   <link name="world"/>
 
   <joint name="joint_world_chassis" type="floating">

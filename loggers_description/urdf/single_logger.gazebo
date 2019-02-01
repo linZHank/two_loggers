@@ -31,14 +31,12 @@
   <gazebo reference="link_left_wheel">
     <mu1>1</mu1>
     <mu2>1</mu2>
-    <minDepth>0.001</minDepth>
     <material>Gazebo/Wood</material>
   </gazebo>
 
   <gazebo reference="link_right_wheel">
     <mu1>1</mu1>
     <mu2>1</mu2>
-    <minDepth>0.001</minDepth>
     <material>Gazebo/Wood</material>
   </gazebo>
 
@@ -64,7 +62,6 @@
   <gazebo reference="link_caster">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <minDepth>0.001</minDepth>
     <material>Gazebo/DarkGrey</material>
   </gazebo>
 
