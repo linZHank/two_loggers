@@ -48,7 +48,7 @@ class SoloEscapeEnv(object):
     self.set_robot_state_pub = rospy.Publisher(
       "/gazebo/set_model_state",
       ModelState,
-      queue_size=100
+      queue_size=10
     )
     # init topic subscriber
     rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
@@ -144,8 +144,8 @@ class SoloEscapeEnv(object):
     cmd_vel.angular.z = action[1]
     for _ in range(10):
       self.cmd_vel_pub.publish(cmd_vel)
-      rospy.logdebug("Action Taken ===> {}".format(cmd_vel))
       self.rate.sleep()
+    rospy.logdebug("Action Taken ===> {}".format(cmd_vel))
     
   def _get_observation(self):
     """
