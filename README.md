@@ -1,10 +1,10 @@
-# Brief Note
+# Two Loggers Gazebo Simulation
 
 ## Pre-requisites
 - [Ubuntu 16.04](http://releases.ubuntu.com/16.04/)
 - [ROS-Kinetic](http://wiki.ros.org/kinetic), `ros-kinetic-desktop-full`
 - [catkin-command-line-tools](https://catkin-tools.readthedocs.io/en/latest/)
-- [TensorFlow]
+- [TensorFlow](https://www.tensorflow.org/)
 
 ## Quick Start
 - Create a catkin workspace, refer to this [tutorial](http://wiki.ros.org/catkin/Tutorials/create_a_workspace). Assume your workspace is at `~/ros_ws/`
