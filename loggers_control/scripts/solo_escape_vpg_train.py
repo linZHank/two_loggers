@@ -31,7 +31,7 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
     x = tf.layers.dense(x, units=size, activation=activation)
   return tf.layers.dense(x, units=sizes[-1], activation=output_activation)
 
-def train(agent, model_path, dim_state=7, num_actions=3, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_steps=64, batch_size=10000):
+def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_steps=64, batch_size=10000):
   # make core of policy network
   states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
   logits = mlp(states_ph, sizes=hidden_sizes+[num_actions])
@@ -68,12 +68,12 @@ def train(agent, model_path, dim_state=7, num_actions=3, hidden_sizes=[32], lear
       batch_states.append(state.copy())
       # act in the environment
       action_id = sess.run(actions_id, {states_ph: state.reshape(1,-1)})[0]
-      if action_id == 0: # go straight
-        action = np.array([.5, 0])
-      elif action_id == 1: # turn left
-        action = np.array([0, 1.0])
-      else: # turn right
-        action = np.array([0, -1.0])
+      if action_id == 0: # forward
+        action = np.array([.5, 0.])
+      elif action_id == 1: # forward left
+        action = np.array([.5, 1.])
+      else: # forward right
+        action = np.array([.5, -1.])
       state, rew, done, info = agent.env_step(action)
       # add small reward if bot getting closer to exit
       dist = np.linalg.norm(state[:2]-np.array([0,-6.02]))
@@ -138,7 +138,7 @@ if __name__ == "__main__":
   # make hyper-parameters
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 3
-  hidden_sizes = [64]
+  hidden_sizes = [32]
   num_episodes = 256
   num_steps = 1024
   learning_rate = 1e-3
