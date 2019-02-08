@@ -9,23 +9,23 @@
 ## Quick Start
 - Create a catkin workspace, refer to this [tutorial](http://wiki.ros.org/catkin/Tutorials/create_a_workspace). Assume your workspace is at `~/ros_ws/`
 - Clone this repo to your catkin workspace
-```bash
+```console
 cd ~/ros_ws/src
 git clone https://github.com/linZHank/two_loggers.git
 ```
 - Build these ROS packages (`loggers_description`, `loggers_gazebo`, `loggers_control`)
-``` bash
+``` console
 cd ~/ros_ws/
 catkin build
 source devel/setup.bash
 ```
 > Better make sure following two lines are in your `~/.bashrc` file.
-``` bash
+``` console
 source /opt/ros/kinetic/setup.bash
 source /home/linzhank/ros_ws/devel/setup.bash
 ```
 - Launch a single logger robot simulation
-``` bash
+``` console
 roslaunch loggers_control single_logger_control.launch 
 ```
 

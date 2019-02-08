@@ -18,7 +18,7 @@ import rospy
 import random
 import os
 import time
-import datetime
+from datetime import datetime
 import matplotlib.pyplot as plt
 
 from solo_escape_task_env import SoloEscapeEnv
@@ -31,7 +31,7 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
     x = tf.layers.dense(x, units=size, activation=activation)
   return tf.layers.dense(x, units=sizes[-1], activation=output_activation)
 
-def train(agent, dim_state=7, num_actions=3, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_steps=64, batch_size=10000):
+def train(agent, model_path, dim_state=7, num_actions=3, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_steps=64, batch_size=10000):
   # make core of policy network
   states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
   logits = mlp(states_ph, sizes=hidden_sizes+[num_actions])
@@ -123,7 +123,7 @@ def train(agent, dim_state=7, num_actions=3, hidden_sizes=[32], learning_rate=1e
     print('epoch: %3d \t loss: %.3f \t return: %.3f \t ep_len: %.3f'%
                 (ep, batch_loss, np.mean(batch_returns), np.mean(batch_lengths)))
     sedimentary_returns.append(batch_returns)
-    save_path = saver.save(sess, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model/model.ckpt")
+    save_path = saver.save(sess, model_path)
     rospy.loginfo("Model saved in path : {}".format(save_path))
     rospy.logerr("Success Count: {}".format(agent.success_count))
   plt.plot(sedimentary_returns)
@@ -139,11 +139,14 @@ if __name__ == "__main__":
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 3
   hidden_sizes = [64]
-  num_episodes = 128
+  num_episodes = 256
   num_steps = 1024
   learning_rate = 1e-3
   batch_size = 5000
+  model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-" +\
+                 datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt" 
   # make core of policy network
-  train(agent=escaper, dim_state = statespace_dim, num_actions=actionspace_dim,
+  train(agent=escaper, model_path=model_path, dim_state = statespace_dim,
+        num_actions=actionspace_dim, hidden_sizes=hidden_sizes,
         learning_rate=learning_rate, num_episodes=num_episodes,
         num_steps=num_steps, batch_size=batch_size)
