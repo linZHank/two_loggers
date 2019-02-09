@@ -23,9 +23,6 @@
 
   <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-    args="-urdf -z 0.07 -model two_loggers -param robot_description"/>
-
-  <!-- ros_control rrbot launch file -->
-  <!--include file="$(find rrbot_control)/launch/rrbot_control.launch" /-->
+    args="-urdf -z 0.0901 -model two_loggers -param robot_description"/>
 
 </launch>
