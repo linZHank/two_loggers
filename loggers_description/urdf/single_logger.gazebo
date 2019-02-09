@@ -14,7 +14,7 @@
   <!--   <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so"> -->
   <!--     <legacyMode>false</legacyMode> -->
   <!--     <alwaysOn>true</alwaysOn> -->
-  <!--     <updateRate>40</updateRate> -->
+  <!--     <updateRate>100</updateRate> -->
   <!--     <leftJoint>joint_chassis_leftwheel</leftJoint> -->
   <!--     <rightJoint>joint_chassis_rightwheel</rightJoint> -->
   <!--     <wheelSeparation>0.4</wheelSeparation> -->
@@ -78,7 +78,7 @@
   </gazebo>
 
   <gazebo reference="link_hat">
-    <material>Gazebo/JointAnchor</material>
+    <material>Gazebo/Wood</material>
     <!-- <visual> -->
     <!--   <material> <!-\- UC Red -\-> -->
     <!--     <ambient>0.8784 0.0039 0.1333 1</ambient> -->

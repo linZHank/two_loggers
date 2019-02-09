@@ -10,13 +10,13 @@
   <!-- Import Rviz colors -->
   <xacro:include filename="$(find loggers_description)/urdf/materials.xacro" />
 
-  <!-- Used for fixing robot to Gazebo 'base_link' -->
-  <!-- <link name="world"/> -->
+  <!-- Use a dummy link, or Gazebo would not take care of root link's inertia -->
+  <link name="world"/>
 
-  <!-- <joint name="joint_world_chassis" type="planar"> -->
-  <!--   <parent link="world"/> -->
-  <!--   <child link="link_chassis"/> -->
-  <!-- </joint> -->
+  <joint name="joint_world_chassis0" type="planar">
+    <parent link="world"/>
+    <child link="link_chassis_0"/>
+  </joint>
 
   <link name="link_chassis_0">
     <visual>
