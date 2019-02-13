@@ -35,7 +35,7 @@ if __name__ == "__main__":
   # parameters
   dim_state = 7
   num_actions = 3
-  hidden_sizes = [32]
+  hidden_sizes = [64]
   num_episodes = 10
   num_steps = 1024
   # set tf 
@@ -43,7 +43,7 @@ if __name__ == "__main__":
   logits = mlp(states_ph, sizes=hidden_sizes+[num_actions])
   actions_id = tf.squeeze(tf.multinomial(logits=logits,num_samples=1), axis=1)
   saver = tf.train.Saver()
-  model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model/model.ckpt"
+  model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-2019-02-12-18-54/model.ckpt"
   rospy.init_node("solo_escape_eval", anonymous=True, log_level=rospy.INFO)
   # make an instance from env class
   escaper = SoloEscapeEnv()

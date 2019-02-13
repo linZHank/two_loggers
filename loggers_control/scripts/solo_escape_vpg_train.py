@@ -138,7 +138,7 @@ if __name__ == "__main__":
   # make hyper-parameters
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 3
-  hidden_sizes = [32]
+  hidden_sizes = [64]
   num_episodes = 256
   num_steps = 1024
   learning_rate = 1e-3
