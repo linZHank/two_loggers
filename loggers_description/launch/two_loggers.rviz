@@ -56,7 +56,7 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        link_caster_1:
+        link_chassis_0:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -66,7 +66,17 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        link_chassis_hat_1:
+        link_hat_0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        link_hat_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        link_left_wheel_0:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -76,7 +86,17 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        link_right_wheel_0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         link_right_wheel_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        link_log:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -90,7 +110,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 238; 238; 238
-    Fixed Frame: link_chassis_1
+    Fixed Frame: link_log
     Frame Rate: 30
   Name: root
   Tools:
