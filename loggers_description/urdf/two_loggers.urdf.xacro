@@ -15,8 +15,7 @@
   <!-- Use a dummy link, or Gazebo would not take care of root link's inertia -->
   <link name="world"/>
 
-  <joint name="joint_world_log" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0"/>
+  <joint name="joint_world_log" type="floating">
     <parent link="world"/>
     <child link="link_log"/>
   </joint>

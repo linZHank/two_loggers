@@ -13,7 +13,7 @@
   <!-- Used for fixing robot to Gazebo 'base_link' -->
   <link name="world"/>
 
-  <joint name="joint_world_chassis" type="planar">
+  <joint name="joint_world_chassis" type="floating">
     <parent link="world"/>
     <child link="link_chassis"/>
   </joint>

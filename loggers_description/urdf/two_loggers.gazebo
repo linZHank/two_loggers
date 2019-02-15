@@ -11,7 +11,7 @@
       <rightJoint>joint_chassis0_rwheel0</rightJoint>
       <wheelSeparation>0.24</wheelSeparation>
       <wheelDiameter>0.2</wheelDiameter>
-      <wheelTorque>0.1</wheelTorque>
+      <wheelTorque>1</wheelTorque>
       <!--wheelAcceleration>${wheel_accel}</wheelAcceleration-->
       <commandTopic>cmd_vel_0</commandTopic>
       <odometryTopic>odom</odometryTopic>
@@ -56,7 +56,7 @@
       <rightJoint>joint_chassis1_rwheel1</rightJoint>
       <wheelSeparation>0.24</wheelSeparation>
       <wheelDiameter>0.2</wheelDiameter>
-      <wheelTorque>0.1</wheelTorque>
+      <wheelTorque>1</wheelTorque>
       <!-- wheelAcceleration>${wheel_accel}</wheelAcceleration -->
       <commandTopic>cmd_vel_1</commandTopic>
       <odometryTopic>odom</odometryTopic>

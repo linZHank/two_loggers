@@ -23,6 +23,6 @@
 
   <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-    args="-urdf -x -1 -z 0.0901 -Y -1.57 -model two_loggers -param robot_description"/>
+    args="-urdf -z 0.23 -model two_loggers -param robot_description"/>
 
 </launch>

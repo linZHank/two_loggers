@@ -13,7 +13,6 @@ sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/script
 
 import numpy as np
 import tensorflow as tf
-import gym
 import rospy
 import random
 import os

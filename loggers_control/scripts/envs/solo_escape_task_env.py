@@ -40,11 +40,17 @@ class SoloEscapeEnv(object):
     self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
     self.pause_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
     # init topic publisher
+    # self.cmd_vel_pub = rospy.Publisher(
+    #   "/logger/chassis_drive_controller/cmd_vel",
+    #   Twist,
+    #   queue_size=10
+    # ) # when using ros controllers diff drive plugin
     self.cmd_vel_pub = rospy.Publisher(
-      "/logger/chassis_drive_controller/cmd_vel",
+      "/cmd_vel",
       Twist,
-      queue_size=10
-    )
+      queue_size=1
+    ) # when using gazebo ros plugin
+
     self.set_robot_state_pub = rospy.Publisher(
       "/gazebo/set_model_state",
       ModelState,

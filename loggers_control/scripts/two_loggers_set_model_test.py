@@ -11,7 +11,7 @@ from gazebo_msgs.msg import ModelState, LinkState
 from std_srvs.srv import Empty
 
 if __name__ == "__main__":
-  reset_simulation = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
+  # reset_simulation = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
   reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
   cmd_pub_0 = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
   cmd_pub_1 = rospy.Publisher("/cmd_vel_1", Twist, queue_size=1)
