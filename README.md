@@ -7,6 +7,11 @@
 - [TensorFlow](https://www.tensorflow.org/)
 
 ## Quick Start
+- Install gazebo_ros_pkgs
+
+``` console
+sudo apt-get install ros-kinetic-gazebo-ros-pkgs ros-kinetic-gazebo-ros-control
+```
 - Create a catkin workspace, refer to this [tutorial](http://wiki.ros.org/catkin/Tutorials/create_a_workspace). Assume your workspace is at `~/ros_ws/`
 - Clone this repo to your catkin workspace
 ```console
