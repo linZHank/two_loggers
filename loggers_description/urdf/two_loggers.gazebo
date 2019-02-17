@@ -9,8 +9,8 @@
       <updateRate>100</updateRate>
       <leftJoint>joint_chassis0_lwheel0</leftJoint>
       <rightJoint>joint_chassis0_rwheel0</rightJoint>
-      <wheelSeparation>0.24</wheelSeparation>
-      <wheelDiameter>0.2</wheelDiameter>
+      <wheelSeparation>0.2</wheelSeparation>
+      <wheelDiameter>0.18</wheelDiameter>
       <wheelTorque>1</wheelTorque>
       <!--wheelAcceleration>${wheel_accel}</wheelAcceleration-->
       <commandTopic>cmd_vel_0</commandTopic>
@@ -54,8 +54,8 @@
       <updateRate>100</updateRate>
       <leftJoint>joint_chassis1_lwheel1</leftJoint>
       <rightJoint>joint_chassis1_rwheel1</rightJoint>
-      <wheelSeparation>0.24</wheelSeparation>
-      <wheelDiameter>0.2</wheelDiameter>
+      <wheelSeparation>0.2</wheelSeparation>
+      <wheelDiameter>0.18</wheelDiameter>
       <wheelTorque>1</wheelTorque>
       <!-- wheelAcceleration>${wheel_accel}</wheelAcceleration -->
       <commandTopic>cmd_vel_1</commandTopic>
