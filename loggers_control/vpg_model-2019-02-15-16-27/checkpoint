@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-2019-02-15-16-27/model.ckpt"
+all_model_checkpoint_paths: "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-2019-02-15-16-27/model.ckpt"
