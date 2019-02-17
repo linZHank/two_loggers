@@ -5,7 +5,18 @@
     
   <!-- Constants for robot dimensions -->
   <xacro:property name="PI" value="3.1415926535897931"/>
-  <xacro:property name="EPSILON" value="1e-6"/> <!-- a small number for default inertia -->
+  <!-- properties of link_log -->
+  <xacro:property name="R_LOG" value="0.01"/> 
+  <xacro:property name="L_LOG" value="2"/> 
+  <xacro:property name="M_LOG" value="0.4"/> 
+  <!-- properties of link_hat* -->
+  <xacro:property name="R_HAT" value="0.02"/> 
+  <xacro:property name="L_HAT" value="0.1"/> 
+  <xacro:property name="M_HAT" value="0.5"/> 
+  <!-- properties of link_chassis* -->
+  <xacro:property name="R_CHASSIS" value="0.4"/> 
+  <xacro:property name="L_CHASSIS" value="0.1"/> 
+  <xacro:property name="M_CHASSIS" value="2"/> 
 
   <!-- Import all Gazebo-customization elements, including Gazebo colors -->
   <xacro:include filename="$(find loggers_description)/urdf/two_loggers.gazebo" />
@@ -24,25 +35,25 @@
     <visual>
       <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
       <geometry>
-        <cylinder length="2" radius="0.01"/>
+        <cylinder length="${L_LOG}" radius="${R_LOG}"/>
       </geometry>
       <material name="red"/>
     </visual>
     <collision>
       <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
       <geometry>
-        <cylinder length="2" radius="0.01"/>
+        <cylinder length="${L_LOG}" radius="${R_LOG}"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.1"/>
+      <mass value="${M_LOG}"/>
       <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
+      <inertia ixx="${1/12*M_LOG*(3*R_LOG*R_LOG+L_LOG*L_LOG)}" ixy="0" ixz="0" iyy="${1/12*M_LOG*(3*R_LOG*R_LOG+L_LOG*L_LOG)}" iyz="0" izz="${1/2*M_LOG*R_LOG*R_LOG}"/>
     </inertial>
   </link>
 
   <joint name="joint_log_hat0" type="revolute">
-    <origin rpy="0 0 0" xyz="-1 0 0"/>
+    <origin rpy="0 0 0" xyz="${-L_LOG/2} 0 0"/>
     <parent link="link_log"/>
     <child link="link_hat_0"/>
     <axis rpy="0 0 0" xyz="0 0 1"/>
@@ -51,27 +62,27 @@
 
   <link name="link_hat_0">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 -0.04"/>
+      <origin rpy="0 0 0" xyz="0 0 ${-L_HAT/2}"/>
       <geometry>
-        <cylinder length="0.08" radius="0.02"/>
+        <cylinder length="${L_HAT}" radius="${R_HAT}"/>
       </geometry>
       <material name="orange"/>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.04"/>
+      <origin rpy="0 0 0" xyz="0 0 ${-L_HAT/2}"/>
       <geometry>
-        <cylinder length="0.08" radius="0.02"/>
+        <cylinder length="${L_HAT}" radius="${R_HAT}"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.5"/>
-      <origin rpy="0 0 0" xyz="0 0 -0.04"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
+      <mass value="${M_HAT}"/>
+      <origin rpy="0 0 0" xyz="0 0 ${-L_HAT/2}"/>
+      <inertia ixx="${1/12*M_HAT*(3*R_HAT*R_HAT+L_HAT*L_HAT)}" ixy="0" ixz="0" iyy="${1/12*M_HAT*(3*R_HAT*R_HAT+L_HAT*L_HAT)}" iyz="0" izz="${1/2*M_HAT*R_HAT*R_HAT}"/>
     </inertial>
   </link>
 
   <joint name="joint_hat0_chassis0" type="continuous">
-    <origin rpy="0 0 0" xyz="0.0 0 -0.13"/>
+    <origin rpy="0 0 0" xyz="0.0 0 ${-L_HAT-L_CHASSIS/2}"/>
     <parent link="link_hat_0"/>
     <child link="link_chassis_0" />
     <axis rpy="0 0 0" xyz="0 0 1"/>
@@ -79,254 +90,114 @@
 
   <link name="link_chassis_0">
     <visual>
-      <origin rpy="0 0 ${-PI/2}" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.4 0.2 0.1"/>
+        <cylinder length="${L_CHASSIS}" radius="${R_CHASSIS}"/>
       </geometry>
       <material name="black"/>
     </visual>
     <collision>
-      <origin rpy="0 0 ${-PI/2}" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.4 0.2 0.1"/>
+        <cylinder length="${L_CHASSIS}" radius="${R_CHASSIS}"/>
       </geometry>
     </collision>
     <inertial>
       <mass value="2"/>
-      <origin rpy="0 0 ${-PI/2}" xyz="0 0 0"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="${1/12*M_CHASSIS*(3*R_CHASSIS*R_CHASSIS+L_CHASSIS*L_CHASSIS)}" ixy="0" ixz="0" iyy="${1/12*M_CHASSIS*(3*R_CHASSIS*R_CHASSIS+L_CHASSIS*L_CHASSIS)}" iyz="0" izz="${1/2*M_CHASSIS*R_CHASSIS*R_CHASSIS}"/>
     </inertial>
   </link>
 
-  <joint name="joint_chassis0_caster0" type="fixed">
-    <origin rpy="0 0 0" xyz="0 -0.15 -0.05"/>
-    <parent link="link_chassis_0"/>
-    <child link="link_caster_0"/>
-  </joint>
+  <!-- <joint name="joint_chassis0_caster0" type="fixed"> -->
+  <!--   <origin rpy="0 0 0" xyz="0 -0.15 -0.05"/> -->
+  <!--   <parent link="link_chassis_0"/> -->
+  <!--   <child link="link_caster_0"/> -->
+  <!-- </joint> -->
         
-  <link name="link_caster_0">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <sphere radius="0.04"/>
-      </geometry>
-      <material name="grey"/>
-    </visual>
-    <collision>
-      <origin rpy=" 0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <sphere radius="0.04"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.1"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
-    </inertial>
-  </link>
+  <!-- <link name="link_caster_0"> -->
+  <!--   <visual> -->
+  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
+  <!--     <geometry> -->
+  <!--       <sphere radius="0.04"/> -->
+  <!--     </geometry> -->
+  <!--     <material name="grey"/> -->
+  <!--   </visual> -->
+  <!--   <collision> -->
+  <!--     <origin rpy=" 0 0 0" xyz="0 0 0"/> -->
+  <!--     <geometry> -->
+  <!--       <sphere radius="0.04"/> -->
+  <!--     </geometry> -->
+  <!--   </collision> -->
+  <!--   <inertial> -->
+  <!--     <mass value="0.1"/> -->
+  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
+  <!--     <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/> -->
+  <!--   </inertial> -->
+  <!-- </link> -->
 
-  <joint name="joint_chassis0_lwheel0" type="continuous">
-    <origin rpy="0 0 0" xyz="0.12 0.16 0.01"/>
-    <parent link="link_chassis_0"/>
-    <child link="link_left_wheel_0" />
-    <axis rpy="0 0 0" xyz="1 0 0"/>
-  </joint>
+  <!-- <joint name="joint_chassis0_lwheel0" type="continuous"> -->
+  <!--   <origin rpy="0 0 0" xyz="0.12 0.16 0.01"/> -->
+  <!--   <parent link="link_chassis_0"/> -->
+  <!--   <child link="link_left_wheel_0" /> -->
+  <!--   <axis rpy="0 0 0" xyz="1 0 0"/> -->
+  <!-- </joint> -->
 
-  <link name="link_left_wheel_0">
-    <visual>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
-      <geometry>
-        <cylinder length="0.04" radius="0.1"/>
-      </geometry>
-      <material name="orange"/>
-    </visual>
-    <collision>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0" />
-      <geometry>
-        <cylinder length="0.04" radius="0.1"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.5"/>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
-    </inertial>
-  </link>
+  <!-- <link name="link_left_wheel_0"> -->
+  <!--   <visual> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/> -->
+  <!--     <geometry> -->
+  <!--       <cylinder length="0.04" radius="0.1"/> -->
+  <!--     </geometry> -->
+  <!--     <material name="orange"/> -->
+  <!--   </visual> -->
+  <!--   <collision> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0" /> -->
+  <!--     <geometry> -->
+  <!--       <cylinder length="0.04" radius="0.1"/> -->
+  <!--     </geometry> -->
+  <!--   </collision> -->
+  <!--   <inertial> -->
+  <!--     <mass value="0.5"/> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/> -->
+  <!--     <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/> -->
+  <!--   </inertial> -->
+  <!-- </link> -->
           
-  <joint name="joint_chassis0_rwheel0" type="continuous">
-    <origin rpy="0 0 0" xyz="-0.12 0.16 0.01"/>
-    <child link="link_right_wheel_0" />
-    <parent link="link_chassis_0"/>
-    <axis rpy="0 0 0" xyz="1 0 0"/>
-  </joint>
+  <!-- <joint name="joint_chassis0_rwheel0" type="continuous"> -->
+  <!--   <origin rpy="0 0 0" xyz="-0.12 0.16 0.01"/> -->
+  <!--   <child link="link_right_wheel_0" /> -->
+  <!--   <parent link="link_chassis_0"/> -->
+  <!--   <axis rpy="0 0 0" xyz="1 0 0"/> -->
+  <!-- </joint> -->
     
-  <link name="link_right_wheel_0">
-    <collision>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0" />
-      <geometry>
-        <cylinder length="0.04" radius="0.1"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
-      <geometry>
-        <cylinder length="0.04" radius="0.1"/>
-      </geometry>
-      <material name="orange"/>
-    </visual>
-    <inertial>
-      <mass value="0.5"/>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
-    </inertial>
-  </link>
+  <!-- <link name="link_right_wheel_0"> -->
+  <!--   <collision> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0" /> -->
+  <!--     <geometry> -->
+  <!--       <cylinder length="0.04" radius="0.1"/> -->
+  <!--     </geometry> -->
+  <!--   </collision> -->
+  <!--   <visual> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/> -->
+  <!--     <geometry> -->
+  <!--       <cylinder length="0.04" radius="0.1"/> -->
+  <!--     </geometry> -->
+  <!--     <material name="orange"/> -->
+  <!--   </visual> -->
+  <!--   <inertial> -->
+  <!--     <mass value="0.5"/> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/> -->
+  <!--     <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/> -->
+  <!--   </inertial> -->
+  <!-- </link> -->
   
-  <joint name="joint_log_hat1" type="revolute">
-    <origin rpy="0 0 0" xyz="1 0 0"/>
-    <parent link="link_log"/>
-    <child link="link_hat_1"/>
-    <axis rpy="0 0 0" xyz="0 0 1"/>
-    <limit effort="0" lower="0" upper="0" velocity="0"/>
-  </joint>
-
-  <link name="link_hat_1">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 -0.04"/>
-      <geometry>
-        <cylinder length="0.08" radius="0.02"/>
-      </geometry>
-      <material name="orange"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.04"/>
-      <geometry>
-        <cylinder length="0.08" radius="0.02"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.5"/>
-      <origin rpy="0 0 0" xyz="0 0 -0.04"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
-    </inertial>
-  </link>
-
-  <joint name="joint_hat1_chassis1" type="continuous">
-    <origin rpy="0 0 0" xyz="0.0 0 -0.13"/>
-    <parent link="link_hat_1"/>
-    <child link="link_chassis_1" />
-    <axis rpy="0 0 0" xyz="0 0 1"/>
-  </joint>
-
-  <link name="link_chassis_1">
-    <visual>
-      <origin rpy="0 0 ${-PI/2}" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.4 0.2 0.1"/>
-      </geometry>
-      <material name="white"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 ${-PI/2}" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.4 0.2 0.1"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="2"/>
-      <origin rpy="0 0 ${-PI/2}" xyz="0 0 0"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
-    </inertial>
-  </link>
-
-  <joint name="joint_chassis1_caster1" type="fixed">
-    <origin rpy="0 0 0" xyz="0 -0.15 -0.05"/>
-    <parent link="link_chassis_1"/>
-    <child link="link_caster_1"/>
-  </joint>
-        
-  <link name="link_caster_1">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <sphere radius="0.04"/>
-      </geometry>
-      <material name="grey"/>
-    </visual>
-    <collision>
-      <origin rpy=" 0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <sphere radius="0.04"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.1"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
-    </inertial>
-  </link>
-
-  <joint name="joint_chassis1_lwheel1" type="continuous">
-    <origin rpy="0 0 0" xyz="0.12 0.16 0.01"/>
-    <parent link="link_chassis_1"/>
-    <child link="link_left_wheel_1" />
-    <axis rpy="0 0 0" xyz="1 0 0"/>
-  </joint>
-
-  <link name="link_left_wheel_1">
-    <visual>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
-      <geometry>
-        <cylinder length="0.04" radius="0.1"/>
-      </geometry>
-      <material name="orange"/>
-    </visual>
-    <collision> 
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0" />
-      <geometry>
-        <cylinder length="0.04" radius="0.1"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.5"/>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
-    </inertial>
-  </link>
-          
-  <joint name="joint_chassis1_rwheel1" type="continuous">
-    <origin rpy="0 0 0" xyz="-0.12 0.16 0.01"/>
-    <child link="link_right_wheel_1" />
-    <parent link="link_chassis_1"/>
-    <axis rpy="0 0 0" xyz="1 0 0"/>
-  </joint>
-    
-  <link name="link_right_wheel_1">
-    <collision>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0" />
-      <geometry>
-        <cylinder length="0.04" radius="0.1"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
-      <geometry>
-        <cylinder length="0.04" radius="0.1"/>
-      </geometry>
-      <material name="orange"/>
-    </visual>
-    <inertial>
-      <mass value="0.5"/>
-      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
-      <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/>
-    </inertial>
-  </link>
-
   <!-- <joint name="joint_log_hat1" type="revolute"> -->
+  <!--   <origin rpy="0 0 0" xyz="1 0 0"/> -->
   <!--   <parent link="link_log"/> -->
   <!--   <child link="link_hat_1"/> -->
-  <!--   <origin rpy="0 0 0" xyz="0 2 0"/> -->
-  <!--   <limit effort="0" lower="0" upper="0" velocity="0"/> -->
   <!--   <axis rpy="0 0 0" xyz="0 0 1"/> -->
+  <!--   <limit effort="0" lower="0" upper="0" velocity="0"/> -->
   <!-- </joint> -->
 
   <!-- <link name="link_hat_1"> -->
@@ -346,42 +217,42 @@
   <!--   <inertial> -->
   <!--     <mass value="0.5"/> -->
   <!--     <origin rpy="0 0 0" xyz="0 0 -0.04"/> -->
-  <!--     <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/> -->
+  <!--     <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/> -->
   <!--   </inertial> -->
   <!-- </link> -->
 
   <!-- <joint name="joint_hat1_chassis1" type="continuous"> -->
   <!--   <origin rpy="0 0 0" xyz="0.0 0 -0.13"/> -->
-  <!--   <parent link="link_hat_1" /> -->
-  <!--   <child link="link_chassis_1"/> -->
+  <!--   <parent link="link_hat_1"/> -->
+  <!--   <child link="link_chassis_1" /> -->
   <!--   <axis rpy="0 0 0" xyz="0 0 1"/> -->
   <!-- </joint> -->
-  
+
   <!-- <link name="link_chassis_1"> -->
   <!--   <visual> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
+  <!--     <origin rpy="0 0 ${-PI/2}" xyz="0 0 0"/> -->
   <!--     <geometry> -->
   <!--       <box size="0.4 0.2 0.1"/> -->
   <!--     </geometry> -->
-  <!--     <material name="black"/> -->
+  <!--     <material name="white"/> -->
   <!--   </visual> -->
   <!--   <collision> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
+  <!--     <origin rpy="0 0 ${-PI/2}" xyz="0 0 0"/> -->
   <!--     <geometry> -->
   <!--       <box size="0.4 0.2 0.1"/> -->
   <!--     </geometry> -->
   <!--   </collision> -->
   <!--   <inertial> -->
   <!--     <mass value="2"/> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--     <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/> -->
+  <!--     <origin rpy="0 0 ${-PI/2}" xyz="0 0 0"/> -->
+  <!--     <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/> -->
   <!--   </inertial> -->
   <!-- </link> -->
 
   <!-- <joint name="joint_chassis1_caster1" type="fixed"> -->
+  <!--   <origin rpy="0 0 0" xyz="0 -0.15 -0.05"/> -->
   <!--   <parent link="link_chassis_1"/> -->
   <!--   <child link="link_caster_1"/> -->
-  <!--   <origin rpy="0 0 0" xyz="0.15 0 -0.05"/> -->
   <!-- </joint> -->
         
   <!-- <link name="link_caster_1"> -->
@@ -401,54 +272,54 @@
   <!--   <inertial> -->
   <!--     <mass value="0.1"/> -->
   <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--     <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/> -->
+  <!--     <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/> -->
   <!--   </inertial> -->
   <!-- </link> -->
 
   <!-- <joint name="joint_chassis1_lwheel1" type="continuous"> -->
-  <!--   <origin rpy="0 0 0" xyz="-0.16 0.12 0.01"/> -->
-  <!--   <child link="link_left_wheel_1" /> -->
+  <!--   <origin rpy="0 0 0" xyz="0.12 0.16 0.01"/> -->
   <!--   <parent link="link_chassis_1"/> -->
-  <!--   <axis rpy="0 0 0" xyz="0 1 0"/> -->
-  <!-- </joint>   -->
+  <!--   <child link="link_left_wheel_1" /> -->
+  <!--   <axis rpy="0 0 0" xyz="1 0 0"/> -->
+  <!-- </joint> -->
 
-  <!-- <link name="link_left_wheel_1">     -->
+  <!-- <link name="link_left_wheel_1"> -->
   <!--   <visual> -->
-  <!--     <origin rpy="${PI/2} 0 0" xyz="0 0 0"/> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/> -->
   <!--     <geometry> -->
   <!--       <cylinder length="0.04" radius="0.1"/> -->
   <!--     </geometry> -->
   <!--     <material name="orange"/> -->
   <!--   </visual> -->
-  <!--   <collision> -->
-  <!--     <origin rpy="${PI/2} 0 0" xyz="0 0 0" /> -->
+  <!--   <collision>  -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0" /> -->
   <!--     <geometry> -->
   <!--       <cylinder length="0.04" radius="0.1"/> -->
   <!--     </geometry> -->
   <!--   </collision> -->
   <!--   <inertial> -->
   <!--     <mass value="0.5"/> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--     <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/> -->
+  <!--     <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/> -->
   <!--   </inertial> -->
   <!-- </link> -->
           
   <!-- <joint name="joint_chassis1_rwheel1" type="continuous"> -->
-  <!--   <origin rpy="0 0 0" xyz="-0.16 -0.12 0.01"/> -->
+  <!--   <origin rpy="0 0 0" xyz="-0.12 0.16 0.01"/> -->
   <!--   <child link="link_right_wheel_1" /> -->
   <!--   <parent link="link_chassis_1"/> -->
-  <!--   <axis rpy="0 0 0" xyz="0 1 0"/> -->
-  <!-- </joint>     -->
+  <!--   <axis rpy="0 0 0" xyz="1 0 0"/> -->
+  <!-- </joint> -->
     
-  <!-- <link name="link_right_wheel_1">     -->
+  <!-- <link name="link_right_wheel_1"> -->
   <!--   <collision> -->
-  <!--     <origin rpy="${PI/2} 0 0" xyz="0 0 0" /> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0" /> -->
   <!--     <geometry> -->
   <!--       <cylinder length="0.04" radius="0.1"/> -->
   <!--     </geometry> -->
   <!--   </collision> -->
   <!--   <visual> -->
-  <!--     <origin rpy="${PI/2} 0 0" xyz="0 0 0"/> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/> -->
   <!--     <geometry> -->
   <!--       <cylinder length="0.04" radius="0.1"/> -->
   <!--     </geometry> -->
@@ -456,8 +327,8 @@
   <!--   </visual> -->
   <!--   <inertial> -->
   <!--     <mass value="0.5"/> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--     <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/> -->
+  <!--     <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/> -->
+  <!--     <inertia ixx="${EPSILON}" ixy="0" ixz="0" iyy="${EPSILON}" iyz="0" izz="${EPSILON}"/> -->
   <!--   </inertial> -->
   <!-- </link> -->
 
