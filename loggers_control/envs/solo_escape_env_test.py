@@ -21,9 +21,10 @@ env = gym.make('SoloEscape-v0')
 # test env with random sampled actions
 for episode in range(16):
   state, info = env.reset()
+  env.step(np.array([0,0]))
   done = False
   for step in range(64):
-    action = np.array([-4, 0]) # env.action_space.sample()
+    action = np.array([1, 0]) # env.action_space.sample()
     next_state, reward, done, info = env.step(action)
     print("Episode : {}, Step: {}, \nCurrent position: {}, Reward: {:.4f}".format(
       episode,

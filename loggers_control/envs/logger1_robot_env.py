@@ -34,7 +34,7 @@ class Logger1RobotEnv(GymGazeboEnv):
     # Controller Vars
     self.controllers_list = ["chassis_drive_controller"]
     self.robot_name_space = "logger"
-    self.reset_controls = True
+    self.reset_controls = False
 
     # We launch the init function of the Parent Class gym_gazebo_env.GymGazeboEnv
     super(Logger1RobotEnv, self).__init__(
@@ -50,10 +50,10 @@ class Logger1RobotEnv(GymGazeboEnv):
     self._check_all_sensors_ready()
 
     # We Start all the ROS related Subscribers and publishers
-    rospy.Subscriber("/logger/chassis_drive_controller/odom", Odometry, self._odom_callback)
+    rospy.Subscriber("/odom", Odometry, self._odom_callback)
     rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
 
-    self._cmd_vel_pub = rospy.Publisher("/logger/chassis_drive_controller/cmd_vel", Twist, queue_size=10)
+    self._cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
     self._check_publishers_connection()
 
     self.gazebo.pauseSim()
@@ -83,13 +83,13 @@ class Logger1RobotEnv(GymGazeboEnv):
 
   def _check_odom_ready(self):
     self.odom = None
-    rospy.logdebug("Waiting for /logger/chassis_drive_controller/odom to be READY...")
+    rospy.logdebug("Waiting for /odom to be READY...")
     while self.odom is None and not rospy.is_shutdown():
       try:
-        self.odom = rospy.wait_for_message("/logger/chassis_drive_controller/odom", Odometry, timeout=5.0)
+        self.odom = rospy.wait_for_message("/odom", Odometry, timeout=5.0)
         rospy.logdebug("Current /odom READY=>")
       except:
-        rospy.logerr("Current /logger/chassis_drive_controller/odom not ready yet, retrying for getting odom")
+        rospy.logerr("Current /odom not ready yet, retrying for getting odom")
 
     return self.odom
 
