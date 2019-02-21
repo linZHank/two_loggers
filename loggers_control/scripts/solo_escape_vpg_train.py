@@ -117,20 +117,27 @@ def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], lear
     return batch_loss, batch_returns, batch_lengths
   
   # training loop
-  sedimentary_returns = []
+  deposit_returns = []
   for ep in range(num_episodes):
     batch_loss, batch_returns, batch_lengths = train_one_episode()
     print('epoch: %3d \t loss: %.3f \t return: %.3f \t ep_len: %.3f'%
                 (ep, batch_loss, np.mean(batch_returns), np.mean(batch_lengths)))
-    sedimentary_returns.append(batch_returns)
+    deposit_returns.append(batch_returns)
     save_path = saver.save(sess, model_path)
     rospy.loginfo("Model saved in path : {}".format(save_path))
     rospy.logerr("Success Count: {}".format(agent.success_count))
-  plt.plot(sedimentary_returns)
-  plt.show()  
+  # plot returns
+  fig, ax = plt.subplots()
+  ax.plot(np.arange(len(deposit_returns)), deposit_returns)
+  ax.set(xlabel="Time Step", ylabel='Episodic Return')
+  ax.grid()
+  figure_fname = os.path.join(os.path.dirname(model_path),"returns.png")
+  plt.savefig(figure_fname)
+  plt.close(fig)
   
 
 if __name__ == "__main__":
+  start_time = time.time()
   rospy.init_node("solo_escape_vpg", anonymous=True, log_level=rospy.INFO)
   # make an instance from env class
   escaper = SoloEscapeEnv()
@@ -139,29 +146,42 @@ if __name__ == "__main__":
   actionspace_dim = 3
   hidden_sizes = [64]
   learning_rate = 1e-3
-  num_episodes = 512
-  num_steps = 1024
+  num_episodes = 400
+  num_steps = 1000
   model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-" +\
                  datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
   # store hyper-parameters
-  hyp_param = {
+  hyp_params = {
     "statespace_dim": statespace_dim,
     "actionspace_dim": actionspace_dim,
     "hidden_sizes": hidden_sizes,
     "learning_rate": learning_rate,
     "num_episodes": num_episodes,
-    "num_steps": num_steps
-  }
-               
+    "num_steps": num_steps,
+  }               
   # make core of policy network
   train(agent=escaper, model_path=model_path, dim_state = statespace_dim,
         num_actions=actionspace_dim, hidden_sizes=hidden_sizes,
         learning_rate=learning_rate, num_episodes=num_episodes,
-        num_steps=num_steps, batch_size=batch_size)
+        num_steps=num_steps)
+  rospy.logdebug("success: {}".format(escaper.success_count))
+  end_time = time.time()
+  training_time = end_time - start_time
+  # store results
+  results = {
+    "success_count": escaper.success_count,
+    "training_time": training_time
+  }
   # save hyper-parameters
   file_name = "hyper_parameters.pkl"
   file_dir = os.path.dirname(model_path)
   file_path = os.path.join(file_dir,file_name)
-  with open(file_path, "wb") as f:
-    pickle.dump(file_path, f, pickle.HIGHEST_PROTOCOL)
+  with open(file_path, "wb") as hfile:
+    pickle.dump(hyp_params, hfile, pickle.HIGHEST_PROTOCOL)
+  # save results
+  file_name = "results.pkl"
+  file_dir = os.path.dirname(model_path)
+  file_path = os.path.join(file_dir,file_name)
+  with open(file_path, "wb") as rfile:
+    pickle.dump(results, rfile, pickle.HIGHEST_PROTOCOL)
   
