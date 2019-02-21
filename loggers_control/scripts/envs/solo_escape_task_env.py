@@ -212,7 +212,7 @@ class SoloEscapeEnv(object):
       self.status = "north"
       self._episode_done = True
       rospy.logwarn("Logger is too close to north wall!")
-    elif -4.99<self.curr_pose[1]<-4.75 and np.absolute(self.curr_pose[0])>1:
+    elif -4.99<self.curr_pose[1]<-4.75 and np.absolute(self.curr_pose[0])>0.8 :
       reward = -0.
       self.status = "south"
       self._episode_done = True
