@@ -18,6 +18,7 @@ import random
 import os
 import time
 import datetime
+import pickle
 import matplotlib.pyplot as plt
 
 from solo_escape_task_env import SoloEscapeEnv
@@ -31,10 +32,16 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
   return tf.layers.dense(x, units=sizes[-1], activation=output_activation)  
 
 if __name__ == "__main__":
-  # parameters
-  dim_state = 7
-  num_actions = 3
-  hidden_sizes = [64]
+  # identify saved model path
+  model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-2019-02-15-16-27/model.ckpt"
+  # load hyper-parameters
+  hyp_param_path = os.path.join(os.path.dirname(model_path),"hyper_parameters.pkl")
+  with open(hyp_param_path, "rb") as f:
+    hyp_param = pickle.load(f)
+  dim_state = hyp_param["statespace_dim"]
+  num_actions = hyp_param["actionspace_dim"]
+  hidden_sizes = hyp_param["hidden_sizes"]
+  # num_spisodes and num_steps are different from training
   num_episodes = 10
   num_steps = 1024
   # set tf 
@@ -42,7 +49,6 @@ if __name__ == "__main__":
   logits = mlp(states_ph, sizes=hidden_sizes+[num_actions])
   actions_id = tf.squeeze(tf.multinomial(logits=logits,num_samples=1), axis=1)
   saver = tf.train.Saver()
-  model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-2019-02-15-16-27/model.ckpt"
   rospy.init_node("solo_escape_eval", anonymous=True, log_level=rospy.INFO)
   # make an instance from env class
   escaper = SoloEscapeEnv()
