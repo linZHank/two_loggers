@@ -79,6 +79,7 @@ class SoloEscapeEnv(object):
     """
     rospy.logwarn("\nEnvironment Reset!!!\n")
     self.reset_world()
+    self._take_action(np.zeros(2))
     self._set_init()
     obs = self._get_observation()
     info = self._post_information()
@@ -144,13 +145,13 @@ class SoloEscapeEnv(object):
       action: 2-d numpy array.
     """
     rospy.logdebug("Start Taking Action....")
-    self.action = action
     cmd_vel = Twist()
     cmd_vel.linear.x = action[0]
     cmd_vel.angular.z = action[1]
     for _ in range(10):
       self.cmd_vel_pub.publish(cmd_vel)
       self.rate.sleep()
+    self.action = action
     rospy.logdebug("Action Taken ===> {}".format(cmd_vel))
     
   def _get_observation(self):
