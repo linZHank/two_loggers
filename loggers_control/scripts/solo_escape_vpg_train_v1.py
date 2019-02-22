@@ -32,7 +32,7 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
     x = tf.layers.dense(x, units=size, activation=activation)
   return tf.layers.dense(x, units=sizes[-1], activation=output_activation)
 
-def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], learning_rate=1e-3, num_episodes=50, num_steps=64):
+def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], learning_rate=1e-3, num_episodes=100, num_steps=64, bonus_wall=0, bonus_time=0, bonus_door=0, bonus_distance=0):
   # make core of policy network
   states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
   logits = mlp(states_ph, sizes=hidden_sizes+[num_actions])
@@ -63,11 +63,7 @@ def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], lear
     state, _ = agent.env_reset()       # first obs comes from starting distribution
     done = False            # signal from environment that episode is over
     ep_rewards = []            # list for rewards accrued throughout ep
-    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.]))
-    # bonus options
-    bonus_wall = -.01 # bonus for hitting the wall
-    bonus_time = bonus_wall/num_steps # time bonus for every step
-    bonus_door = .1 # bonus for stucking at door
+    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.2]))
     bonus_distance = dist_0/11
     for st in range(num_steps):
       # save obs
@@ -81,19 +77,26 @@ def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], lear
       else: # forward
         action = np.array([.5, 0.])
       state, rew, done, info = agent.env_step(action)
+      # compute current distance to exit
+      dist = np.linalg.norm(state[:2]-np.array([0,-6.2]))
+      # if bonus_approach is needed, mod next line
+      bonus_approach = 0 # (dist_0-dist)/num_steps
       # adjust reward based on relative distance to the exit
       if info["status"] == "escaped":
-        bonus = bonus_time+bonus_distance
+        bonus = bonus_distance+rew*(num_episodes-1)
       elif info["status"] == "door":
         bonus = bonus_time+bonus_door
       elif info["status"] == "trapped":
-        bonus = bonus_time
+        bonus = bonus_time+bonus_approach
       else: # hit wall
         bonus = bonus_time+bonus_wall
       rew += bonus
-        # save action, reward
+      # save action, reward
       batch_actions.append(action_id)
       ep_rewards.append(rew)
+      # update robot's distance to exit
+      dist_0 = dist
+      # log this step
       rospy.loginfo("Episode: {}, Step: {} \naction: {}, state: {}, reward: {}, done: {}".format(
         ep,
         st,
@@ -149,10 +152,16 @@ if __name__ == "__main__":
   # make hyper-parameters
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 3
-  hidden_sizes = [128]
-  learning_rate = 1e-3
-  num_episodes = 300
+  hidden_sizes = [64]
+  learning_rate = 1e-4
+  num_episodes = 800
   num_steps = 1000
+  # bonus options
+  bonus_wall = -.01 # bonus for hitting the wall
+  bonus_time = bonus_wall/num_steps # time bonus for every step
+  bonus_door = .1 # bonus for stucking at door
+  # bonus_distance = "dist_0/11"
+  # model save location
   model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-" +\
                  datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
   # store hyper-parameters
@@ -163,26 +172,28 @@ if __name__ == "__main__":
     "learning_rate": learning_rate,
     "num_episodes": num_episodes,
     "num_steps": num_steps,
+    # "bonus_approach": "(dist_0-dist)/num_steps",
+    "bonus_approach": 0,
+    "bonus_distance": "dist_0/11",
+    "bonus_door": bonus_door,
+    "bonus_time": bonus_time,
+    "bonus_wall": bonus_wall
   }               
   # make core of policy network
   train(agent=escaper, model_path=model_path, dim_state = statespace_dim,
-        num_actions=actionspace_dim, hidden_sizes=hidden_sizes,
-        learning_rate=learning_rate, num_episodes=num_episodes,
-        num_steps=num_steps)
+        num_actions=actionspace_dim, hidden_sizes=hidden_sizes, learning_rate=learning_rate,
+        num_episodes=num_episodes, num_steps=num_steps, bonus_wall=bonus_wall,
+        bonus_time=bonus_time, bonus_door=bonus_door, bonus_distance=0)
   rospy.logdebug("success: {}".format(escaper.success_count))
+
+  # time
   end_time = time.time()
   training_time = end_time - start_time
   # store results
-  results = {
-    "success_count": escaper.success_count,
-    "training_time": training_time,
-    "statespace_dim": statespace_dim,
-    "actionspace_dim": actionspace_dim,
-    "hidden_sizes": hidden_sizes,
-    "learning_rate": learning_rate,
-    "num_episodes": num_episodes,
-    "num_steps": num_steps
-  }
+  train_info = hyp_params
+  train_info["success_count"] =  escaper.success_count
+  train_info["training_time"] =  training_time
+
   # save hyper-parameters
   file_name = "hyper_parameters.pkl"
   file_dir = os.path.dirname(model_path)
@@ -190,10 +201,10 @@ if __name__ == "__main__":
   with open(file_path, "wb") as hfile:
     pickle.dump(hyp_params, hfile, pickle.HIGHEST_PROTOCOL)
   # save results
-  file_name = "results.csv"
+  file_name = "train_information.csv"
   file_dir = os.path.dirname(model_path)
   file_path = os.path.join(file_dir,file_name)
   with open(file_path, "w") as rfile:
-    for key in results.keys():
-      rfile.write("{},{}\n".format(key,results[key]))
+    for key in train_info.keys():
+      rfile.write("{},{}\n".format(key,train_info[key]))
   

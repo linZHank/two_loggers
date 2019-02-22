@@ -1,0 +1,8 @@
+actionspace_dim,3
+training_time,8527.69299006
+success_count,118
+num_episodes,400
+statespace_dim,7
+learning_rate,0.001
+num_steps,1000
+hidden_sizes,[64]

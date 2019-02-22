@@ -63,7 +63,7 @@ def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], lear
     state, _ = agent.env_reset()       # first obs comes from starting distribution
     done = False            # signal from environment that episode is over
     ep_rewards = []            # list for rewards accrued throughout ep
-    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.]))
+    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.02]))
     for st in range(num_steps):
       # save obs
       batch_states.append(state.copy())
