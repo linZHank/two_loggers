@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 
 """
-Model based control for turtlebot with vanilla policy gradient in crib environment
-Navigate towards preset goal
+Vanilla Policy Gradient control single logger escape the walled cell.
+Adjust reward based on different situations
 Author: LinZHanK (linzhank@gmail.com)
 Inspired by: https://github.com/openai/spinningup/blob/master/spinup/examples/pg_math/1_simple_pg.py
 """
@@ -19,6 +19,7 @@ import os
 import time
 from datetime import datetime
 import pickle
+import csv
 import matplotlib.pyplot as plt
 
 from solo_escape_task_env import SoloEscapeEnv
@@ -62,29 +63,37 @@ def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], lear
     state, _ = agent.env_reset()       # first obs comes from starting distribution
     done = False            # signal from environment that episode is over
     ep_rewards = []            # list for rewards accrued throughout ep
-    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.02]))
+    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.]))
+    # bonus options
+    bonus_wall = -.01 # bonus for hitting the wall
+    bonus_time = -.1/num_steps # time bonus for every step
+    bonus_door = .1 # bonus for stucking at door
+    bonus_distance = dist_0/11
     for st in range(num_steps):
       # save obs
       batch_states.append(state.copy())
       # act in the environment
       action_id = sess.run(actions_id, {states_ph: state.reshape(1,-1)})[0]
-      if action_id == 0: # forward
-        action = np.array([.5, 0.])
-      elif action_id == 1: # forward left
+      if action_id == 0: # forward left
         action = np.array([.5, 1.])
-      else: # forward right
+      elif action_id == 1: # forward right
         action = np.array([.5, -1.])
+      else: # forward
+        action = np.array([.5, 0.])
       state, rew, done, info = agent.env_step(action)
       # add small reward if bot getting closer to exit
       dist = np.linalg.norm(state[:2]-np.array([0,-6.02]))
       # adjust reward based on relative distance to the exit
       if info["status"] == "escaped":
-        rew *= num_steps
+        bonus = bonus_time+bonus_distance
       elif info["status"] == "door":
-        rew += 0.01/(state[1]+6.02)*num_steps
-      else:
-        rew += (dist_0-dist)
-      # save action, reward
+        bonus = bonus_time+bonus_door
+      elif info["status"] == "trapped":
+        bonus = bonus_time
+      else: # hit wall
+        bonus = bonus_time+bonus_wall
+      rew += bonus
+        # save action, reward
       batch_actions.append(action_id)
       ep_rewards.append(rew)
       # update bot's distance to exit
@@ -144,9 +153,9 @@ if __name__ == "__main__":
   # make hyper-parameters
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 3
-  hidden_sizes = [64]
+  hidden_sizes = [128]
   learning_rate = 1e-3
-  num_episodes = 400
+  num_episodes = 300
   num_steps = 1000
   model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-" +\
                  datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
@@ -170,7 +179,13 @@ if __name__ == "__main__":
   # store results
   results = {
     "success_count": escaper.success_count,
-    "training_time": training_time
+    "training_time": training_time,
+    "statespace_dim": statespace_dim,
+    "actionspace_dim": actionspace_dim,
+    "hidden_sizes": hidden_sizes,
+    "learning_rate": learning_rate,
+    "num_episodes": num_episodes,
+    "num_steps": num_steps
   }
   # save hyper-parameters
   file_name = "hyper_parameters.pkl"
@@ -179,9 +194,10 @@ if __name__ == "__main__":
   with open(file_path, "wb") as hfile:
     pickle.dump(hyp_params, hfile, pickle.HIGHEST_PROTOCOL)
   # save results
-  file_name = "results.pkl"
+  file_name = "results.csv"
   file_dir = os.path.dirname(model_path)
   file_path = os.path.join(file_dir,file_name)
-  with open(file_path, "wb") as rfile:
-    pickle.dump(results, rfile, pickle.HIGHEST_PROTOCOL)
+  with open(file_path, "w") as rfile:
+    for key in results.keys():
+      rfile.write("{},{}\n".format(key,results[key]))
   
