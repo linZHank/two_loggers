@@ -81,8 +81,6 @@ def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], lear
       else: # forward
         action = np.array([.5, 0.])
       state, rew, done, info = agent.env_step(action)
-      # add small reward if bot getting closer to exit
-      dist = np.linalg.norm(state[:2]-np.array([0,-6.02]))
       # adjust reward based on relative distance to the exit
       if info["status"] == "escaped":
         bonus = bonus_time+bonus_distance
@@ -96,8 +94,6 @@ def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], lear
         # save action, reward
       batch_actions.append(action_id)
       ep_rewards.append(rew)
-      # update bot's distance to exit
-      dist_0 = dist
       rospy.loginfo("Episode: {}, Step: {} \naction: {}, state: {}, reward: {}, done: {}".format(
         ep,
         st,
