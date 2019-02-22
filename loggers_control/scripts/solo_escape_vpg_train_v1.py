@@ -66,7 +66,7 @@ def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], lear
     dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.]))
     # bonus options
     bonus_wall = -.01 # bonus for hitting the wall
-    bonus_time = -.1/num_steps # time bonus for every step
+    bonus_time = bonus_wall/num_steps # time bonus for every step
     bonus_door = .1 # bonus for stucking at door
     bonus_distance = dist_0/11
     for st in range(num_steps):
