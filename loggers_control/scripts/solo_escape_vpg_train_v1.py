@@ -150,7 +150,7 @@ def train(agent, model_path,
   # plot returns
   fig, ax = plt.subplots()
   ax.plot(np.arange(len(deposit_returns)), deposit_returns)
-  ax.set(xlabel="Time Step", ylabel='Episodic Return')
+  ax.set(xlabel="Episode", ylabel='Episodic Return')
   ax.grid()
   figure_fname = os.path.join(os.path.dirname(model_path),"returns.png")
   plt.savefig(figure_fname)
@@ -179,19 +179,6 @@ if __name__ == "__main__":
   escaper = SoloEscapeEnv()
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 3
-  # hidden_sizes = [64]
-  # learning_rate = 1e-4
-  # num_episodes = 800
-  # num_steps = 1000
-  # bonus options
-  # bonus_wall = -.01 # bonus for hitting the wall
-  # bonus_time = bonus_wall/num_steps # time bonus for every step
-  # bonus_door = .1 # bonus for stucking at door
-  # bonus_distance = d0_divided_11
-  # bonus_approach = zero
-  # model save location
-  # model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-" +\
-  #                datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
   # store hyper-parameters
   bonus_time_func = zero
   bonus_distance_func = zero
