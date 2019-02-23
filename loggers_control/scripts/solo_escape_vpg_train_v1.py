@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 import sys
 sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/scripts/envs")
-
+import argparse
 import numpy as np
 import tensorflow as tf
 import rospy
@@ -32,7 +32,18 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
     x = tf.layers.dense(x, units=size, activation=activation)
   return tf.layers.dense(x, units=sizes[-1], activation=output_activation)
 
-def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], learning_rate=1e-3, num_episodes=100, num_steps=64, bonus_wall=0, bonus_time=0, bonus_door=0, bonus_distance=0):
+# bonus functions
+def bonusWallDividedNumsteps(bw,ns): return bw/ns # bonus_time
+def weightedD0(w,d0): return w*d0 # bonus_distance
+def d0MinusD(d0,d): return d0-d # bonus approach
+def zero(x,y): return 0
+
+def train(agent, model_path,
+          dim_state=7, num_actions=3,
+          hidden_sizes=[64], learning_rate=1e-3,
+          num_episodes=400, num_steps=1000,
+          bonus_wall=-.01, bonus_door=0.1,
+          bonus_time_func=zero, bonus_distance_func=zero, bonus_approach_func=zero):
   # make core of policy network
   states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
   logits = mlp(states_ph, sizes=hidden_sizes+[num_actions])
@@ -79,8 +90,10 @@ def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], lear
       state, rew, done, info = agent.env_step(action)
       # compute current distance to exit
       dist = np.linalg.norm(state[:2]-np.array([0,-6.2]))
-      # if bonus_approach is needed, mod next line
-      bonus_approach = 0 # (dist_0-dist)/num_steps
+      # consider bonus terms
+      bonus_time = bonus_time_func(bonus_wall, num_steps)
+      bonus_distance = bonus_distance_func(11, dist_0)
+      bonus_approach = bonus_approach_func(dist_0, dist)
       # adjust reward based on relative distance to the exit
       if info["status"] == "escaped":
         bonus = bonus_distance+rew*(num_episodes-1)
@@ -145,64 +158,89 @@ def train(agent, model_path, dim_state=7, num_actions=2, hidden_sizes=[32], lear
   
 
 if __name__ == "__main__":
+  # make arg parser
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--model_path", type=str,
+                      default="/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
+  parser.add_argument("--hidden_sizes", type=list, default = [64])
+  parser.add_argument("--learning_rate", type=float, default = 1e-3)
+  parser.add_argument("--num_episodes", type=int, default = 800)
+  parser.add_argument("--num_steps", type=int, default = 1000)
+  parser.add_argument("--bonus_wall", type=float, default = -.01)
+  parser.add_argument("--bonus_door", type=float, default = .1)
+  parser.add_argument("--bonus_time", type=bool, default = True)
+  parser.add_argument("--bonus_distance", type=bool, default = True)
+  parser.add_argument("--bonus_approach", type=bool, default = True)
+  args = parser.parse_args()
+  # time
   start_time = time.time()
   rospy.init_node("solo_escape_vpg", anonymous=True, log_level=rospy.INFO)
   # make an instance from env class
   escaper = SoloEscapeEnv()
-  # make hyper-parameters
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 3
-  hidden_sizes = [64]
-  learning_rate = 1e-4
-  num_episodes = 800
-  num_steps = 1000
+  # hidden_sizes = [64]
+  # learning_rate = 1e-4
+  # num_episodes = 800
+  # num_steps = 1000
   # bonus options
-  bonus_wall = -.01 # bonus for hitting the wall
-  bonus_time = bonus_wall/num_steps # time bonus for every step
-  bonus_door = .1 # bonus for stucking at door
-  # bonus_distance = "dist_0/11"
+  # bonus_wall = -.01 # bonus for hitting the wall
+  # bonus_time = bonus_wall/num_steps # time bonus for every step
+  # bonus_door = .1 # bonus for stucking at door
+  # bonus_distance = d0_divided_11
+  # bonus_approach = zero
   # model save location
-  model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-" +\
-                 datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
+  # model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-" +\
+  #                datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
   # store hyper-parameters
+  bonus_time_func = zero
+  bonus_distance_func = zero
+  bonus_approach_func = zero
+  if args.bonus_time:
+    bonus_time_func = bonusWallDividedNumsteps
+  if args.bonus_distance:
+    bonus_distance_func = weightedD0
+  if args.bonus_approach:
+    bonus_approach_func = d0MinusD
+  # make core of policy network
+  train(agent=escaper, model_path=args.model_path,
+        dim_state = statespace_dim, num_actions=actionspace_dim,
+        hidden_sizes=args.hidden_sizes, learning_rate=args.learning_rate,
+        num_episodes=args.num_episodes, num_steps=args.num_steps,
+        bonus_wall=args.bonus_wall, bonus_door=args.bonus_door,
+        bonus_time_func=bonus_time_func, bonus_distance_func=bonus_distance_func, bonus_approach_func=bonus_approach_func)
+  rospy.logdebug("success: {}".format(escaper.success_count))
+
   hyp_params = {
     "statespace_dim": statespace_dim,
     "actionspace_dim": actionspace_dim,
-    "hidden_sizes": hidden_sizes,
-    "learning_rate": learning_rate,
-    "num_episodes": num_episodes,
-    "num_steps": num_steps,
-    # "bonus_approach": "(dist_0-dist)/num_steps",
-    "bonus_approach": 0,
-    "bonus_distance": "dist_0/11",
-    "bonus_door": bonus_door,
-    "bonus_time": bonus_time,
-    "bonus_wall": bonus_wall
+    "hidden_sizes": args.hidden_sizes,
+    "learning_rate": args.learning_rate,
+    "num_episodes": args.num_episodes,
+    "num_steps": args.num_steps,
   }               
-  # make core of policy network
-  train(agent=escaper, model_path=model_path, dim_state = statespace_dim,
-        num_actions=actionspace_dim, hidden_sizes=hidden_sizes, learning_rate=learning_rate,
-        num_episodes=num_episodes, num_steps=num_steps, bonus_wall=bonus_wall,
-        bonus_time=bonus_time, bonus_door=bonus_door, bonus_distance=0)
-  rospy.logdebug("success: {}".format(escaper.success_count))
-
   # time
   end_time = time.time()
   training_time = end_time - start_time
   # store results
   train_info = hyp_params
-  train_info["success_count"] =  escaper.success_count
-  train_info["training_time"] =  training_time
+  train_info["success_count"] = escaper.success_count
+  train_info["training_time"] = training_time
+  train_info["bonus_wall"] = args.bonus_wall
+  train_info["bonus_door"] = args.bonus_door
+  train_info["bonus_time"] = bonus_time_func.func_name
+  train_info["bonus_distance"] = bonus_distance_func.func_name
+  train_info["bonus_approach"] = bonus_approach_func.func_name
 
   # save hyper-parameters
   file_name = "hyper_parameters.pkl"
-  file_dir = os.path.dirname(model_path)
+  file_dir = os.path.dirname(args.model_path)
   file_path = os.path.join(file_dir,file_name)
   with open(file_path, "wb") as hfile:
     pickle.dump(hyp_params, hfile, pickle.HIGHEST_PROTOCOL)
   # save results
   file_name = "train_information.csv"
-  file_dir = os.path.dirname(model_path)
+  file_dir = os.path.dirname(args.model_path)
   file_path = os.path.join(file_dir,file_name)
   with open(file_path, "w") as rfile:
     for key in train_info.keys():
