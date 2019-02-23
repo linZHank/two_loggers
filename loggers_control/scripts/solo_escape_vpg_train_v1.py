@@ -35,7 +35,7 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
 # bonus functions
 def bonusWallDividedNumsteps(bw,ns): return bw/ns # bonus_time
 def weightedD0(w,d0): return w*d0 # bonus_distance
-def d0MinusD(d0,d): return d0-d # bonus approach
+def d0MinusD(d0,d): return (d0-d)/100 # bonus approach
 def zero(x,y): return 0
 
 def train(agent, model_path,
