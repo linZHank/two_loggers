@@ -96,7 +96,7 @@ def train(agent, model_path,
       bonus_approach = bonus_approach_func(dist_0, dist)
       # adjust reward based on relative distance to the exit
       if info["status"] == "escaped":
-        bonus = bonus_distance+rew*(num_episodes-1)
+        bonus = bonus_distance
       elif info["status"] == "door":
         bonus = bonus_time+bonus_door
       elif info["status"] == "trapped":
