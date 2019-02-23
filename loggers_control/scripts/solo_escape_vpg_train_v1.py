@@ -126,8 +126,6 @@ def train(agent, model_path,
     batch_lengths.append(ep_length)
     # the weight for each logprob(a|s) is R(tau)
     batch_rtaus += [ep_return] * ep_length
-    # if len(batch_states) > batch_size:
-    #   break
     # take a single policy gradient update step
     batch_loss, _ = sess.run([loss, train_op],
                              feed_dict={
@@ -138,21 +136,25 @@ def train(agent, model_path,
     return batch_loss, batch_returns, batch_lengths
   
   # training loop
-  deposit_returns = []
+  episodic_returns = []
+  deposit_returns = [0]
   for ep in range(num_episodes):
     batch_loss, batch_returns, batch_lengths = train_one_episode()
     print('epoch: %3d \t loss: %.3f \t return: %.3f \t ep_len: %.3f'%
                 (ep, batch_loss, np.mean(batch_returns), np.mean(batch_lengths)))
-    deposit_returns.append(batch_returns)
+    episodic_returns.append(batch_returns)
     save_path = saver.save(sess, model_path)
     rospy.loginfo("Model saved in path : {}".format(save_path))
     rospy.logerr("Success Count: {}".format(agent.success_count))
+    # compute returns over time
+    deposit_returns.append(deposit_returns[-1]+batch_returns[0])
   # plot returns
+  deposit_returns.pop(0)
   fig, ax = plt.subplots()
   ax.plot(np.arange(len(deposit_returns)), deposit_returns)
-  ax.set(xlabel="Episode", ylabel='Episodic Return')
+  ax.set(xlabel="Episode", ylabel='Accumulated Return')
   ax.grid()
-  figure_fname = os.path.join(os.path.dirname(model_path),"returns.png")
+  figure_fname = os.path.join(os.path.dirname(model_path),"returns_over_time.png")
   plt.savefig(figure_fname)
   plt.close(fig)
   
