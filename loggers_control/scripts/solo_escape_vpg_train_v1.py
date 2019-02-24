@@ -174,6 +174,7 @@ if __name__ == "__main__":
   parser.add_argument("--bonus_distance", type=bool, default = True)
   parser.add_argument("--bonus_approach", type=bool, default = True)
   args = parser.parse_args()
+
   # time
   start_time = time.time()
   rospy.init_node("solo_escape_vpg", anonymous=True, log_level=rospy.INFO)
@@ -198,7 +199,9 @@ if __name__ == "__main__":
         num_episodes=args.num_episodes, num_steps=args.num_steps,
         bonus_wall=args.bonus_wall, bonus_door=args.bonus_door,
         bonus_time_func=bonus_time_func, bonus_distance_func=bonus_distance_func, bonus_approach_func=bonus_approach_func)
-  rospy.logdebug("success: {}".format(escaper.success_count))
+  # time
+  end_time = time.time()
+  training_time = end_time - start_time
 
   hyp_params = {
     "statespace_dim": statespace_dim,
@@ -208,9 +211,6 @@ if __name__ == "__main__":
     "num_episodes": args.num_episodes,
     "num_steps": args.num_steps,
   }               
-  # time
-  end_time = time.time()
-  training_time = end_time - start_time
   # store results
   train_info = hyp_params
   train_info["success_count"] = escaper.success_count
@@ -220,7 +220,6 @@ if __name__ == "__main__":
   train_info["bonus_time"] = bonus_time_func.func_name
   train_info["bonus_distance"] = bonus_distance_func.func_name
   train_info["bonus_approach"] = bonus_approach_func.func_name
-
   # save hyper-parameters
   file_name = "hyper_parameters.pkl"
   file_dir = os.path.dirname(args.model_path)
