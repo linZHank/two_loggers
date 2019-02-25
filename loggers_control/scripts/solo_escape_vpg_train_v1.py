@@ -34,7 +34,7 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
 
 # bonus functions
 def bonusWallDividedNumsteps(bw,ns): return bw/ns # bonus_time
-def weightedD0(w,d0,ns): return w*d0 # bonus_distance
+def weightedD0(w,d0,ns): return w*d0*ns # bonus_distance
 def d0MinusD(d0,d,ns): return (d0-d)/ns # bonus approach
 def zero(x,y,z=0): return 0
 
@@ -93,7 +93,7 @@ def train(agent, model_path,
       # consider bonus terms
       bonus_time = bonus_time_func(bonus_wall, num_steps)
       bonus_distance = bonus_distance_func(11, dist_0, num_steps)
-      bonus_approach = bonus_approach_func(dist_0, dist,num_steps)
+      bonus_approach = bonus_approach_func(dist_0, dist, num_steps)
       # adjust reward based on relative distance to the exit
       if info["status"] == "escaped":
         bonus = bonus_distance
@@ -138,6 +138,7 @@ def train(agent, model_path,
   # training loop
   episodic_returns = []
   deposit_returns = [0]
+  average_returns = []
   for ep in range(num_episodes):
     batch_loss, batch_returns, batch_lengths = train_one_episode()
     print('epoch: %3d \t loss: %.3f \t return: %.3f \t ep_len: %.3f'%
@@ -148,13 +149,14 @@ def train(agent, model_path,
     rospy.logerr("Success Count: {}".format(agent.success_count))
     # compute returns over time
     deposit_returns.append(deposit_returns[-1]+batch_returns[0])
+    average_returns.append(deposit_returns[-1]/(len(deposit_returns)-1))
   # plot returns
   deposit_returns.pop(0)
   fig, ax = plt.subplots()
-  ax.plot(np.arange(len(deposit_returns)), deposit_returns)
-  ax.set(xlabel="Episode", ylabel='Accumulated Return')
+  ax.plot(np.arange(len(average_returns)), average_returns)
+  ax.set(xlabel="Episode", ylabel="Averaged Returns")
   ax.grid()
-  figure_fname = os.path.join(os.path.dirname(model_path),"returns_over_time.png")
+  figure_fname = os.path.join(os.path.dirname(model_path),"averaged_returns_over_time.png")
   plt.savefig(figure_fname)
   plt.close(fig)
   
