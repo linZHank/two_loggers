@@ -34,7 +34,7 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
 
 # bonus functions
 def bonusWallDividedNumsteps(bw,ns): return bw/ns # bonus_time
-def weightedD0(w,d0,ns): return w*d0*ns # bonus_distance
+def weightedD0(w,d0): return w*d0 # bonus_distance
 def d0MinusD(d0,d,ns): return (d0-d)/ns # bonus approach
 def zero(x,y,z=0): return 0
 
@@ -75,7 +75,7 @@ def train(agent, model_path,
     done = False            # signal from environment that episode is over
     ep_rewards = []            # list for rewards accrued throughout ep
     dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.2]))
-    bonus_distance = dist_0/11
+    bonus_distance = bonus_distance_func(1./11, dist_0)
     for st in range(num_steps):
       # save obs
       batch_states.append(state.copy())
@@ -92,11 +92,10 @@ def train(agent, model_path,
       dist = np.linalg.norm(state[:2]-np.array([0,-6.2]))
       # consider bonus terms
       bonus_time = bonus_time_func(bonus_wall, num_steps)
-      bonus_distance = bonus_distance_func(11, dist_0, num_steps)
       bonus_approach = bonus_approach_func(dist_0, dist, num_steps)
       # adjust reward based on relative distance to the exit
       if info["status"] == "escaped":
-        bonus = bonus_distance
+        bonus = bonus_time+bonus_distance
       elif info["status"] == "door":
         bonus = bonus_time+bonus_door
       elif info["status"] == "trapped":
