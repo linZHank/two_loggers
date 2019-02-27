@@ -9,3 +9,9 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     
+# bonus functions
+def bonusWallDividedNumsteps(bonus_wall, num_steps): return bonus_wall/num_steps # bonus for every time step
+def weightedD0(weight,d0): return weight*d0 # bonus for initial distance
+def d0MinusD(d0,d,num_stes): return (d0-d)/num_steps # bonus of approaching the exit
+def zero(x,y,z=0): return 0
+
