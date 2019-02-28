@@ -57,7 +57,7 @@ def save_csv(fname, path, content):
     path: file path, str
     content: to be saved, dict
   """
-  fdir = os.path.dirname(model_path)
+  fdir = os.path.dirname(path)
   file_path = os.path.join(fdir,fname)
   with open(file_path, "w") as f:
     for key in content.keys():
