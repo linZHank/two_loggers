@@ -27,7 +27,7 @@ def train(agent, model_path,
           dim_state=7, num_actions=3,
           hidden_sizes=[64], learning_rate=1e-3,
           num_episodes=400, num_steps=1000,
-          bonus_wall=-.01, bonus_door=0.01,
+          bonus_wall=-.01, bonus_door=0.1,
           time_bonus_func=utils.zero, distance_bonus_func=utils.zero, approach_bonus_func=utils.zero):
   # make core of policy network
   states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
@@ -60,6 +60,7 @@ def train(agent, model_path,
     done = False            # signal from environment that episode is over
     ep_rewards = []            # list for rewards accrued throughout ep
     dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.02]))
+    bonus_distance = distance_bonus_func(1./11, dist_0, num_steps)
     for st in range(num_steps):
       # save obs
       batch_states.append(state.copy())
@@ -74,17 +75,16 @@ def train(agent, model_path,
       state, rew, done, info = agent.env_step(action)
       # compute current distance to exit
       dist = np.linalg.norm(state[:2]-np.array([0,-6.2]))
-      # bonus terms
-      bonus_time = time_bonus_func(num_steps)
-      bonus_distance = distance_bonus_func(1./11, dist_0, num_steps)
+      # consider bonus terms
+      bonus_time = time_bonus_func(bonus_wall, num_steps)
       bonus_approach = approach_bonus_func(dist_0, dist, num_steps)
       # adjust reward based on relative distance to the exit
       if info["status"] == "escaped":
-        bonus = rew*num_steps
+        bonus = bonus_time+bonus_distance
       elif info["status"] == "door":
-        bonus = bonus_door*num_steps
+        bonus = bonus_time+bonus_door
       elif info["status"] == "trapped":
-        bonus = bonus_time
+        bonus = bonus_time+bonus_approach
       else: # hit wall
         bonus = bonus_time+bonus_wall
       rew += bonus
