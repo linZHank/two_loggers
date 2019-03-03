@@ -86,9 +86,7 @@ def train(agent, model_path,
           bonus = utils.bonus_func(num_steps)
       elif info["status"] == "trapped":
         if distance_bonus:
-          if delta_dist >= 0:
-            bonus = utils.bonus_func(num_steps) # positive, if getting closer to exit
-          else:
+          if delta_dist < 0: # 0, if getting closer to exit
             bonus = -utils.bonus_func(num_steps) # negtive, if getting further from exit
       else:
         if wall_bonus:
