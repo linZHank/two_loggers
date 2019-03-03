@@ -29,7 +29,7 @@ def train(agent, model_path,
           dim_state=7, num_actions=3,
           hidden_sizes=[64], learning_rate=1e-3,
           num_episodes=400, num_steps=1000,
-          wall_bonus=False, distance_bonus=False):
+          wall_bonus=False, door_bonus=False, distance_bonus=False):
   # make core of policy network
   states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
   logits = utils.mlp(states_ph, sizes=hidden_sizes+[num_actions])
@@ -81,15 +81,18 @@ def train(agent, model_path,
       bonus=0
       if info["status"] == "escaped":
         bonus = rew
-      elif info["status"] == "wall":
-        if wall_bonus:
-          bonus = -utils.bonus_func(num_steps)*10
+      elif info["status"] == "door":
+        if door_bonus:
+          bonus = utils.bonus_func(num_steps)
       elif info["status"] == "trapped":
         if distance_bonus:
           if delta_dist >= 0:
             bonus = utils.bonus_func(num_steps) # positive, if getting closer to exit
           else:
             bonus = -utils.bonus_func(num_steps) # negtive, if getting further from exit
+      else:
+        if wall_bonus:
+          bonus = -utils.bonus_func(num_steps)*10
       rew += bonus
       # save action, reward
       batch_actions.append(action_id)
@@ -144,6 +147,7 @@ if __name__ == "__main__":
   parser.add_argument("--num_episodes", type=int, default=400)
   parser.add_argument("--num_steps", type=int, default=1000)
   parser.add_argument("--wall_bonus", type=bool, default=False)
+  parser.add_argument("--door_bonus", type=bool, default=False)
   parser.add_argument("--distance_bonus", type=bool, default=False)
   args = parser.parse_args()
 
@@ -157,10 +161,10 @@ if __name__ == "__main__":
   # train
   train(
     agent=escaper, model_path=args.model_path,
-    dim_state = statespace_dim, num_actions=actionspace_dim,
+    dim_state=statespace_dim, num_actions=actionspace_dim,
     hidden_sizes=[args.hidden_sizes], learning_rate=args.learning_rate,
     num_episodes=args.num_episodes, num_steps=args.num_steps,
-    wall_bonus = args.wall_bonus, distance_bonus = args.distance_bonus
+    wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, distance_bonus=args.distance_bonus
   )
   # time
   end_time = time.time()
@@ -182,6 +186,7 @@ if __name__ == "__main__":
   train_info["success_count"] = escaper.success_count
   train_info["training_time"] = training_time
   train_info["wall_bonus"] = args.wall_bonus
+  train_info["door_bonus"] = args.door_bonus
   train_info["distance_bonus"] = args.distance_bonus
 
   # save hyper-parameters
