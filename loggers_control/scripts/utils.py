@@ -23,11 +23,12 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     
-# bonus functions
-def wallBonusDividedNumsteps(num_steps): return -1./num_steps # bonus for every time step
-def weightedD0(weight,d0,amplifier): return weight*d0*amplifier # bonus for initial distance
-def d0MinusD(d0,d,num_steps): return (d0-d)/num_steps # bonus of approaching the exit
-def zero(x=0,y=0,z=0): return 0
+# bonus functions 0301
+# def wallBonusDividedNumsteps(num_steps): return -1./num_steps # bonus for every time step
+# def weightedD0(weight,d0,amplifier): return weight*d0*amplifier # bonus for initial distance
+# def d0MinusD(d0,d,num_steps): return (d0-d)/num_steps # bonus of approaching the exit
+# bonus functions 0303
+def bonus_func(n_steps): return 1./n_steps # basic bonus 
 
 def mlp(x, sizes, activation=tf.tanh, output_activation=None):
   # Build a feedforward neural network.

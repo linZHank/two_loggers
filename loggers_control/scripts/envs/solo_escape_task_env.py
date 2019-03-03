@@ -27,6 +27,7 @@ class SoloEscapeEnv(object):
     # init environment parameters
     self.observation = np.array([0., 0., 0., 0., 1., 0., 0.]) # x,y,v_x,v_y,cos_theta,sin_theta, theta_dot
     self.action = np.zeros(2)
+    self.success_reward = 1 # should always be 1
     self.reward = 0
     self._episode_done = False
     self.success_count = 0
@@ -192,7 +193,7 @@ class SoloEscapeEnv(object):
     """
     rospy.logdebug("Start Computing Reward....")
     if self.curr_pose[1] < -6:
-      reward = 1
+      reward = self.success_reward
       self.success_count += 1
       self.status = "escaped"
       self._episode_done = True
