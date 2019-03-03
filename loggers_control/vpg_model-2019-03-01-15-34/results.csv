@@ -1,0 +1,13 @@
+actionspace_dim,2
+bonus_time,wallBonusDividedNumsteps
+bonus_approach,zero
+num_episodes,400
+statespace_dim,7
+learning_rate,0.01
+num_steps,1000
+bonus_wall,-0.01
+hidden_sizes,64
+bonus_door,0.1
+training_time,21221.505789
+success_count,0
+bonus_distance,zero
