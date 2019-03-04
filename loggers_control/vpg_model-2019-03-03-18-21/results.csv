@@ -1,0 +1,12 @@
+actionspace_dim,2
+num_episodes,400
+statespace_dim,7
+learning_rate,0.01
+num_steps,1000
+door_bonus,False
+hidden_sizes,64
+version,2019-03-03
+success_count,1
+training_time,35048.0294931
+wall_bonus,True
+distance_bonus,True
