@@ -1,6 +1,6 @@
 #! /usr/bin/env python
-
 """
+Version: 2019-03-03
 Model based control for turtlebot with vanilla policy gradient in crib environment
 Navigate towards preset goal
 Author: LinZHanK (linzhank@gmail.com)
@@ -22,13 +22,14 @@ from datetime import datetime
 from solo_escape_task_env import SoloEscapeEnv
 import utils
 
+VERSION="2019-03-03" # make sure this is same as on line #3
+
 
 def train(agent, model_path,
           dim_state=7, num_actions=3,
           hidden_sizes=[64], learning_rate=1e-3,
           num_episodes=400, num_steps=1000,
-          bonus_wall=-.01, bonus_door=0.1,
-          time_bonus_func=utils.zero, distance_bonus_func=utils.zero, approach_bonus_func=utils.zero):
+          wall_bonus=False, door_bonus=False, distance_bonus=False):
   # make core of policy network
   states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
   logits = utils.mlp(states_ph, sizes=hidden_sizes+[num_actions])
@@ -60,7 +61,6 @@ def train(agent, model_path,
     done = False            # signal from environment that episode is over
     ep_rewards = []            # list for rewards accrued throughout ep
     dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.02]))
-    bonus_distance = distance_bonus_func(1./11, dist_0, num_steps)
     for st in range(num_steps):
       # save obs
       batch_states.append(state.copy())
@@ -72,26 +72,30 @@ def train(agent, model_path,
         action = np.array([.5, -1.])
       else: # forward
         action = np.array([.5, 0.])
+        rospy.logerr("Moving forward")
       state, rew, done, info = agent.env_step(action)
-      # compute current distance to exit
+      # compute current distance to exit, and distance change
       dist = np.linalg.norm(state[:2]-np.array([0,-6.2]))
-      # consider bonus terms
-      bonus_time = time_bonus_func(bonus_wall, num_steps)
-      bonus_approach = approach_bonus_func(dist_0, dist, num_steps)
+      delta_dist = dist_0 - dist
       # adjust reward based on relative distance to the exit
+      bonus=0
       if info["status"] == "escaped":
-        bonus = bonus_time+bonus_distance
+        bonus = rew
       elif info["status"] == "door":
-        bonus = bonus_time+bonus_door
+        if door_bonus:
+          bonus = utils.bonus_func(num_steps)
       elif info["status"] == "trapped":
-        bonus = bonus_time+bonus_approach
-      else: # hit wall
-        bonus = bonus_time+bonus_wall
+        if distance_bonus:
+          if delta_dist < 0: # 0, if getting closer to exit
+            bonus = -utils.bonus_func(num_steps) # negtive, if getting further from exit
+      else:
+        if wall_bonus:
+          bonus = -utils.bonus_func(num_steps)*10
       rew += bonus
       # save action, reward
       batch_actions.append(action_id)
       ep_rewards.append(rew)
-      # update robot's distance to exit
+      # update previous robot's distance to exit
       dist_0 = dist
       # log this step
       rospy.loginfo("Episode: {}, Step: {} \naction: {}, state: {}, reward: {}, done: {}".format(
@@ -108,7 +112,7 @@ def train(agent, model_path,
     ep_return, ep_length = sum(ep_rewards), len(ep_rewards)
     batch_returns.append(ep_return)
     batch_lengths.append(ep_length)
-    # the weight for each logprob(a|s) is R(tau)
+    # the weight for every logprob(a|s) is R(tau)
     batch_rtaus += [ep_return] * ep_length
     # take a single policy gradient update step
     batch_loss, _ = sess.run([loss, train_op],
@@ -128,7 +132,7 @@ def train(agent, model_path,
     save_path = saver.save(sess, model_path)
     rospy.loginfo("Model saved in path : {}".format(save_path))
     rospy.logerr("Success Count: {}".format(agent.success_count))
-  # plot returns
+  # plot returns and save figure
   utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=model_path)  
 
 if __name__ == "__main__":
@@ -136,15 +140,13 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--model_path", type=str,
                       default="/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
-  parser.add_argument("--hidden_sizes", type=int, default = 64)
-  parser.add_argument("--learning_rate", type=float, default = 1e-3)
-  parser.add_argument("--num_episodes", type=int, default = 400)
-  parser.add_argument("--num_steps", type=int, default = 1000)
-  parser.add_argument("--bonus_wall", type=float, default = -.01)
-  parser.add_argument("--bonus_door", type=float, default = .1)
-  parser.add_argument("--bonus_time", type=bool, default=False)
-  parser.add_argument("--bonus_distance", type=bool, default=False)
-  parser.add_argument("--bonus_approach", type=bool, default=False)
+  parser.add_argument("--hidden_sizes", type=int, default=64)
+  parser.add_argument("--learning_rate", type=float, default=1e-3)
+  parser.add_argument("--num_episodes", type=int, default=400)
+  parser.add_argument("--num_steps", type=int, default=1000)
+  parser.add_argument("--wall_bonus", type=bool, default=False)
+  parser.add_argument("--door_bonus", type=bool, default=False)
+  parser.add_argument("--distance_bonus", type=bool, default=False)
   args = parser.parse_args()
 
   # Main really starts here
@@ -154,23 +156,14 @@ if __name__ == "__main__":
   escaper = SoloEscapeEnv()
   statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
   actionspace_dim = 2
-  # store hyper-parameters
-  time_bonus_func = utils.zero
-  distance_bonus_func = utils.zero
-  approach_bonus_func = utils.zero
-  if args.bonus_time:
-    time_bonus_func = utils.wallBonusDividedNumsteps
-  if args.bonus_distance:
-    distance_bonus_func = utils.weightedD0
-  if args.bonus_approach:
-    approach_bonus_func = utils.d0MinusD
-  # make core of policy network
-  train(agent=escaper, model_path=args.model_path,
-        dim_state = statespace_dim, num_actions=actionspace_dim,
-        hidden_sizes=[args.hidden_sizes], learning_rate=args.learning_rate,
-        num_episodes=args.num_episodes, num_steps=args.num_steps,
-        bonus_wall=args.bonus_wall, bonus_door=args.bonus_door,
-        time_bonus_func=time_bonus_func, distance_bonus_func=distance_bonus_func, approach_bonus_func=approach_bonus_func)
+  # train
+  train(
+    agent=escaper, model_path=args.model_path,
+    dim_state=statespace_dim, num_actions=actionspace_dim,
+    hidden_sizes=[args.hidden_sizes], learning_rate=args.learning_rate,
+    num_episodes=args.num_episodes, num_steps=args.num_steps,
+    wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, distance_bonus=args.distance_bonus
+  )
   # time
   end_time = time.time()
   training_time = end_time - start_time
@@ -187,13 +180,12 @@ if __name__ == "__main__":
   }               
   # store training information
   train_info = hyp_params
+  train_info["version"]=VERSION
   train_info["success_count"] = escaper.success_count
   train_info["training_time"] = training_time
-  train_info["bonus_wall"] = args.bonus_wall
-  train_info["bonus_door"] = args.bonus_door
-  train_info["bonus_time"] = time_bonus_func.func_name
-  train_info["bonus_distance"] = distance_bonus_func.func_name
-  train_info["bonus_approach"] = approach_bonus_func.func_name
+  train_info["wall_bonus"] = args.wall_bonus
+  train_info["door_bonus"] = args.door_bonus
+  train_info["distance_bonus"] = args.distance_bonus
 
   # save hyper-parameters
   utils.save_pkl(fname="hyper_parameters.pkl",
