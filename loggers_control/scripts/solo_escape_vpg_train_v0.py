@@ -60,7 +60,7 @@ def train(agent, model_path,
     state, _ = agent.env_reset()       # first obs comes from starting distribution
     done = False            # signal from environment that episode is over
     ep_rewards = []            # list for rewards accrued throughout ep
-    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.02]))
+    dist_0 = np.linalg.norm(state[:2]-np.array([0,-6]))
     for st in range(num_steps):
       # save obs
       batch_states.append(state.copy())
@@ -75,7 +75,7 @@ def train(agent, model_path,
         rospy.logerr("Moving forward")
       state, rew, done, info = agent.env_step(action)
       # compute current distance to exit, and distance change
-      dist = np.linalg.norm(state[:2]-np.array([0,-6.2]))
+      dist = np.linalg.norm(state[:2]-np.array([0,-6]))
       delta_dist = dist_0 - dist
       # adjust reward based on relative distance to the exit
       bonus=0
