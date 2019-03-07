@@ -31,6 +31,8 @@ class SoloEscapeEnv(object):
     self.reward = 0
     self._episode_done = False
     self.success_count = 0
+    self.max_step = 5000
+    self.step = 0
     # init env info
     self.init_pose = np.zeros(3) # x, y, theta
     self.prev_pose = np.zeros(3)
@@ -84,6 +86,7 @@ class SoloEscapeEnv(object):
     self._set_init()
     obs = self._get_observation()
     info = self._post_information()
+    self.step = 0
     rospy.logdebug("Environment Reset Finished")
 
     return obs, info
@@ -96,6 +99,7 @@ class SoloEscapeEnv(object):
     obs = self._get_observation()
     reward, done = self._compute_reward()
     info = self._post_information()
+    self.step += 1
 
     return obs, reward, done, info
 
@@ -230,6 +234,10 @@ class SoloEscapeEnv(object):
       rospy.loginfo("Logger is trapped in the cell...")
     self.reward = reward
     rospy.logdebug("Stepwise Reward Computed ===> {}".format(reward))
+    # check step size out of range
+    if self.step > self.max_step:
+      self._episode_done = True
+      rospy.logwarn("Logger is wandering over {} steps, env will reset...".format(self.step))
     
     return self.reward, self._episode_done 
 
