@@ -121,7 +121,7 @@ def train(agent, model_path,
         state, _, = agent.env_reset()
         done, ep_rewards = False, []
         episode += 1
-        step = 0
+        step = 1
         print(
           utils.bcolors.OKGREEN, "batch_size limit: {}, current batch_lengths: {}".format(
             batch_size,
