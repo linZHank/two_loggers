@@ -22,18 +22,12 @@ import pickle
 import matplotlib.pyplot as plt
 
 from solo_escape_task_env import SoloEscapeEnv
-from utils import bcolors
+import utils
 
-
-def mlp(x, sizes, activation=tf.tanh, output_activation=None):
-  # Build a feedforward neural network.
-  for size in sizes[:-1]:
-    x = tf.layers.dense(x, units=size, activation=activation)
-  return tf.layers.dense(x, units=sizes[-1], activation=output_activation)  
 
 if __name__ == "__main__":
   # identify saved model path
-  model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-2019-02-15-16-27/model.ckpt"
+  model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-2019-03-08-09-53/model.ckpt"
   # load hyper-parameters
   hyp_param_path = os.path.join(os.path.dirname(model_path),"hyper_parameters.pkl")
   with open(hyp_param_path, "rb") as f:
@@ -46,7 +40,7 @@ if __name__ == "__main__":
   num_steps = 1024
   # set tf 
   states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
-  logits = mlp(states_ph, sizes=hidden_sizes+[num_actions])
+  logits = utils.mlp(states_ph, sizes=[hidden_sizes]+[num_actions])
   actions_id = tf.squeeze(tf.multinomial(logits=logits,num_samples=1), axis=1)
   saver = tf.train.Saver()
   rospy.init_node("solo_escape_eval", anonymous=True, log_level=rospy.INFO)
@@ -62,19 +56,22 @@ if __name__ == "__main__":
     rew = 0
     ep_rewards = []
     for st in range(num_steps):
-      action_id = sess.run(actions_id, feed_dict={states_ph: state.reshape(1,-1)})[0]
-      if action_id == 0: # go straight
-        action = np.array([.5, 0])
-      elif action_id == 1: # turn left
-        action = np.array([0, 1.0])
-      else: # turn right
-        action = np.array([0, -1.0])
+      # pick an action
+      action_id = sess.run(actions_id, {states_ph: state.reshape(1,-1)})[0]
+      if action_id == 0: # forward left
+        action = np.array([.5, 1.])
+      elif action_id == 1: # forward right
+        action = np.array([.5, -1.])
+      else: # forward
+        action = np.array([.5, 0.])
+        rospy.logerr("Moving forward")
+      # take the action
       state, rew, done, info = escaper.env_step(action)
       # deposit reward
       ep_rewards.append(rew)
       rospy.loginfo("Episode: {}, Step: {} \naction: {}, state: {}, reward: {}, done: {}".format(
-        ep,
-        st,
+        ep+1,
+        st+1,
         action,
         state,
         rew,
