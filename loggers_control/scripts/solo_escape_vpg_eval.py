@@ -27,7 +27,7 @@ import utils
 
 if __name__ == "__main__":
   # identify saved model path
-  model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-2019-03-08-09-53/model.ckpt"
+  model_path = "/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-2019-03-09-10-17/model.ckpt"
   # load hyper-parameters
   hyp_param_path = os.path.join(os.path.dirname(model_path),"hyper_parameters.pkl")
   with open(hyp_param_path, "rb") as f:
