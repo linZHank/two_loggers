@@ -31,7 +31,7 @@ class SoloEscapeEnv(object):
     self.reward = 0
     self._episode_done = False
     self.success_count = 0
-    self.max_step = 5000
+    self.max_step = 1600
     self.step = 0
     # init env info
     self.init_pose = np.zeros(3) # x, y, theta
