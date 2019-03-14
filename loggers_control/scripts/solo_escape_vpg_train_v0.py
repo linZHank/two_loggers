@@ -143,21 +143,23 @@ def train(agent, model_path,
     return batch_loss, batch_returns, batch_lengths
   
   # training loop
-  ave_epoch_returns = []
+  episodic_returns = []
+  num_episodes = 0  
   for epoch in range(num_epochs):
     batch_loss, batch_returns, batch_lengths = train_one_epoch()
-    print("epoch: {:d} \t loss: {:.3f} \t return: {:.3f}\t ep_len: {}".format(
+    episodic_returns += batch_returns
+    print("epoch: {:d} \t episode: {:d} \t loss: {:.3f} \t return: {:.3f}\t ep_len: {}".format(
       epoch+1,
+      len(episodic_returns),
       batch_loss,
       np.mean(batch_returns),
       np.mean(batch_lengths)
     ))
-    ave_epoch_returns.append(np.mean(batch_returns))
     save_path = saver.save(sess, model_path)
     rospy.loginfo("Model saved in path : {}".format(save_path))
     rospy.logerr("Success Count: {}".format(agent.success_count))
   # plot returns and save figure
-  utils.plot_returns(returns=ave_epoch_returns, mode=2, save_flag=True, path=model_path)  
+  utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=model_path)  
 
 if __name__ == "__main__":
   # make arg parser
