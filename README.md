@@ -39,3 +39,6 @@ roslaunch loggers_control single_logger_control.launch
 - To train a neural network model with **Vanilla Policy Gradient** algorithm: `rosrun loggers_control solo_escape_vpg.py`
 - A trained neural network model is stored at `this_repo/loggers_control/vpg_model`
 
+# Demo
+## Solo Escape with VPG
+[![IMAGE ALT TEXT HERE](https://youtu.be/xqkG5bBXyY8)
