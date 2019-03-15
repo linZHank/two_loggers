@@ -41,4 +41,4 @@ roslaunch loggers_control single_logger_control.launch
 
 # Demo
 ## Solo Escape with VPG
-[![IMAGE ALT TEXT HERE](https://youtu.be/xqkG5bBXyY8)
+[![IMAGE ALT TEXT HERE](http://i3.ytimg.com/vi/xqkG5bBXyY8/hqdefault.jpg)](https://youtu.be/xqkG5bBXyY8)
