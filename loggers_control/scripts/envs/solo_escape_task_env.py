@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-
-""" Configure a cart-pole system spawned in Gazebo to be a qualified environment for reinforcement learning 
-    Based on cartpole-v0, but increases pole swaying angle limit and modifies reward mechanism"""
-
+""" 
+Task environment for single logger escaping form the walled cell
+"""
 
 from __future__ import absolute_import, division, print_function
 

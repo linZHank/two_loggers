@@ -24,10 +24,13 @@ class DoubleEscapeEnv(object):
     self.rate = rospy.Rate(100)
     # init environment parameters
     self.observation = np.array([0., 0., 0., 0., 1., 0., 0.]) # x,y,v_x,v_y,cos_theta,sin_theta, theta_dot
-    self.action = np.zeros(2)
+    self.action_0 = np.zeros(2)
+    self.action_1 = np.zeros(2)
     self.reward = 0
     self._episode_done = False
     self.success_count = 0
+    self.max_step = 2000
+    self.step = 0
     # init env info
     self.init_pose = np.zeros(3) # x, y, theta
     self.prev_pose = np.zeros(3)
@@ -38,22 +41,16 @@ class DoubleEscapeEnv(object):
     self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
     self.pause_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
     # init topic publisher
-    # self.cmd_vel_pub = rospy.Publisher(
-    #   "/logger/chassis_drive_controller/cmd_vel",
-    #   Twist,
-    #   queue_size=10
-    # ) # when using ros controllers diff drive plugin
-    self.cmd_vel0_pub = rospy.Publisher(
+    self.cmdvel0_pub = rospy.Publisher(
       "/cmd_vel_0",
       Twist,
       queue_size=1
-    ) # when using gazebo ros plugin
-    self.cmd_vel1_pub = rospy.Publisher(
+    ) 
+    self.cmdvel1_pub = rospy.Publisher(
       "/cmd_vel_1",
       Twist,
       queue_size=1
-    ) # when using gazebo ros plugin
-
+    )
     self.set_robot_state_pub = rospy.Publisher(
       "/gazebo/set_model_state",
       ModelState,
@@ -76,53 +73,55 @@ class DoubleEscapeEnv(object):
     except rospy.ServiceException as e:
       rospy.logfatal("/gazebo/unpause_physics service call failed")
           
-  def env_reset(self):
-    """ 
+  def reset(self):
+    """
+    reset environment
     obs, info = env.reset() 
     """
     rospy.logwarn("\nEnvironment Reset!!!\n")
+    self._take_action(np.zeros(2), np.zeros(2))
     self.reset_world()
     self._set_init()
     obs = self._get_observation()
     info = self._post_information()
+    self.step = 0
     rospy.logdebug("Environment Reset Finished")
 
     return obs, info
 
-  def env_step(self, action):
+  def step(self, action_0, action_1):
     """
-    Manipulate the environment with an action
+    Manipulate logger_0 with action_0, logger_1 with action_1
+    obs, rew, done, info = env.step(action_0, action_1)
     """
-    self._take_action(action)
+    self._take_action(action_0, actions_1)
     obs = self._get_observation()
     reward, done = self._compute_reward()
     info = self._post_information()
+    self.step += 1
 
     return obs, reward, done, info
-
-  def get_model_states(self):
-    return self.model_states
   
   def _set_init(self):
     """ 
-    Set initial condition for simulation
-      Set Logger at a random pose inside cell by publishing /gazebo/set_model_state topic
+    Set initial condition for two_loggers at a random pose inside cell by publishing 
+    "/gazebo/set_model_state" topic.
     Returns: 
       init_position: array([x, y]) 
     """
     rospy.logdebug("Start initializing robot....")
     # set logger inside crib, away from crib edges
-    mag = random.uniform(0, 4) # robot vector magnitude
+    mag = random.uniform(0, 3.2) # robot vector magnitude
     ang = random.uniform(-math.pi, math.pi) # robot vector orientation
     x = mag * math.cos(ang)
     y = mag * math.sin(ang)
     w = random.uniform(-1.0, 1.0)
     theta = tf.transformations.euler_from_quaternion([0,0,math.sqrt(1-w**2),w])[2]
     robot_state = ModelState()
-    robot_state.model_name = "logger"
+    robot_state.model_name = "two_loggers"
     robot_state.pose.position.x = x
     robot_state.pose.position.y = y
-    robot_state.pose.position.z = 0.09
+    robot_state.pose.position.z = 0.2
     robot_state.pose.orientation.x = 0
     robot_state.pose.orientation.y = 0
     robot_state.pose.orientation.z = math.sqrt(1 - w**2)
@@ -134,27 +133,32 @@ class DoubleEscapeEnv(object):
     for _ in range(10):
       self.set_robot_state_pub.publish(robot_state)
       self.rate.sleep()
-    rospy.logwarn("Robot was set at {}".format(self.init_pose))
+    rospy.logwarn("two_loggers were set at {}".format(self.init_pose))
     # Episode cannot done
     self._episode_done = False
     # Give the system a little time to finish initialization
     rospy.logdebug("Logger Initialized @ ===> {}".format(robot_state))
 
-  def _take_action(self, action):
+  def _take_action(self, action_0, action_1):
     """
-    Set linear and angular speed for logger to execute.
+    Set linear and angular speed for logger_0 and logger_1 to execute.
     Args:
-      action: 2-d numpy array.
+      action: 2x (v_lin,v_ang).
     """
     rospy.logdebug("Start Taking Action....")
-    self.action = action
-    cmd_vel = Twist()
-    cmd_vel.linear.x = action[0]
-    cmd_vel.angular.z = action[1]
+    self.action_0 = action_0
+    self.action_1 = action_1
+    cmd_vel_0 = Twist()
+    cmd_vel_0.linear.x = action_0[0]
+    cmd_vel_0.angular.z = action_0[1]
+    cmd_vel_1 = Twist()
+    cmd_vel_1.linear.x = action_1[0]
+    cmd_vel_1.angular.z = action_1[1]
     for _ in range(10):
-      self.cmd_vel_pub.publish(cmd_vel)
+      self.cmdvel0_pub.publish(cmd_vel_0)
+      self.cmdvel1_pub.publish(cmd_vel_1)
       self.rate.sleep()
-    rospy.logdebug("Action Taken ===> {}".format(cmd_vel))
+    rospy.logdebug("\nlogger_0 take action ===> {}\nlogger_1 take action ===> {}".format(cmd_vel_0, cmd_vel_1))
     
   def _get_observation(self):
     """
@@ -252,3 +256,6 @@ class DoubleEscapeEnv(object):
 
   def _model_states_callback(self, data):
     self.model_states = data
+
+  def _get_model_states(self):
+    return self.model_states
