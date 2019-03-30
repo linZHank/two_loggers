@@ -12,7 +12,7 @@ import time
 import rospy
 import tf
 from std_srvs.srv import Empty
-from gazebo_msgs.msg import ModelState, ModelStates
+from gazebo_msgs.msg import ModelState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
 
 
@@ -23,7 +23,17 @@ class DoubleEscapeEnv(object):
     # init simulation parameters
     self.rate = rospy.Rate(100)
     # init environment parameters
-    self.observation = np.array([0., 0., 0., 0., 1., 0., 0.]) # x,y,v_x,v_y,cos_theta,sin_theta, theta_dot
+    self.observation = dict(
+      log=dict(
+        pose=Pose(),
+        twist=Twist()),
+      logger_0=dict(
+        pose=Pose(),
+        twist=Twist()),
+      logger_1==dict(
+        pose=Pose(),
+        twist=Twist())
+      )
     self.action_0 = np.zeros(2)
     self.action_1 = np.zeros(2)
     self.reward = 0
@@ -33,8 +43,6 @@ class DoubleEscapeEnv(object):
     self.step = 0
     # init env info
     self.init_pose = np.zeros(3) # x, y, theta
-    self.prev_pose = np.zeros(3)
-    self.curr_pose = np.zeros(3)
     self.status = "trapped"
     # init services
     self.reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
@@ -58,6 +66,7 @@ class DoubleEscapeEnv(object):
     )
     # init topic subscriber
     rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
+    rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)
 
   def pauseSim(self):
     rospy.wait_for_service("/gazebo/pause_physics")
@@ -78,14 +87,15 @@ class DoubleEscapeEnv(object):
     reset environment
     obs, info = env.reset() 
     """
-    rospy.logwarn("\nEnvironment Reset!!!\n")
+    rospy.logdebug("Environment reset start")
     self._take_action(np.zeros(2), np.zeros(2))
     self.reset_world()
     self._set_init()
     obs = self._get_observation()
     info = self._post_information()
     self.step = 0
-    rospy.logdebug("Environment Reset Finished")
+    rospy.logwarn("\nEnvironment Reset!!!\n")
+    rospy.logdebug("Environment reset finished")
 
     return obs, info
 
@@ -94,11 +104,14 @@ class DoubleEscapeEnv(object):
     Manipulate logger_0 with action_0, logger_1 with action_1
     obs, rew, done, info = env.step(action_0, action_1)
     """
+    rospy.logdebug("Environment step start")
     self._take_action(action_0, actions_1)
     obs = self._get_observation()
     reward, done = self._compute_reward()
     info = self._post_information()
     self.step += 1
+    rospy.logwarn("\nEnvironment Step!")
+    rospy.logdebug("Environment step finished")
 
     return obs, reward, done, info
   
@@ -164,29 +177,29 @@ class DoubleEscapeEnv(object):
     """
     Get observations from env
     Return:
-      observation: [x, y, v_x, v_y, cos(yaw), sin(yaw), yaw_dot]
+      observation: {"log{"pose", "twist"}", logger0{"pose", "twist"}", logger1{"pose", "twist"}"}
     """
-    rospy.logdebug("Start Getting Observation....")
-    self.prev_pose = self.curr_pose
-    model_states = self.get_model_states() # refer to turtlebot_robot_env
-    # update previous position
-    rospy.logdebug("model_states: {}".format(model_states))
-    x = model_states.pose[-1].position.x # turtlebot was the last model in model_states
-    y = model_states.pose[-1].position.y
-    v_x = model_states.twist[-1].linear.x
-    v_y = model_states.twist[-1].linear.y
-    quat = (
-      model_states.pose[-1].orientation.x,
-      model_states.pose[-1].orientation.y,
-      model_states.pose[-1].orientation.z,
-      model_states.pose[-1].orientation.w
-    )
-    euler = tf.transformations.euler_from_quaternion(quat)
-    cos_yaw = math.cos(euler[2])
-    sin_yaw = math.sin(euler[2])
-    yaw_dot = model_states.twist[-1].angular.z
-    self.curr_pose = np.array([x, y, np.arctan2(sin_yaw,cos_yaw)])
-    self.observation = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
+    # model states
+    rospy.logdebug("Start Getting Observation")
+    # link states (log, logger_0, logger_1)
+    rospy.logdebug("Start Getting Link States")
+    link_states = self._get_link_states()
+    rospy.logdebug("End Getting Link States")
+    # log
+    id_log = link_states.name.index("two_loggers::link_log")
+    self.observation["log"]["pose"] = link_states.pose[id_log]
+    self.observation["log"]["twist"] = link_states.twist[id_log]
+    # logger_0
+    id_logger_0 = link_states.name.index("two_loggers::link_chassis_0")
+    self.observation["logger_0"]["pose"] = link_states.pose[id_logger_0]
+    self.observation["logger_0"]["twist"] = link_states.twist[id_logger_0]
+    # logger_1
+    id_logger_1 = link_states.name.index("two_loggers::link_chassis_1")
+    self.observation["logger_1"]["pose"] = link_states.pose[id_logger_1]
+    self.observation["logger_1"]["twist"] = link_states.twist[id_logger_1]
+    
+
+    rospy.logdebug("End Getting Observation")
     rospy.logdebug("Observation Get ==> {}".format(self.observation))
     
     return self.observation
@@ -203,31 +216,6 @@ class DoubleEscapeEnv(object):
       self.status = "escaped"
       self._episode_done = True
       rospy.logerr("\n!!!\nLogger Escaped !\n!!!")
-    elif self.curr_pose[0] > 4.75:
-      reward = -0.
-      self.status = "east"
-      self._episode_done = True
-      rospy.logwarn("Logger is too close to east wall!")
-    elif self.curr_pose[0] < -4.75:
-      reward = -0.
-      self.status = "west"
-      self._episode_done = True
-      rospy.logwarn("Logger is too close to west wall!")
-    elif self.curr_pose[1] > 4.75:
-      reward = -0.
-      self.status = "north"
-      self._episode_done = True
-      rospy.logwarn("Logger is too close to north wall!")
-    elif -4.99<self.curr_pose[1]<-4.75 and np.absolute(self.curr_pose[0])>1:
-      reward = -0.
-      self.status = "south"
-      self._episode_done = True
-      rospy.logwarn("Logger is too close to south wall!")
-    elif self.curr_pose[1] < -5 and np.absolute(self.curr_pose[0])>0.75:
-      reward = 0.
-      self.status = "door"
-      self._episode_done = True
-      rospy.logwarn("Logger is stuck at the door!")
     else:
       reward = -0.
       self.status = "trapped"
@@ -257,5 +245,11 @@ class DoubleEscapeEnv(object):
   def _model_states_callback(self, data):
     self.model_states = data
 
+  def _link_states_callback(self, data):
+    self.link_states = data
+
   def _get_model_states(self):
     return self.model_states
+
+  def _get_link_states(self):
+    return self.link_states

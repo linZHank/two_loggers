@@ -166,7 +166,7 @@ class SoloEscapeEnv(object):
     """
     rospy.logdebug("Start Getting Observation....")
     self.prev_pose = self.curr_pose
-    model_states = self.get_model_states() # refer to turtlebot_robot_env
+    model_states = self._get_model_states() # refer to turtlebot_robot_env
     # update previous position
     rospy.logdebug("model_states: {}".format(model_states))
     x = model_states.pose[-1].position.x # turtlebot was the last model in model_states
