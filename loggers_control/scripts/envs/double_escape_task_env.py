@@ -24,23 +24,23 @@ class DoubleEscapeEnv(object):
         self.rate = rospy.Rate(100)
         # init environment parameters
         self.observation = dict(
-        log=dict(
-        pose=Pose(),
-        twist=Twist()),
-        logger_0=dict(
-        pose=Pose(),
-        twist=Twist()),
-        logger_1==dict(
-        pose=Pose(),
-        twist=Twist())
+            log=dict(
+                pose=Pose(),
+                twist=Twist()),
+            logger_0=dict(
+                pose=Pose(),
+                twist=Twist()),
+            logger_1=dict(
+                pose=Pose(),
+                twist=Twist())
         )
-        self.action_0 = np.zeros(2)
-        self.action_1 = np.zeros(2)
+        # self.action_0 = np.zeros(2)
+        # self.action_1 = np.zeros(2)
         self.reward = 0
         self._episode_done = False
         self.success_count = 0
         self.max_step = 2000
-        self.step = 0
+        self.steps = 0
         # init env info
         self.init_pose = np.zeros(3) # x, y, theta
         self.status = "trapped"
@@ -59,7 +59,7 @@ class DoubleEscapeEnv(object):
         Twist,
         queue_size=1
         )
-        self.set_robot_state_pub = rospy.Publisher(
+        self.set_model_state_pub = rospy.Publisher(
         "/gazebo/set_model_state",
         ModelState,
         queue_size=10
@@ -93,7 +93,8 @@ class DoubleEscapeEnv(object):
         self._set_init()
         obs = self._get_observation()
         info = self._post_information()
-        self.step = 0
+        self.steps = 0
+
         rospy.logwarn("\nEnvironment Reset!!!\n")
         rospy.logdebug("End Environment Reset \n")
 
@@ -105,11 +106,11 @@ class DoubleEscapeEnv(object):
         obs, rew, done, info = env.step(action_0, action_1)
         """
         rospy.logdebug("\nStart Environment Step")
-        self._take_action(action_0, actions_1)
+        self._take_action(action_0, action_1)
         obs = self._get_observation()
         reward, done = self._compute_reward()
         info = self._post_information()
-        self.step += 1
+        self.steps += 1
         rospy.logdebug("End Environment Step\n")
 
         return obs, reward, done, info
@@ -123,33 +124,31 @@ class DoubleEscapeEnv(object):
         """
         rospy.logdebug("\nStart Initializing Robots")
         # set loggers initial position using pole coordinate
-        mag = random.uniform(0, 3.2) # robot vector magnitude
+        mag = random.uniform(0, 3.6) # robot vector magnitude
         ang = random.uniform(-math.pi, math.pi) # robot vector orientation
         x = mag * math.cos(ang)
         y = mag * math.sin(ang)
         w = random.uniform(-1.0, 1.0)
         theta = tf.transformations.euler_from_quaternion([0,0,math.sqrt(1-w**2),w])[2]
-        robot_state = ModelState()
-        robot_state.model_name = "two_loggers"
-        robot_state.pose.position.x = x
-        robot_state.pose.position.y = y
-        robot_state.pose.position.z = 0.2
-        robot_state.pose.orientation.x = 0
-        robot_state.pose.orientation.y = 0
-        robot_state.pose.orientation.z = math.sqrt(1 - w**2)
-        robot_state.pose.orientation.w = w
-        robot_state.reference_frame = "world"
-        self.init_pose = np.array([x, y, theta])
-        self.curr_pose = self.init_pose
+        model_state = ModelState()
+        model_state.model_name = "two_loggers"
+        model_state.pose.position.x = x
+        model_state.pose.position.y = y
+        model_state.pose.position.z = 0.2
+        model_state.pose.orientation.x = 0
+        model_state.pose.orientation.y = 0
+        model_state.pose.orientation.z = math.sqrt(1 - w**2)
+        model_state.pose.orientation.w = w
+        model_state.reference_frame = "world"
         # Give the system a little time to finish initialization
         for _ in range(10):
-            self.set_robot_state_pub.publish(robot_state)
+            self.set_model_state_pub.publish(model_state)
             self.rate.sleep()
-            rospy.logwarn("two_loggers were set at {}".format(self.init_pose))
+        rospy.logwarn("two_loggers were set at {}".format(model_state))
         # Episode cannot done
         self._episode_done = False
-        rospy.logdebug("Logger Initialized @ ===> {}".format(robot_state))
-        Rospy.logdebug("End Initializing Robots\n")
+        rospy.logdebug("Logger Initialized @ ===> {}".format(model_state))
+        rospy.logdebug("End Initializing Robots\n")
 
     def _get_observation(self):
         """
@@ -173,7 +172,7 @@ class DoubleEscapeEnv(object):
         self.observation["logger_1"]["pose"] = link_states.pose[id_logger_1]
         self.observation["logger_1"]["twist"] = link_states.twist[id_logger_1]
         # env status
-        if self.observation["logger_0"]["Pose"].position.y < -6 && self.observation["logger_1"]["Pose"].position.y < -6:
+        if self.observation["logger_0"]["pose"].position.y < -6 and self.observation["logger_1"]["pose"].position.y < -6:
             self.status = "escaped"
         else:
             self.status = "trapped"
@@ -234,7 +233,7 @@ class DoubleEscapeEnv(object):
         self.info = {
             "status": self.status
         }
-        rospy.logdebug("End Posting Information\n)
+        rospy.logdebug("End Posting Information\n")
 
         return self.info
 
