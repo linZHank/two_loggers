@@ -35,5 +35,5 @@ if __name__ == "__main__":
                                                                    action_0,
                                                                    action_1)
             )
-
+    # stop loggers in the end
     escaper.step(np.zeros(2), np.zeros(2))

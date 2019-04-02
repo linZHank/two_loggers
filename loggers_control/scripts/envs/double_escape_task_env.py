@@ -12,7 +12,7 @@ import time
 import rospy
 import tf
 from std_srvs.srv import Empty
-from gazebo_msgs.msg import ModelState, ModelStates, LinkStates
+from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
 
 
@@ -49,21 +49,10 @@ class DoubleEscapeEnv(object):
         self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         # init topic publisher
-        self.cmdvel0_pub = rospy.Publisher(
-        "/cmd_vel_0",
-        Twist,
-        queue_size=1
-        )
-        self.cmdvel1_pub = rospy.Publisher(
-        "/cmd_vel_1",
-        Twist,
-        queue_size=1
-        )
-        self.set_model_state_pub = rospy.Publisher(
-        "/gazebo/set_model_state",
-        ModelState,
-        queue_size=10
-        )
+        self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
+        self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=1)
+        self.set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=10)
+        self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=10)
         # init topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)
@@ -123,7 +112,7 @@ class DoubleEscapeEnv(object):
         init_position: array([x, y])
         """
         rospy.logdebug("\nStart Initializing Robots")
-        # set loggers initial position using pole coordinate
+        # set model initial pose using pole coordinate
         mag = random.uniform(0, 3.6) # robot vector magnitude
         ang = random.uniform(-math.pi, math.pi) # robot vector orientation
         x = mag * math.cos(ang)
@@ -140,14 +129,18 @@ class DoubleEscapeEnv(object):
         model_state.pose.orientation.z = math.sqrt(1 - w**2)
         model_state.pose.orientation.w = w
         model_state.reference_frame = "world"
-        # Give the system a little time to finish initialization
+        # set orientations for logger_0 and logger_1, by spinning them a little
+        spin_vel_0 = random.choice([-2*np.pi, 2*np.pi])
+        spin_vel_1 = random.choice([-2*np.pi, 2*np.pi])
+        # give the system a little time to finish initialization
         for _ in range(10):
             self.set_model_state_pub.publish(model_state)
+            self._take_action(np.array([0,spin_vel_0]), np.array([0,spin_vel_1]))
             self.rate.sleep()
-        rospy.logwarn("two_loggers were set at {}".format(model_state))
+        self._take_action(np.zeros(2), np.zeros(2)) # stop spinning
+        rospy.logwarn("two_loggers were initialized at {}".format(model_state))
         # Episode cannot done
         self._episode_done = False
-        rospy.logdebug("Logger Initialized @ ===> {}".format(model_state))
         rospy.logdebug("End Initializing Robots\n")
 
     def _get_observation(self):
