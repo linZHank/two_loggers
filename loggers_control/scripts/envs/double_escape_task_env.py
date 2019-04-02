@@ -52,28 +52,27 @@ class DoubleEscapeEnv(object):
         self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
         self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=1)
         self.set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=10)
-        self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=10)
+        # self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=10)
         # init topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)
 
-    def pauseSim(self):
-        rospy.wait_for_service("/gazebo/pause_physics")
-        try:
-            self.pause()
-        except rospy.ServiceException as e:
-            rospy.logfatal("/gazebo/pause_physics service call failed")
-
-    def unpauseSim(self):
-        rospy.wait_for_service("/gazebo/unpause_physics")
-        try:
-            self.unpause()
-        except rospy.ServiceException as e:
-            rospy.logfatal("/gazebo/unpause_physics service call failed")
+    # def pauseSim(self):
+    #     rospy.wait_for_service("/gazebo/pause_physics")
+    #     try:
+    #         self.pause()
+    #     except rospy.ServiceException as e:
+    #         rospy.logfatal("/gazebo/pause_physics service call failed")
+    # def unpauseSim(self):
+    #     rospy.wait_for_service("/gazebo/unpause_physics")
+    #     try:
+    #         self.unpause()
+    #     except rospy.ServiceException as e:
+    #         rospy.logfatal("/gazebo/unpause_physics service call failed")
 
     def reset(self):
         """
-        reset environment
+        Reset environment function
         obs, info = env.reset()
         """
         rospy.logdebug("\nStart Environment Reset")
@@ -83,9 +82,7 @@ class DoubleEscapeEnv(object):
         obs = self._get_observation()
         info = self._post_information()
         self.steps = 0
-
-        rospy.logwarn("\nEnvironment Reset!!!\n")
-        rospy.logdebug("End Environment Reset \n")
+        rospy.logwarn("\nEnd Environment Reset!!!\n")
 
         return obs, info
 
@@ -106,10 +103,7 @@ class DoubleEscapeEnv(object):
 
     def _set_init(self):
         """
-        Set initial condition for two_loggers at a random pose inside cell by publishing
-        "/gazebo/set_model_state" topic.
-        Returns:
-        init_position: array([x, y])
+        Set initial condition for two_loggers at a random pose
         """
         rospy.logdebug("\nStart Initializing Robots")
         # set model initial pose using pole coordinate
@@ -145,7 +139,7 @@ class DoubleEscapeEnv(object):
 
     def _get_observation(self):
         """
-        Get observations from env
+        Get observation from link_states
         Return:
             observation: {"log{"pose", "twist"}", logger0{"pose", "twist"}", logger1{"pose", "twist"}"}
         """
@@ -179,7 +173,7 @@ class DoubleEscapeEnv(object):
         """
         Set linear and angular speed for logger_0 and logger_1 to execute.
         Args:
-            action: 2x (v_lin,v_ang).
+            action: 2x np.array([v_lin,v_ang]).
         """
         rospy.logdebug("\nStart Taking Actions")
         self.action_0 = action_0
@@ -205,14 +199,15 @@ class DoubleEscapeEnv(object):
         rospy.logdebug("\nStart Computing Reward")
         if self.status == "escaped":
             self.reward = 1
+            self.success_count += 1
             self._episode_done = True
             rospy.logerr("\nDouble Escape Succeed!\n")
         else:
             self.reward = -0.
             self.status = "trapped"
             self._episode_done = False
-            rospy.loginfo("Loggers are trapped in the cell...")
-        rospy.logdebug("Stepwise Reward Computed ===> {}".format(self.reward))
+            rospy.loginfo("The log is trapped in the cell...")
+        rospy.logdebug("Stepwise Reward: {}, Success Count: {}".format(self.reward, self.success_count))
         rospy.logdebug("End Computing Reward\n")
 
         return self.reward, self._episode_done

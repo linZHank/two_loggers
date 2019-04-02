@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-""" 
+"""
 Task environment for single logger escaping form the walled cell
 """
 
@@ -31,7 +31,7 @@ class SoloEscapeEnv(object):
     self._episode_done = False
     self.success_count = 0
     self.max_step = 1000
-    self.step = 0
+    self.steps = 0
     # init env info
     self.init_pose = np.zeros(3) # x, y, theta
     self.prev_pose = np.zeros(3)
@@ -67,26 +67,27 @@ class SoloEscapeEnv(object):
       self.pause()
     except rospy.ServiceException as e:
       rospy.logfatal("/gazebo/pause_physics service call failed")
-        
+
   def unpauseSim(self):
     rospy.wait_for_service("/gazebo/unpause_physics")
     try:
       self.unpause()
     except rospy.ServiceException as e:
       rospy.logfatal("/gazebo/unpause_physics service call failed")
-          
+
   def env_reset(self):
-    """ 
-    obs, info = env.reset() 
     """
-    rospy.logwarn("\nEnvironment Reset!!!\n")
-    self.reset_world()
+    obs, info = env.reset()
+    """
+    rospy.logdebug("\nStart Environment Reset")
     self._take_action(np.zeros(2))
+    self.reset_world()
     self._set_init()
     obs = self._get_observation()
     info = self._post_information()
-    self.step = 0
-    rospy.logdebug("Environment Reset Finished")
+    self.steps = 0
+    rospy.logdebug("End Environment Reset\n")
+    rospy.logwarn("\nEnvironment Reset!!!\n")
 
     return obs, info
 
@@ -94,27 +95,29 @@ class SoloEscapeEnv(object):
     """
     Manipulate the environment with an action
     """
+    rospy.logdebug("\nStart Environment Step")
     self._take_action(action)
     obs = self._get_observation()
     reward, done = self._compute_reward()
     info = self._post_information()
-    self.step += 1
+    self.steps += 1
+    rospy.logdebug("End Environment Step\n")
 
     return obs, reward, done, info
 
   def get_model_states(self):
     return self.model_states
-  
+
   def _set_init(self):
-    """ 
-    Set initial condition for simulation
-      Set Logger at a random pose inside cell by publishing /gazebo/set_model_state topic
-    Returns: 
-      init_position: array([x, y]) 
     """
-    rospy.logdebug("Start initializing robot....")
-    # set logger inside crib, away from crib edges
-    mag = random.uniform(0, 4) # robot vector magnitude
+    Set initial condition for simulation
+      Set Logger at a random pose inside cell
+    Returns:
+      init_position: array([x, y])
+    """
+    rospy.logdebug("\nStart Initializing Robot")
+    # set logger inside crib, using pole coordinate
+    mag = random.uniform(0, 4.5) # robot vector magnitude
     ang = random.uniform(-math.pi, math.pi) # robot vector orientation
     x = mag * math.cos(ang)
     y = mag * math.sin(ang)
@@ -129,47 +132,29 @@ class SoloEscapeEnv(object):
     robot_state.pose.orientation.y = 0
     robot_state.pose.orientation.z = math.sqrt(1 - w**2)
     robot_state.pose.orientation.w = w
-    robot_state.reference_frame = "world"  
+    robot_state.reference_frame = "world"
     self.init_pose = np.array([x, y, theta])
     self.curr_pose = self.init_pose
-    # set goal point using pole coordinate
-    for _ in range(10):
+    # Give the system a little time to finish initialization
+    for _ in range(8):
       self.set_robot_state_pub.publish(robot_state)
       self.rate.sleep()
     rospy.logwarn("Robot was set at {}".format(self.init_pose))
     # Episode cannot done
     self._episode_done = False
-    # Give the system a little time to finish initialization
-    rospy.logdebug("Logger Initialized @ ===> {}".format(robot_state))
+    rospy.logdebug("End Initializing Robot\n")
 
-  def _take_action(self, action):
-    """
-    Set linear and angular speed for logger to execute.
-    Args:
-      action: 2-d numpy array.
-    """
-    rospy.logdebug("Start Taking Action....")
-    cmd_vel = Twist()
-    cmd_vel.linear.x = action[0]
-    cmd_vel.angular.z = action[1]
-    for _ in range(10):
-      self.cmd_vel_pub.publish(cmd_vel)
-      self.rate.sleep()
-    self.action = action
-    rospy.logdebug("Action Taken ===> {}".format(cmd_vel))
-    
   def _get_observation(self):
     """
     Get observations from env
     Return:
       observation: [x, y, v_x, v_y, cos(yaw), sin(yaw), yaw_dot]
     """
-    rospy.logdebug("Start Getting Observation....")
+    rospy.logdebug("\nStart Getting Observation")
+    # update previous position
     self.prev_pose = self.curr_pose
     model_states = self._get_model_states() # refer to turtlebot_robot_env
-    # update previous position
-    rospy.logdebug("model_states: {}".format(model_states))
-    x = model_states.pose[-1].position.x # turtlebot was the last model in model_states
+    x = model_states.pose[-1].position.x # logger is the last model in model_states
     y = model_states.pose[-1].position.y
     v_x = model_states.twist[-1].linear.x
     v_y = model_states.twist[-1].linear.y
@@ -186,15 +171,33 @@ class SoloEscapeEnv(object):
     self.curr_pose = np.array([x, y, np.arctan2(sin_yaw,cos_yaw)])
     self.observation = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
     rospy.logdebug("Observation Get ==> {}".format(self.observation))
-    
+    rospy.logdebug("End Getting Observation\n")
+
     return self.observation
-    
+
+  def _take_action(self, action):
+    """
+    Set linear and angular speed for logger to execute.
+    Args:
+      action: np.array([v_lin, v_ang]).
+    """
+    rospy.logdebug("\nStart Taking Action")
+    cmd_vel = Twist()
+    cmd_vel.linear.x = action[0]
+    cmd_vel.angular.z = action[1]
+    for _ in range(10):
+      self.cmd_vel_pub.publish(cmd_vel)
+      self.rate.sleep()
+    self.action = action
+    rospy.logdebug("Action Taken ===> {}".format(cmd_vel))
+    rospy.logdebug("End Taking Action\n")
+
   def _compute_reward(self):
     """
     Return:
       reward: reward in current step
     """
-    rospy.logdebug("Start Computing Reward....")
+    rospy.logdebug("\nStart Computing Reward")
     if self.curr_pose[1] < -6:
       reward = self.success_reward
       self.success_count += 1
@@ -234,27 +237,31 @@ class SoloEscapeEnv(object):
     self.reward = reward
     rospy.logdebug("Stepwise Reward Computed ===> {}".format(reward))
     # check step size out of range
-    if self.step > self.max_step:
+    if self.steps > self.max_step:
       self._episode_done = True
-      rospy.logwarn("Logger is wandering over {} steps, env will reset...".format(self.step))
-    
-    return self.reward, self._episode_done 
+      rospy.logwarn("Logger is wandering over {} steps, env will reset...".format(self.steps))
+    rospy.logdebug("End Computing Reward\n")
+
+    return self.reward, self._episode_done
 
   def _post_information(self):
     """
     Return:
       info: {"init_pose", "curr_pose", "prev_pose"}
     """
-    rospy.logdebug("Start posting information of the task")
+    rospy.logdebug("\nStart Posting Information")
     self.info = {
       "initial_pose": self.init_pose,
       "current_pose": self.curr_pose,
       "previous_pose": self.prev_pose,
       "status": self.status
     }
-    rospy.logdebug("Information Posted ===> {}".format(self.info))
-    
+    rospy.logdebug("End Posting Information\n")
+
     return self.info
 
   def _model_states_callback(self, data):
     self.model_states = data
+
+  def _get_model_states(self):
+    return self.model_states
