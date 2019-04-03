@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 import sys
 sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/scripts/envs")
+
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -20,13 +21,14 @@ import time
 from datetime import datetime
 
 from solo_escape_task_env import SoloEscapeEnv
-import utils
+from utils import gen_utils, solo_utils
+from gen_utils import bcolors
 
-VERSION="2019-03-07" # make sure this is same as on line #3
 
+VERSION="2019-04-03" # make sure this is same as on line #3
 
-def train(agent, model_path,
-          dim_state=7, num_actions=3,
+def train(env, model_path,
+          dim_state=7, num_actions=3, actions=np.zeros((2,2))
           hidden_sizes=[64], learning_rate=1e-3,
           num_epochs=1000, batch_size=1e4,
           wall_bonus=False, door_bonus=False, distance_bonus=False):
@@ -47,7 +49,7 @@ def train(agent, model_path,
   sess = tf.Session()
   sess.run(tf.global_variables_initializer())
   saver = tf.train.Saver()
-  
+
   # for training policy
   def train_one_epoch():
     # make some empty lists for logging.
@@ -57,7 +59,7 @@ def train(agent, model_path,
     batch_returns = [] # for measuring episode returns
     batch_lengths = [] # for measuring episode lengths
     # reset episode-specific variables
-    state, _, = agent.env_reset() # first obs comes from starting distribution
+    obs, _, = env.reset() # first obs comes from starting distribution
     done, ep_rewards = False, []
     dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.0001]))
     episode = 1
@@ -74,7 +76,7 @@ def train(agent, model_path,
       else: # forward
         action = np.array([.5, 0.])
         rospy.logerr("Moving forward")
-      state, rew, done, info = agent.env_step(action)
+      obs, rew, done, info = env.step(action)
       # compute current distance to exit, and distance change
       dist = np.linalg.norm(state[:2]-np.array([0,-6.0001]))
       delta_dist = dist_0 - dist
@@ -118,21 +120,21 @@ def train(agent, model_path,
         # R(tau) is the weight of log(pi(a|s))
         batch_rtaus += [ep_return] * ep_length
         # reset
-        state, _, = agent.env_reset()
+        obs, _, = env.reset()
         done, ep_rewards = False, []
         episode += 1
         step = 1
         print(
-          utils.bcolors.OKGREEN, "batch_size limit: {}, current batch_lengths: {}".format(
+          gen_utils.bcolors.OKGREEN, "batch_size limit: {}, current batch_lengths: {}".format(
             batch_size,
             len(batch_states)
           ),
-          utils.bcolors.ENDC
+          gen_utils.bcolors.ENDC
         )
         # end policy sampling if batch size reached
         if len(batch_states) > batch_size:
           break
-            
+
     # take a single policy gradient update step
     batch_loss, _ = sess.run([loss, train_op],
                              feed_dict={
@@ -141,10 +143,10 @@ def train(agent, model_path,
                                rtaus_ph: np.array(batch_rtaus)
                              })
     return batch_loss, batch_returns, batch_lengths
-  
+
   # training loop
   episodic_returns = []
-  num_episodes = 0  
+  num_episodes = 0
   for epoch in range(num_epochs):
     batch_loss, batch_returns, batch_lengths = train_one_epoch()
     episodic_returns += batch_returns
@@ -159,66 +161,64 @@ def train(agent, model_path,
     rospy.loginfo("Model saved in path : {}".format(save_path))
     rospy.logerr("Success Count: {}".format(agent.success_count))
   # plot returns and save figure
-  utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=model_path)  
+  utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=model_path)
 
 if __name__ == "__main__":
-  # make arg parser
-  parser = argparse.ArgumentParser()
-  parser.add_argument("--model_path", type=str,
-                      default="/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
-  parser.add_argument("--hidden_sizes", type=int, default=64)
-  parser.add_argument("--learning_rate", type=float, default=1e-3)
-  parser.add_argument("--num_epochs", type=int, default=400)
-  parser.add_argument("--batch_size", type=int, default=1e4)
-  parser.add_argument("--wall_bonus", type=bool, default=False)
-  parser.add_argument("--door_bonus", type=bool, default=False)
-  parser.add_argument("--distance_bonus", type=bool, default=False)
-  args = parser.parse_args()
+    # make arg parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model_path", type=str,
+    default="/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
+    parser.add_argument("--hidden_sizes", type=int, default=64)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
+    parser.add_argument("--num_epochs", type=int, default=400)
+    parser.add_argument("--batch_size", type=int, default=1e4)
+    parser.add_argument("--wall_bonus", type=bool, default=False)
+    parser.add_argument("--door_bonus", type=bool, default=False)
+    parser.add_argument("--distance_bonus", type=bool, default=False)
+    args = parser.parse_args()
 
-  # Main really starts here
-  start_time = time.time()
-  rospy.init_node("solo_escape_vpg", anonymous=True, log_level=rospy.INFO)
-  # make an instance from env class
-  escaper = SoloEscapeEnv()
-  statespace_dim = 7 # x, y, x_dot, y_dot, cos_theta, sin_theta, theta_dot
-  actionspace_dim = 2
-  # train
-  train(
-    agent=escaper, model_path=args.model_path,
-    dim_state=statespace_dim, num_actions=actionspace_dim,
-    hidden_sizes=[args.hidden_sizes], learning_rate=args.learning_rate,
-    num_epochs=args.num_epochs, batch_size=args.batch_size,
-    wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, distance_bonus=args.distance_bonus
-  )
-  # time
-  end_time = time.time()
-  training_time = end_time - start_time
+    # Main really starts here
+    start_time = time.time()
+    rospy.init_node("solo_escape_vpg", anonymous=True, log_level=rospy.INFO)
+    # make an instance from env class
+    env = SoloEscapeEnv()
+    env.reset()
+    dim_state = len(solo_utils.obs_to_state(env.observation))
+    actions = np.array([np.array([.5, -1]), np.array([.5, 1])])
+    num_actions = len(actions)
+statespace_
+    # train
+    train(
+        env=env, model_path=args.model_path,
+        dim_state=dim_state, num_actions=num_actions, actions=actions,
+        hidden_sizes=[args.hidden_sizes], learning_rate=args.learning_rate,
+        num_epochs=args.num_epochs, batch_size=args.batch_size,
+        wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, distance_bonus=args.distance_bonus
+    )
+    # time
+    end_time = time.time()
+    training_time = end_time - start_time
 
-  # Main actually ends here
-  # store hyper parameters
-  hyp_params = {
-    "statespace_dim": statespace_dim,
-    "actionspace_dim": actionspace_dim,
-    "hidden_sizes": args.hidden_sizes,
-    "learning_rate": args.learning_rate,
-    "num_epochs": args.num_epochs,
-    "batch_size": args.batch_size
-  }               
-  # store training information
-  train_info = hyp_params
-  train_info["version"]=VERSION
-  train_info["success_count"] = escaper.success_count
-  train_info["training_time"] = training_time
-  train_info["wall_bonus"] = args.wall_bonus
-  train_info["door_bonus"] = args.door_bonus
-  train_info["distance_bonus"] = args.distance_bonus
+    # Main actually ends here
+    # store hyper parameters
+    hyp_params = {
+        "statespace_dim": dim_state,
+        "num_actions": num_action,
+        "hidden_sizes": args.hidden_sizes,
+        "learning_rate": args.learning_rate,
+        "num_epochs": args.num_epochs,
+        "batch_size": args.batch_size
+    }
+    # store training information
+    train_info = hyp_params
+    train_info["version"]=VERSION
+    train_info["success_count"] = env.success_count
+    train_info["training_time"] = training_time
+    train_info["wall_bonus"] = args.wall_bonus
+    train_info["door_bonus"] = args.door_bonus
+    train_info["distance_bonus"] = args.distance_bonus
 
-  # save hyper-parameters
-  utils.save_pkl(fname="hyper_parameters.pkl",
-             path=args.model_path,
-             content=hyp_params)
-  # save results
-  utils.save_csv(fname="results.csv",
-                 path=args.model_path,
-                 content=train_info)
-  
+    # save hyper-parameters
+    gen_utils.save_pkl(content=hyp_params, path=args.model_path, fname="hyper_parameters.pkl")
+    # save results
+    gen_utils.save_csv(content=train_info, path=args.model_path, fname="results.csv")
