@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-
 """
-Task environment for two loggers escaping from the walled cell
+Task environment for two loggers escaping from the walled cell, cooperatively.
 """
 from __future__ import absolute_import, division, print_function
 
@@ -17,7 +16,8 @@ from geometry_msgs.msg import Pose, Twist
 
 
 class DoubleEscapeEnv(object):
-    """ Task environment for a single logger escape from a walled cell
+    """
+    DoubleEscape Class
     """
     def __init__(self):
         # init simulation parameters
@@ -34,16 +34,17 @@ class DoubleEscapeEnv(object):
                 pose=Pose(),
                 twist=Twist())
         )
-        # self.action_0 = np.zeros(2)
-        # self.action_1 = np.zeros(2)
+        self.action_0 = np.zeros(2)
+        self.action_1 = np.zeros(2)
+        self.info = dict(status="")
         self.reward = 0
         self._episode_done = False
         self.success_count = 0
         self.max_step = 2000
         self.steps = 0
-        # init env info
-        self.init_pose = np.zeros(3) # x, y, theta
         self.status = "trapped"
+        self.model_states = ModelStates()
+        self.link_states = LinkStates()
         # init services
         self.reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
         self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
@@ -107,8 +108,8 @@ class DoubleEscapeEnv(object):
         """
         rospy.logdebug("\nStart Initializing Robots")
         # set model initial pose using pole coordinate
-        mag = random.uniform(0, 3.6) # robot vector magnitude
-        ang = random.uniform(-math.pi, math.pi) # robot vector orientation
+        mag = random.uniform(0, 3.6) # model vector magnitude
+        ang = random.uniform(-math.pi, math.pi) # model vector orientation
         x = mag * math.cos(ang)
         y = mag * math.sin(ang)
         w = random.uniform(-1.0, 1.0)
@@ -117,7 +118,7 @@ class DoubleEscapeEnv(object):
         model_state.model_name = "two_loggers"
         model_state.pose.position.x = x
         model_state.pose.position.y = y
-        model_state.pose.position.z = 0.2
+        model_state.pose.position.z = 0.25
         model_state.pose.orientation.x = 0
         model_state.pose.orientation.y = 0
         model_state.pose.orientation.z = math.sqrt(1 - w**2)
@@ -129,11 +130,12 @@ class DoubleEscapeEnv(object):
         # give the system a little time to finish initialization
         for _ in range(10):
             self.set_model_state_pub.publish(model_state)
-            self._take_action(np.array([0,spin_vel_0]), np.array([0,spin_vel_1]))
             self.rate.sleep()
+        # spin robots randomly then stop 'em
+        self._take_action(np.array([0,spin_vel_0]), np.array([0,spin_vel_1]))
         self._take_action(np.zeros(2), np.zeros(2)) # stop spinning
         rospy.logwarn("two_loggers were initialized at {}".format(model_state))
-        # Episode cannot done
+        # episode should not be done
         self._episode_done = False
         rospy.logdebug("End Initializing Robots\n")
 
@@ -173,11 +175,9 @@ class DoubleEscapeEnv(object):
         """
         Set linear and angular speed for logger_0 and logger_1 to execute.
         Args:
-            action: 2x np.array([v_lin,v_ang]).
+            action: 2 x np.array([v_lin,v_ang]).
         """
         rospy.logdebug("\nStart Taking Actions")
-        self.action_0 = action_0
-        self.action_1 = action_1
         cmd_vel_0 = Twist()
         cmd_vel_0.linear.x = action_0[0]
         cmd_vel_0.angular.z = action_0[1]
@@ -188,6 +188,8 @@ class DoubleEscapeEnv(object):
             self.cmdvel0_pub.publish(cmd_vel_0)
             self.cmdvel1_pub.publish(cmd_vel_1)
             self.rate.sleep()
+        self.action_0 = action_0
+        self.action_1 = action_1
         rospy.logdebug("\nlogger_0 take action ===> {}\nlogger_1 take action ===> {}".format(cmd_vel_0, cmd_vel_1))
         rospy.logdebug("End Taking Actions\n")
 
@@ -208,6 +210,10 @@ class DoubleEscapeEnv(object):
             self._episode_done = False
             rospy.loginfo("The log is trapped in the cell...")
         rospy.logdebug("Stepwise Reward: {}, Success Count: {}".format(self.reward, self.success_count))
+        # check if steps out of range
+        if self.steps > self.max_step:
+            self._episode_done = True
+            rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.steps))
         rospy.logdebug("End Computing Reward\n")
 
         return self.reward, self._episode_done
@@ -218,9 +224,7 @@ class DoubleEscapeEnv(object):
             info: {"init_pose", "curr_pose", "prev_pose"}
         """
         rospy.logdebug("\nStart Posting Information")
-        self.info = {
-            "status": self.status
-        }
+        self.info["status"] = self.status
         rospy.logdebug("End Posting Information\n")
 
         return self.info

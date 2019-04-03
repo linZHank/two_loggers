@@ -17,7 +17,7 @@ from double_escape_task_env import DoubleEscapeEnv
 
 if __name__ == "__main__":
     num_episodes = 10
-    num_steps = 8
+    num_steps = 4
     rospy.init_node("double_escape_env_test" , anonymous=True, log_level=rospy.DEBUG)
 
     escaper = DoubleEscapeEnv()

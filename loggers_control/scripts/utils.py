@@ -22,13 +22,13 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-    
+
 # bonus functions 0301
 # def wallBonusDividedNumsteps(num_steps): return -1./num_steps # bonus for every time step
 # def weightedD0(weight,d0,amplifier): return weight*d0*amplifier # bonus for initial distance
 # def d0MinusD(d0,d,num_steps): return (d0-d)/num_steps # bonus of approaching the exit
 # bonus functions 0303
-def bonus_func(n_steps): return 1./n_steps # basic bonus 
+def bonus_func(n_steps): return 1./n_steps # basic bonus
 
 def mlp(x, sizes, activation=tf.tanh, output_activation=None):
   # Build a feedforward neural network.
@@ -102,3 +102,48 @@ def plot_returns(returns, mode, save_flag, path):
   else:
     plt.show()
   plt.close(fig)
+
+def obs_to_state(observation):
+    pass
+      # x = model_states.pose[-1].position.x
+      # y = model_states.pose[-1].position.y
+      # v_x = model_states.twist[-1].linear.x
+      # v_y = model_states.twist[-1].linear.y
+      # quat = (
+      #   model_states.pose[-1].orientation.x,
+      #   model_states.pose[-1].orientation.y,
+      #   model_states.pose[-1].orientation.z,
+      #   model_states.pose[-1].orientation.w
+      # )
+      # euler = tf.transformations.euler_from_quaternion(quat)
+      # cos_yaw = math.cos(euler[2])
+      # sin_yaw = math.sin(euler[2])
+      # yaw_dot = model_states.twist[-1].angular.z
+
+def judge_robot(observation):
+    pass
+    # if self.curr_pose[0] > 4.79:
+    #     reward = -0.
+    #     self.status = "east"
+    #     self._episode_done = True
+    #     rospy.logwarn("Logger is too close to east wall!")
+    # elif self.curr_pose[0] < -4.79:
+    #     reward = -0.
+    #     self.status = "west"
+    #     self._episode_done = True
+    #     rospy.logwarn("Logger is too close to west wall!")
+    # elif self.curr_pose[1] > 4.79:
+    #     reward = -0.
+    #     self.status = "north"
+    #     self._episode_done = True
+    #     rospy.logwarn("Logger is too close to north wall!")
+    # elif self.curr_pose[1]<=-4.79 and np.absolute(self.curr_pose[0])>1 :
+    #     reward = -0.
+    #     self.status = "south"
+    #     self._episode_done = True
+    #     rospy.logwarn("Logger is too close to south wall!")
+    # elif -6<self.curr_pose[1]<-4.79 and np.absolute(self.curr_pose[0])>0.79:
+    #     reward = 0.
+    #     self.status = "door"
+    #     self._episode_done = True
+    #     rospy.logwarn("Logger is stuck at the door!")

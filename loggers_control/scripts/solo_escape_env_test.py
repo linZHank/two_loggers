@@ -21,11 +21,11 @@ if __name__ == "__main__":
 
   escaper = SoloEscapeEnv()
   for ep in range(num_episodes):
-    obs, info = escaper.env_reset()
+    obs, info = escaper.reset()
     rospy.loginfo("Logger was reset with observation: {} \nwith information: {}".format(obs, info))
     for st in range(num_steps):
       action = np.random.randn(2)
-      obs, rew, done, info = escaper.env_step(action)
+      obs, rew, done, info = escaper.step(action)
       rospy.loginfo("Episode: {}, Step: {}, action: {}".format(ep, st, action))
 
   # rospy.spin()
