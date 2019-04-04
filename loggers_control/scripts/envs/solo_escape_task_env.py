@@ -190,9 +190,27 @@ class SoloEscapeEnv(object):
     def _post_information(self):
         """
         Return:
-          info: {"init_pose", "curr_pose", "prev_pose"}
+            info: {"status": "where the robot at"}
         """
         rospy.logdebug("\nStart Posting Information")
+        if self.observation["pose"].position.x > 4.79:
+            self.status = "east"
+        elif self.observation["pose"].position.x < -4.79:
+            self.status = "west"
+        elif self.observation["pose"].position.y > 4.79:
+            self.status = "north"
+        elif self.observation["pose"].position.y < -4.79:
+            if np.absolute(self.observation["pose"].position.x) > 1:
+                self.status = "south"
+            else:
+                if np.absolute(self.observation["pose"].position.x) > 0.79:
+                    self.status = "sdoor" # stuck at door
+                else:
+                    self.status = "tdoor" # through door
+        elif self.observation["pose"].position.y < -6:
+            self.status = "escaped"
+        else:
+            self.status = "trapped"
         self.info["status"] = self.status
         rospy.logdebug("End Posting Information\n")
 
