@@ -157,7 +157,7 @@ echo "source ~/ros_ws/devel/setup.bash" >> ~/.bashrc
     rosrun loggers_control two_loggers_test.py
     ```
 # Install TensorFlow
-To save time, you want to install TensorFlow using pip that is compatible with Python 2.7 (ROS-Kinetic not supports Python 3.x). Refer to the [TensorFlow official guide](https://www.tensorflow.org/install) for more installation options.
+To save time, you want to install TensorFlow using [pip package manager](https://pip.pypa.io/en/stable/) that is compatible with [Python 2.7](https://www.python.org/) (ROS-Kinetic not supports Python 3.x). Refer to the [TensorFlow official guide](https://www.tensorflow.org/install/) for more installation options.
 ```bash
 sudo apt update
 sudo apt install python-dev python-pip
