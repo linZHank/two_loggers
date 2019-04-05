@@ -9,7 +9,7 @@
 
 ## Step-1. Check BIOS Mode
 Search "System Information" in the search bar and open it. Make sure in `System Summary`, for `Item` `BIOS Mode` its corresponding `Value` is `UEFI`. \\
-![sys_info](https://github.com/linZHank/two_loggers/raw/master/Docs/images/sys_info.png)
+![sys_info](https://github.com/linZHank/two_loggers/blob/master/Docs/images/sys_info.PNG)
 
 > If `Value` is `Legacy`, please refer [this guide](https://docs.microsoft.com/zh-cn/windows/deployment/mbr-to-gpt) to switch the disk partition style from MBR to GPT.
 - Right click `Win` button on bottom left, select `Disk Manager`, make sure *Window* is installed on Disk 0. If on other disk, you'll have to change the disk index accordingly.
@@ -52,7 +52,8 @@ MBR2GPT: Fixing drive letter mapping
 MBR2GPT: Conversion completed successfully
 MBR2GPT: Before the new system can boot properly you need to switch the firmware to boot to UEFI mode!
 ```
-- Reboot your computer. Now, your *Windows* is on a GPT disk, and your BIOS mode should be `UEFI`.  
+- Reboot your computer. Now, your *Windows* is on a GPT disk, and your BIOS mode should be `UEFI`.
+
 # Create Ubuntu16.04 Installation USB Drive
 
 # Install Ubuntu16.04
