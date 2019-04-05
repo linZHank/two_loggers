@@ -3,7 +3,13 @@
 - Create Ubuntu16.04 Installation USB Drive
 - Install Ubuntu16.04
 - Install ROS
+- Build `two_loggers`
 - Install TensorFlow
+
+![ubuntu_logo](https://github.com/linZHank/two_loggers/blob/master/Docs/images/ubuntu_logo.png)
+![ros_logo](https://github.com/linZHank/two_loggers/blob/master/Docs/images/ros_logo.png)
+![gazebo_logo](https://github.com/linZHank/two_loggers/blob/master/Docs/images/gazebo_logo.png)
+![tf_logo](https://github.com/linZHank/two_loggers/blob/master/Docs/images/tf_logo.jpg)
 
 # Prepare WIN10
 Assume you are going to dual boot ***Ubuntu 16.04*** alonside your ***Windows 10***
