@@ -6,7 +6,7 @@
 - Install TensorFlow
 
 # Prepare WIN10
-Assume you are going to dual boot ***Ubuntu*** alonside your ***Windows***
+Assume you are going to dual boot ***Ubuntu 16.04*** alonside your ***Windows 10***
 
 ## Step-1. Check BIOS Mode
 Search "System Information" in the search bar and open it. Make sure in `System Summary`, for `Item` `BIOS Mode` its corresponding `Value` is `UEFI`.
@@ -62,20 +62,20 @@ MBR2GPT: Before the new system can boot properly you need to switch the firmware
 > recommend: at least 50000 (~50G)
 ![shrink_disk](https://github.com/linZHank/two_loggers/blob/master/Docs/images/shrink_disk.PNG)
 
-# Create Ubuntu16.04 Installation USB Drive
-Refer to [Create a bootable USB stick on Windows](https://tutorials.ubuntu.com/tutorial/tutorial-create-a-usb-stick-on-windows#0). Note: make sure you download the [Ubuntu 16.04 desktop image](http://releases.ubuntu.com/16.04/)
 
 # Install Ubuntu 16.04
-Insert the just created Ubuntu bootable USB drive and reboot.
 
-## Step-1 BIOS Settings
-A few things you'll have to make sure.
+## Step-1 Create Ubuntu16.04 Installation USB Drive
+Refer to [Create a bootable USB stick on Windows](https://tutorials.ubuntu.com/tutorial/tutorial-create-a-usb-stick-on-windows#0). Note: make sure you download the [Ubuntu 16.04 desktop image](http://releases.ubuntu.com/16.04/)
+
+## Step-2 BIOS Settings
+Insert the just created Ubuntu bootable USB drive and reboot. A few things you'll have to make sure in your BIOS (press F-2 when computer startup).
     1. The storage option should be **AHCI** instead of ~~RAID~~.
     2. **Disable** the option of "fast boot".
     3. Set your system to boot up from **USB Drive**
     4. **Save and Exit**
 
-## Step-2 Install Ubuntu from USB
+## Step-3 Install Ubuntu from USB
 - A (purplish) screen will show up if successfully boot up from USB. This interface is called **GRUB**, and in this grub you'll have 4 options (`Try Ubuntu without installing`; `Install Ubuntu`; `OEM install (for manufacturers)`; `Check disc for defects`)
 - Select first option: **Try Ubuntu without installing**. This should brings you to the Ubuntu tryout interface (It looks exactly the same as the installed one).
 ![try_ubuntu](https://github.com/linZHank/two_loggers/blob/master/Docs/images/try_ubuntu.PNG)
@@ -83,7 +83,7 @@ A few things you'll have to make sure.
 - "Continue" -\> "**don't** download update, **don't** install 3rd party software" -\> "Continue"
 - Make sure the first option is exactly **Install Ubuntu alongside Windows Boot Manager**. If not, go back to beginning of this guide and make sure your boot disk has been switched to GPT format.
 - "Continue" all the way till end of installation.
-- Reboot and you are all set for a dual-boot(***Ubuntu*** and ***Windows***) machine. 
+- Reboot and you are all set for a dual-boot(***Ubuntu*** and ***Windows***) machine.
 
 # Install ROS
 
