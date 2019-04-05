@@ -78,13 +78,82 @@ Insert the just created Ubuntu bootable USB drive and reboot. A few things you'l
 ## Step-3 Install Ubuntu from USB
 - A (purplish) screen will show up if successfully boot up from USB. This interface is called **GRUB**, and in this grub you'll have 4 options (`Try Ubuntu without installing`; `Install Ubuntu`; `OEM install (for manufacturers)`; `Check disc for defects`)
 - Select first option: **Try Ubuntu without installing**. This should brings you to the Ubuntu tryout interface (It looks exactly the same as the installed one).
-![try_ubuntu](https://github.com/linZHank/two_loggers/blob/master/Docs/images/try_ubuntu.PNG)
+![try_ubuntu](https://github.com/linZHank/two_loggers/blob/master/Docs/images/try_ubuntu.png)
 - Double click the only icon on desktop to **Install Ubuntu 16.04LTS**
 - "Continue" -\> "**don't** download update, **don't** install 3rd party software" -\> "Continue"
 - Make sure the first option is exactly **Install Ubuntu alongside Windows Boot Manager**. If not, go back to beginning of this guide and make sure your boot disk has been switched to GPT format.
 - "Continue" all the way till end of installation.
-- Reboot and you are all set for a dual-boot(***Ubuntu*** and ***Windows***) machine.
+- Reboot and you are all set with a dual-boot(***Ubuntu*** and ***Windows***) machine.
 
 # Install ROS
+Go to official [ROS](http://www.ros.org/) site for a full [installation guide](http://wiki.ros.org/kinetic/Installation/Ubuntu). One thing you should've notice: ROS version is strictly associate with Ubuntu version. So, in our case under Ubuntu 16.04, we must install **ROS-Kinetic**. The following steps are tailored to be a shorter guide of installing ROS
 
+## Step-1 Desktop-full Installtion
+Open a terminal by `Ctrl` `Alt` `t`
+1. Setup your sources.list
+    ```bash
+    sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+    ```
+2. Setup your keys
+    ```bash
+    sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116
+    ```
+3. Installation
+    ```bash
+    sudo apt-get update
+    sudo apt-get install ros-kinetic-desktop-full
+    ```
+
+## Step-2 After Installation
+1. Initialize rosdep
+    ```bash
+    sudo rosdep init
+    rosdep update
+    ```
+2. Environment setup
+    ```bash
+    echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc
+    ```
+    **Note**: a substitution way of doing this is open `~/.bashrc` with your favorite text editor (gedit, atom, emacs, vim, etc.). Scroll down to the end of this file and add this line `source /opt/ros/kinetic/setup.bash`.
+
+# Build `two_loggers`
+## Step-1 (Optional) Install catkin-command-line-tools
+```bash
+sudo apt install python-catkin-tools
+```
+## Step-2 Create a ROS workspace
+```bash
+mkdir -p ~/ros_ws/src
+cd ~/ros_ws
+catkin init
+```
+## Step-3 Build packages in *this repo*
+```bash
+cd ~/ros_ws/src
+git clone https://github.com/linZHank/two_loggers.git
+cd ~/ros_ws
+catkin build
+echo "source ~/ros_ws/devel/setup.bash" >> ~/.bashrc
+```
+> You can substitute `catkin build` with `catkin_make` if you use original *catkin_make* tool to build ros packages.
+
+## Step-4 Verify Your Build
+1. Verify single logger control
+    Open a new terminal
+    ```bash
+    roslaunch loggers_control single_logger_control.launch
+    ```
+    Open another terminal
+    ```bash
+    rosrun loggers_control single_logger_test.py
+    ```
+2. Verify two loggers control
+    Open a new terminal
+    ```bash
+    roslaunch loggers_control two_loggers_control.launch
+    ```
+    Open another terminal
+    ```bash
+    rosrun loggers_control two_loggers_test.py
+    ```
 # Install TensorFlow
