@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division, print_function
 
 import sys
-sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/scripts/envs")
+sys.path.insert(0, "~/ros_ws/src/two_loggers/loggers_control/scripts/envs")
 
 import numpy as np
 import math
