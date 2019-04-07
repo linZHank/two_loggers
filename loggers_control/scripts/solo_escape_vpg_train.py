@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 """
-Version: 2019-03-07
-Model based control for turtlebot with vanilla policy gradient in crib environment
-Navigate towards preset goal
+Version: 2019-04-07
+Model free on policy control for logger robot with vanilla policy gradient in wall-celled environment
+Navigate to escape from the only exit
 Author: LinZHanK (linzhank@gmail.com)
 Inspired by: https://github.com/openai/spinningup/blob/master/spinup/examples/pg_math/1_simple_pg.py
 """
@@ -25,7 +25,7 @@ import gen_utils, solo_utils, tf_utils
 from gen_utils import bcolors
 
 
-VERSION="2019-04-04" # make sure this is same as on line #3
+VERSION="2019-04-07" # make sure this is same as on line #3
 
 def train(env, model_path,
           dim_state=7, num_actions=3, actions=np.zeros((2,2)),
