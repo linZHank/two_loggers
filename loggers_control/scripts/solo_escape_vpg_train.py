@@ -150,7 +150,7 @@ if __name__ == "__main__":
     # make arg parser
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str,
-    default="/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
+    default="/home/piofagivens/ros_ws/src/two_loggers/loggers_control/vpg_model-"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
     parser.add_argument("--hidden_sizes", type=int, default=64)
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--num_epochs", type=int, default=400)
