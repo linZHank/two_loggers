@@ -138,6 +138,25 @@ class SoloEscapeEnv(object):
         id_logger = model_states.name.index("logger")
         self.observation["pose"] = model_states.pose[id_logger]
         self.observation["twist"] = model_states.twist[id_logger]
+        # compute status
+        if self.observation["pose"].position.x > 4.79:
+            self.status = "east"
+        elif self.observation["pose"].position.x < -4.79:
+            self.status = "west"
+        elif self.observation["pose"].position.y > 4.79:
+            self.status = "north"
+        elif -6<=self.observation["pose"].position.y < -4.79:
+            if np.absolute(self.observation["pose"].position.x) > 1:
+                self.status = "south"
+            else:
+                if np.absolute(self.observation["pose"].position.x) > 0.79:
+                    self.status = "sdoor" # stuck at door
+                else:
+                    self.status = "tdoor" # through door
+        elif self.observation["pose"].position.y < -6:
+            self.status = "escaped"
+        else:
+            self.status = "trapped"
         rospy.logdebug("Observation Get ==> {}".format(self.observation))
         rospy.logdebug("End Getting Observation\n")
 
@@ -167,14 +186,12 @@ class SoloEscapeEnv(object):
         """
         rospy.logdebug("\nStart Computing Reward")
         # status
-        if self.observation["pose"].position.y < -6:
-            self.status = "escaped"
+        if self.status == "escaped":
             self.reward = 1
             self.success_count += 1
             self._episode_done = True
             rospy.logerr("\n!!!\nLogger Escaped !\n!!!")
         else:
-            self.status = "trapped"
             self.reward = -0.
             self._episode_done = False
             rospy.loginfo("\nLogger is trapped\n!!!")
@@ -193,24 +210,7 @@ class SoloEscapeEnv(object):
             info: {"status": "where the robot at"}
         """
         rospy.logdebug("\nStart Posting Information")
-        if self.observation["pose"].position.x > 4.79:
-            self.status = "east"
-        elif self.observation["pose"].position.x < -4.79:
-            self.status = "west"
-        elif self.observation["pose"].position.y > 4.79:
-            self.status = "north"
-        elif self.observation["pose"].position.y < -4.79:
-            if np.absolute(self.observation["pose"].position.x) > 1:
-                self.status = "south"
-            else:
-                if np.absolute(self.observation["pose"].position.x) > 0.79:
-                    self.status = "sdoor" # stuck at door
-                else:
-                    self.status = "tdoor" # through door
-        elif self.observation["pose"].position.y < -6:
-            self.status = "escaped"
-        else:
-            self.status = "trapped"
+
         self.info["status"] = self.status
         rospy.logdebug("End Posting Information\n")
 

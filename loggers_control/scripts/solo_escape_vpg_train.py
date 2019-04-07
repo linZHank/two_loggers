@@ -9,8 +9,8 @@ Inspired by: https://github.com/openai/spinningup/blob/master/spinup/examples/pg
 from __future__ import absolute_import, division, print_function
 
 import sys
-sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/scripts/envs")
-sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/scripts/utils")
+sys.path.insert(0, "/home/piofagivens/ros_ws/src/two_loggers/loggers_control/scripts/envs")
+sys.path.insert(0, "/home/piofagivens/ros_ws/src/two_loggers/loggers_control/scripts/utils")
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -102,7 +102,7 @@ def train(env, model_path,
                 # R(tau) is the weight of log(pi(a|s))
                 batch_rtaus += [ep_return] * ep_length
                 # reset
-                obs, _, = env.reset()
+                obs, _ = env.reset()
                 done, ep_rewards = False, []
                 state = solo_utils.obs_to_state(obs)
                 episode += 1

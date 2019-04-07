@@ -48,13 +48,14 @@ def obs_to_state(observation):
 
 def adjust_reward(rew, info, delta_d,
                   wall_bonus_flag, door_bonus_flag, dist_bonus_flag):
+    adj_reward = rew
     if info["status"] == "escaped":
         adj_reward = 10*rew
         done = True
     elif info["status"] == "sdoor":
         if door_bonus_flag:
             adj_reward = 1./100
-            done = True
+        done = True
     elif info["status"] == "tdoor":
         if door_bonus_flag:
             adj_reward = 1./100
@@ -69,6 +70,6 @@ def adjust_reward(rew, info, delta_d,
     else:
         if wall_bonus_flag:
             adj_reward = -1./1e2
-            done = True
+        done = True
 
     return adj_reward, done
