@@ -58,7 +58,8 @@ Hat is the link on the top of our logger robot. Hat link is a cylinder with radi
     <xacro:property name="R_HAT" value="0.02"/>
     <xacro:property name="L_HAT" value="0.1"/>
     <xacro:property name="M_HAT" value="0.5"/>
-    ```    
+    ```
+
 A link in *urdf* requires 3 major components: `visual`, `collision` and `inertial`.
 >For common shapes, the inertia tensor can be found at [List of moments of inertia](https://en.wikipedia.org/wiki/List_of_moments_of_inertia).
 
