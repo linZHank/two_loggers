@@ -1,10 +1,13 @@
 # Create URDF Model for Logger Robot
 **Please make sure your system is successfully set up following the [system setup guide](https://github.com/linZHank/two_loggers/blob/master/Docs/system_setup.md)**
 
-URDF is a file format which enables visualization of robots' model in [Rviz](http://wiki.ros.org/rviz) or [Gazebo](http://gazebosim.org/). Rviz is a GUI interface of viewing all kinds of ROS related things, mostly the topics. Gazebo is an open sourced dynamic simulation software. Both Rviz and Gazebo should be installed if you installed `desktop-full` version of ROS. Because there exist plenty of Gazebo plugins for ROS, it is very very common for people who are interested in robotics simulation in ROS ecosystem.
-> **Note:** there are two kinds of model file formats for Gazebo: ***sdf*** and ***urdf***. If you are not familiar with C++ and do not want to write your own gazebo plugins for ROS, then stick to the ***urdf***.
+URDF is a file format which enables visualization of robots' model in [Rviz](http://wiki.ros.org/rviz) or [Gazebo](http://gazebosim.org/). Rviz is a GUI interface of viewing all kinds of ROS related things, mostly the topics. Gazebo is an open sourced dynamic simulation software. Both Rviz and Gazebo should have been installed if you installed `desktop-full` version of ROS.
 
-In the rest of this tutorial, I will walk through some basic steps of creating a urdf model for the single logger robot in this repo.
+## Why Gazebo
+To be honest, I don't know why most people are using Gazebo for their robot simulations. It seems Gazebo has plenty of plugins for ROS, which makes manipulating with Gazebo simulated robots within ROS ecosystem much easier.
+
+## URDF vs SDF
+There are two kinds of file formats for Gazebo models: ***sdf*** and ***urdf***. I and many people I know have been spending a while to struggle with using ***sdf*** or ***urdf***. In short, **urdf** for your robot, **sdf** for your environment. For those who are familiar with C++ and willing to get hands dirty to write customized ROS plugins, **sdf** is OK for covering all the things. In this tutorial, I am going to show you how to simulate a mobile robot with **urdf** format.
 
 ## Create a ROS Package
 > Let's assume you are using [catkin-command-line-tools](https://catkin-tools.readthedocs.io/en/latest/)
