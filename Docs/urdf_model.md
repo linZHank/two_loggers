@@ -18,12 +18,11 @@ A robot model is always created follow a *link-joint-link* manner. You can also 
     ```console
     cd ~/ros_ws/src
     ```
-2. Create a ROS package. You can understand a ROS package
-as a folder tailored for ROS. You'll store your robots' urdf file in this package.
+2. Create a ROS package. You can understand a ROS package as a folder tailored for ROS. You'll store your robots' urdf file in this package.
     ```console
     catkin create pkg loggers_description
     ```
-> If you are using original `catkin_create_pkg`, please refer to the [Creating Package Tutorial](http://wiki.ros.org/ROS/Tutorials/CreatingPackage)
+    > If you are using original `catkin_create_pkg`, please refer to the [Creating Package Tutorial](http://wiki.ros.org/ROS/Tutorials/CreatingPackage)
 
 3. Create a folder for storing your URDF
     ```console
@@ -53,37 +52,37 @@ as a folder tailored for ROS. You'll store your robots' urdf file in this packag
 
 ## Create the Hat
 Hat is the link on the top of our logger robot. Hat link is a cylinder with radius of 0.02m, length of 0.1m and mass of 0.5kg. For the sake of the convenience, we can define these properties right after the header.
-    ```xml
-    <!-- properties of link_hat -->
-    <xacro:property name="R_HAT" value="0.02"/>
-    <xacro:property name="L_HAT" value="0.1"/>
-    <xacro:property name="M_HAT" value="0.5"/>
-    ```
+```xml
+<!-- properties of link_hat -->
+<xacro:property name="R_HAT" value="0.02"/>
+<xacro:property name="L_HAT" value="0.1"/>
+<xacro:property name="M_HAT" value="0.5"/>
+```
 
 A link in *urdf* requires 3 major components: `visual`, `collision` and `inertial`.
->For common shapes, the inertia tensor can be found at [List of moments of inertia](https://en.wikipedia.org/wiki/List_of_moments_of_inertia).
+> For common shapes, the inertia tensor can be found at [List of moments of inertia](https://en.wikipedia.org/wiki/List_of_moments_of_inertia).
 
-    ```xml
-    <link name="link_hat">
-        <visual>
-            <origin rpy="0 0 0" xyz="0 0 0"/>
-            <geometry>
-                <cylinder length="${L_HAT}" radius="${R_HAT}"/>
-            </geometry>
-        </visual>
-        <collision>
-            <origin rpy="0 0 0" xyz="0 0 0"/>
-            <geometry>
-                <cylinder length="${L_HAT}" radius="${R_HAT}"/>
-            </geometry>
-        </collision>
-        <inertial>
-            <mass value="${M_HAT}"/>
-            <origin rpy="0 0 0" xyz="0 0 0"/>
-            <inertia ixx="${1/12*M_HAT*(3*R_HAT*R_HAT+L_HAT*L_HAT)}" ixy="0" ixz="0" iyy="${1/12*M_HAT*(3*R_HAT*R_HAT+L_HAT*L_HAT)}" iyz="0" izz="${1/2*M_HAT*R_HAT*R_HAT}"/>
-        </inertial>
-    </link>
-    ```
+```xml
+<link name="link_hat">
+    <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+            <cylinder length="${L_HAT}" radius="${R_HAT}"/>
+        </geometry>
+    </visual>
+    <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+            <cylinder length="${L_HAT}" radius="${R_HAT}"/>
+        </geometry>
+    </collision>
+    <inertial>
+        <mass value="${M_HAT}"/>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <inertia ixx="${1/12*M_HAT*(3*R_HAT*R_HAT+L_HAT*L_HAT)}" ixy="0" ixz="0" iyy="${1/12*M_HAT*(3*R_HAT*R_HAT+L_HAT*L_HAT)}" iyz="0" izz="${1/2*M_HAT*R_HAT*R_HAT}"/>
+    </inertial>
+</link>
+```
 
 ## Create the Chassis
 
