@@ -9,8 +9,8 @@ Inspired by: https://github.com/openai/spinningup/blob/master/spinup/examples/pg
 from __future__ import absolute_import, division, print_function
 
 import sys
-sys.path.insert(0, "/home/piofagivens/ros_ws/src/two_loggers/loggers_control/scripts/envs")
-sys.path.insert(0, "/home/piofagivens/ros_ws/src/two_loggers/loggers_control/scripts/utils")
+sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/scripts/envs")
+sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/scripts/utils")
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     # make arg parser
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str,
-    default="/home/piofagivens/ros_ws/src/two_loggers/loggers_control/vpg_model-"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
+    default="/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
     parser.add_argument("--hidden_sizes", type=int, default=64)
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--num_epochs", type=int, default=400)
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     # store hyper parameters
     hyp_params = {
         "statespace_dim": dim_state,
-        "num_actions": num_action,
+        "num_actions": num_actions,
         "hidden_sizes": args.hidden_sizes,
         "learning_rate": args.learning_rate,
         "num_epochs": args.num_epochs,
