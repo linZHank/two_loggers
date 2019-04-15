@@ -77,7 +77,7 @@ def train(env, model_path,
             dist = np.linalg.norm(state[:2]-np.array([0,-6.0001]))
             delta_dist = dist_0 - dist
             # adjust reward based on relative distance to the exit
-            rew, done = solo_utils.adjust_reward(rew, info, delta_dist,
+            rew, done = solo_utils.adjust_reward(rew, info, delta_dist, done,
                                            wall_bonus_flag, door_bonus_flag, dist_bonus_flag)
             # save action_id, reward
             batch_actions.append(act_i)
