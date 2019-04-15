@@ -66,7 +66,6 @@ def adjust_reward(rew, info, delta_d,
                 adj_reward = -1./1e3 # negative, if getting further from exit
             else:
                 adj_reward = 1./1e4 # positive, if getting closer to exit
-        done = False
     else:
         if wall_bonus_flag:
             adj_reward = -1./1e2

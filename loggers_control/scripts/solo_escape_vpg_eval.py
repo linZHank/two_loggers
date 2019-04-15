@@ -38,7 +38,7 @@ if __name__ == "__main__":
   # num_spisodes and num_steps are different from training
   num_episodes = 10
   num_steps = 1024
-  # set tf 
+  # set tf
   states_ph = tf.placeholder(shape=(None, dim_state), dtype=tf.float32)
   logits = utils.mlp(states_ph, sizes=[hidden_sizes]+[num_actions])
   actions_id = tf.squeeze(tf.multinomial(logits=logits,num_samples=1), axis=1)
@@ -79,4 +79,3 @@ if __name__ == "__main__":
       ))
       if done:
         break
-
