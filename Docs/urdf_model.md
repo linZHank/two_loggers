@@ -1,7 +1,8 @@
 # Create URDF Model for Logger Robot
 **Please make sure your system is successfully set up following the [system setup guide](https://github.com/linZHank/two_loggers/blob/master/Docs/system_setup.md)**
 
-URDF is a file format which enables visualization of robots' model in [Rviz](http://wiki.ros.org/rviz) or [Gazebo](http://gazebosim.org/). Rviz is a GUI interface of viewing all kinds of ROS related things, mostly the topics. Gazebo is an open sourced dynamic simulation software. Both Rviz and Gazebo should have been installed if you installed `desktop-full` version of ROS. If more details of *urdf* is desired, please go through [Building a Visual Robot Model with URDF from Scratch](http://wiki.ros.org/urdf/Tutorials/Building%20a%20Visual%20Robot%20Model%20with%20URDF%20from%20Scratch).
+URDF is a file format which enables visualization of robots' model in [Rviz](http://wiki.ros.org/rviz) or [Gazebo](http://gazebosim.org/). Rviz is a GUI interface of viewing all kinds of ROS related things, mostly the topics. Gazebo is an open sourced dynamic simulation software. Both Rviz and Gazebo should have been installed if you installed `desktop-full` version of ROS. If more details of *urdf* is desired, please go through [Building a Visual Robot Model with URDF from Scratch](http://wiki.ros.org/urdf/Tutorials/Building%20a%20Visual%20Robot%20Model%20with%20URDF%20from%20Scratch). Our goal in this tutorial is using *urdf* to model a robot as shown below.
+![logger_robot](https://github.com/linZHank/two_loggers/blob/master/Docs/images/logger_robot.svg)
 
 ## Why Gazebo
 To be honest, I don't know why most people are using Gazebo for their robot simulations. It seems Gazebo has plenty of plugins for ROS, which makes manipulating Gazebo simulated robots within ROS ecosystem much easier.
