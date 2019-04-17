@@ -9,8 +9,6 @@ Inspired by: https://github.com/openai/spinningup/blob/master/spinup/examples/pg
 from __future__ import absolute_import, division, print_function
 
 import sys
-sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/scripts/envs")
-sys.path.insert(0, "/home/linzhank/ros_ws/src/two_loggers/loggers_control/scripts/utils")
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -20,9 +18,9 @@ import os
 import time
 from datetime import datetime
 
-from solo_escape_task_env import SoloEscapeEnv
-import gen_utils, solo_utils, tf_utils
-from gen_utils import bcolors
+from envs.solo_escape_task_env import SoloEscapeEnv
+from utils import gen_utils, solo_utils, tf_utils
+from utils.gen_utils import bcolors
 
 
 VERSION="2019-04-07" # make sure this is same as on line #3
@@ -150,7 +148,7 @@ if __name__ == "__main__":
     # make arg parser
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str,
-    default="/home/linzhank/ros_ws/src/two_loggers/loggers_control/vpg_model-"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
+    default=os.path.dirname(sys.path[0])+"/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
     parser.add_argument("--hidden_sizes", type=int, default=64)
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--num_epochs", type=int, default=400)
