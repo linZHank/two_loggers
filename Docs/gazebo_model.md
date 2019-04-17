@@ -1,5 +1,8 @@
 # Introduce the Logger Robot into Gazebo
-** Important: Before you start this tutorial, please make sure you have completed the one regarding to [Create URDF Model for Logger Robot](https://github.com/linZHank/two_loggers/blob/master/Docs/urdf_model.md)** This tutorial is a modified version of [this gazebo tutorial](http://gazebosim.org/tutorials/?tut=ros_urdf). The extras are we are building a mobile robot here instead of a robotic arm. And of course, we are using a Differential driver to control this robot.
+**Important: Before you start this tutorial, please make sure you have completed the one regarding to [Create URDF Model for Logger Robot](https://github.com/linZHank/two_loggers/blob/master/Docs/urdf_model.md).** This tutorial is a modified version of [this gazebo tutorial](http://gazebosim.org/tutorials/?tut=ros_urdf). The special part is we are building a mobile robot here instead of a robotic arm. And of course, we are using a Differential driver to control this robot. To make sure our differential drive plugin works, install following packages first.
+```console
+sudo apt-get install ros-kinetic-gazebo-ros-pkgs ros-kinetic-gazebo-ros-control
+```
 
 ## Spawn Robot Model in Gazebo
 The *urdf* model is informative enough, we only need a little more touch to bring it alive in Gazebo.
@@ -112,7 +115,18 @@ In between `<robot>` and `</robot>` tags, add the following contents:
     </plugin>
 </gazebo>
 ```
-You can change control command frequency use `<updateRate>` tag. The `<commandTopic>` tag indicates the ROS topic name with which you can interact with the robot in Gazebo simulation.  
+You can change control command frequency use `<updateRate>` tag. The `<commandTopic>` tag indicates the ROS topic name with which you can interact with the robot in Gazebo simulation.
+
+To verify this plugin working correctly, launch our robot in a new terminal:
+```console
+roslaunch loggers_gazebo single_logger_world.launch
+```
+Open another terminal and check available ROS topics:
+```console
+rostopic list
+```
+You'll see /cmd_vel appearing in this ROS topic list.
+![rostopic_list](https://github.com/linZHank/two_loggers/blob/master/Docs/images/rostopic_list.png)
 
 ## Make a World for Your Robot
 
