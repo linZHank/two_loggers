@@ -82,10 +82,37 @@ Open a terminal then run:
 roslaunch loggers_gazebo single_logger_world.launch
 ```
 > Your allied champion has respawned!
+
 ![robot_gazebo_empty](https://github.com/linZHank/two_loggers/blob/master/Docs/images/robot_gazebo_empty.png)
 
-
 ## Gazebo Differential Drive Plug-in
+Now we have our ~~hero~~robot spawned in Gazebo, but it really just is a dummy. Cannot move, cannot jump, cannot fly. So, next let's install a differential drive plugin so that we can drive the robot in a Gazebo environment through ROS commands.
+
+Open the Gazebo markup file:
+```console
+gedit ~/ros_ws/src/two_loggers/loggers_description/urdf/single_logger.gazebo
+```
+In between `<robot>` and `</robot>` tags, add the following contents:
+```xml
+<gazebo>
+    <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+        <legacyMode>false</legacyMode>
+        <alwaysOn>true</alwaysOn>
+        <updateRate>100</updateRate>
+        <leftJoint>joint_chassis_lwheel</leftJoint>
+        <rightJoint>joint_chassis_rwheel</rightJoint>
+        <wheelSeparation>0.2</wheelSeparation>
+        <wheelDiameter>0.18</wheelDiameter>
+        <wheelTorque>1</wheelTorque>
+        <!--wheelAcceleration>${wheel_accel}</wheelAcceleration-->
+        <commandTopic>cmd_vel</commandTopic>
+        <odometryTopic>odom</odometryTopic>
+        <odometryFrame>odom</odometryFrame>
+        <robotBaseFrame>link_chassis</robotBaseFrame>
+    </plugin>
+</gazebo>
+```
+You can change control command frequency use `<updateRate>` tag. The `<commandTopic>` tag indicates the ROS topic name with which you can interact with the robot in Gazebo simulation.  
 
 ## Make a World for Your Robot
 
