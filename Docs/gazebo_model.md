@@ -126,6 +126,7 @@ Open another terminal and check available ROS topics:
 rostopic list
 ```
 You'll see /cmd_vel appearing in this ROS topic list.
+
 ![rostopic_list](https://github.com/linZHank/two_loggers/blob/master/Docs/images/rostopic_list.png)
 
 ## Make a World for Your Robot
