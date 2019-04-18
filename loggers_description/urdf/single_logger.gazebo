@@ -15,10 +15,10 @@
       <legacyMode>false</legacyMode>
       <alwaysOn>true</alwaysOn>
       <updateRate>100</updateRate>
-      <leftJoint>joint_chassis_leftwheel</leftJoint>
-      <rightJoint>joint_chassis_rightwheel</rightJoint>
-      <wheelSeparation>0.24</wheelSeparation>
-      <wheelDiameter>0.2</wheelDiameter>
+      <leftJoint>joint_chassis_lwheel</leftJoint>
+      <rightJoint>joint_chassis_rwheel</rightJoint>
+      <wheelSeparation>0.2</wheelSeparation>
+      <wheelDiameter>0.18</wheelDiameter>
       <wheelTorque>1</wheelTorque>
       <!--wheelAcceleration>${wheel_accel}</wheelAcceleration-->
       <commandTopic>cmd_vel</commandTopic>

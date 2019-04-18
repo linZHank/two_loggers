@@ -36,6 +36,11 @@ roslaunch loggers_control single_logger_control.launch
 
 ## Notes
 - To test out single logger environment`rosrun loggers_control single_logger_test.py`
-- To train a neural network model with **Vanilla Policy Gradient** algorithm: `rosrun loggers_control solo_escape_vpg.py`
-- A trained neural network model is stored at `this_repo/loggers_control/vpg_model`
+- To train a neural network model with **Vanilla Policy Gradient** algorithm: `rosrun loggers_control solo_escape_vpg_train.py`
+- Trained multilayer perceptrons models are stored at `this_repo/loggers_control/vpg_model`
+- To evaluate models: `rosrun loggers_control solo_escape_vpg_eval.py`
+  > You'll need to change the model path manually in the script, will write an argparse for this in the future
 
+# Demo
+## Solo Escape with VPG
+[![IMAGE ALT TEXT HERE](http://i3.ytimg.com/vi/xqkG5bBXyY8/hqdefault.jpg)](https://youtu.be/xqkG5bBXyY8)

@@ -14,7 +14,7 @@
   <xacro:property name="L_HAT" value="0.1"/> 
   <xacro:property name="M_HAT" value="0.5"/> 
   <!-- properties of link_chassis* -->
-  <xacro:property name="R_CHASSIS" value="0.4"/> 
+  <xacro:property name="R_CHASSIS" value="0.2"/> 
   <xacro:property name="L_CHASSIS" value="0.1"/> 
   <xacro:property name="M_CHASSIS" value="2"/> 
   <!-- properties of link_caster* -->
@@ -283,7 +283,7 @@ p      <material name="red"/>
     </inertial>
   </link>
 
-  <joint name="joint_chassi10_lwheel1" type="continuous">
+  <joint name="joint_chassis1_lwheel1" type="continuous">
     <origin rpy="0 0 0" xyz="${R_CHASSIS/2} ${R_CHASSIS/2} 0"/>
     <parent link="link_chassis_1"/>
     <child link="link_left_wheel_1" />

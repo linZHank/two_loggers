@@ -4,6 +4,21 @@
     
   <!-- Constants for robot dimensions -->
   <xacro:property name="PI" value="3.1415926535897931"/>
+  <!-- properties of link_hat -->
+  <xacro:property name="R_HAT" value="0.02"/> 
+  <xacro:property name="L_HAT" value="0.1"/> 
+  <xacro:property name="M_HAT" value="0.5"/> 
+  <!-- properties of link_chassis -->
+  <xacro:property name="R_CHASSIS" value="0.2"/> 
+  <xacro:property name="L_CHASSIS" value="0.1"/> 
+  <xacro:property name="M_CHASSIS" value="2"/> 
+  <!-- properties of link_caster -->
+  <xacro:property name="R_CASTER" value="0.04"/> 
+  <xacro:property name="M_CASTER" value="0.1"/> 
+  <!-- properties of link_wheel -->
+  <xacro:property name="R_WHEEL" value="0.09"/> 
+  <xacro:property name="L_WHEEL" value="0.04"/> 
+  <xacro:property name="M_WHEEL" value="0.5"/> 
 
   <!-- Import all Gazebo-customization elements, including Gazebo colors -->
   <xacro:include filename="$(find loggers_description)/urdf/single_logger.gazebo" />
@@ -13,246 +28,163 @@
   <!-- Used for fixing robot to Gazebo 'base_link' -->
   <link name="world"/>
 
-  <joint name="joint_world_chassis" type="floating">
+  <joint name="joint_world_hat" type="floating">
     <parent link="world"/>
-    <child link="link_chassis"/>
+    <child link="link_hat"/>
+  </joint>
+
+  <link name="link_hat">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="${L_HAT}" radius="${R_HAT}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="${L_HAT}" radius="${R_HAT}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="${M_HAT}"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="${1/12*M_HAT*(3*R_HAT*R_HAT+L_HAT*L_HAT)}" ixy="0" ixz="0" iyy="${1/12*M_HAT*(3*R_HAT*R_HAT+L_HAT*L_HAT)}" iyz="0" izz="${1/2*M_HAT*R_HAT*R_HAT}"/>
+    </inertial>
+  </link>
+
+  <joint name="joint_hat_chassis" type="continuous">
+    <origin rpy="0 0 ${PI/2}" xyz="0.0 0 ${(-L_HAT-L_CHASSIS)/2}"/>
+    <parent link="link_hat"/>
+    <child link="link_chassis" />
+    <axis rpy="0 0 0" xyz="0 0 1"/>
   </joint>
 
   <link name="link_chassis">
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.4 0.2 0.1"/>
+        <cylinder length="${L_CHASSIS}" radius="${R_CHASSIS}"/>
       </geometry>
-      <material name="uc_red"/>
+      <material name="black"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.4 0.2 0.1"/>
+        <cylinder length="${L_CHASSIS}" radius="${R_CHASSIS}"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="4"/>
+      <mass value="2"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+      <inertia ixx="${1/12*M_CHASSIS*(3*R_CHASSIS*R_CHASSIS+L_CHASSIS*L_CHASSIS)}" ixy="0" ixz="0" iyy="${1/12*M_CHASSIS*(3*R_CHASSIS*R_CHASSIS+L_CHASSIS*L_CHASSIS)}" iyz="0" izz="${1/2*M_CHASSIS*R_CHASSIS*R_CHASSIS}"/>
     </inertial>
   </link>
 
   <joint name="joint_chassis_caster" type="fixed">
+    <origin rpy="0 0 0" xyz="0 ${-R_CHASSIS/2} ${-L_CHASSIS/2}"/>
     <parent link="link_chassis"/>
     <child link="link_caster"/>
-    <origin rpy="0 0 0" xyz="0.15 0 -0.05"/>
-  </joint>        
-  
+  </joint>
+        
   <link name="link_caster">
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <sphere radius="0.04"/>
+        <sphere radius="${R_CASTER}"/>
       </geometry>
       <material name="grey"/>
     </visual>
     <collision>
       <origin rpy=" 0 0 0" xyz="0 0 0"/>
       <geometry>
-        <sphere radius="0.04"/>
+        <sphere radius="${R_CASTER}"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.08"/>
+      <mass value="${M_CASTER}"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      <inertia ixx="${2/5*M_CASTER*R_CASTER*R_CASTER}" ixy="0" ixz="0" iyy="${2/5*M_CASTER*R_CASTER*R_CASTER}" iyz="0" izz="${2/5*M_CASTER*R_CASTER*R_CASTER}"/>
     </inertial>
   </link>
 
-  <!-- The following commented code experiment ball joint with 3 revolute joint, -->
-  <!-- however the behavior of the approximated ball joint was weird. -->
-  
-  <!-- <joint name="joint_chassis_casterroll" type="continuous"> -->
-  <!--   <parent link="link_chassis"/> -->
-  <!--   <child link="link_caster_roll"/> -->
-  <!--   <origin rpy="0 0 0" xyz="0.15 0 -0.05"/> -->
-  <!--   <axis xyz="1 0 0"/> -->
-  <!-- </joint> -->        
-  <!-- <link name="link_caster_roll"> -->
-  <!--   <visual> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--     <geometry> -->
-  <!--       <sphere radius="0.00000001"/> -->
-  <!--     </geometry> -->
-  <!--     <material name="white"/> -->
-  <!--   </visual> -->
-  <!--   <collision> -->
-  <!--     <origin rpy=" 0 0 0" xyz="0 0 0"/> -->
-  <!--     <geometry> -->
-  <!--       <sphere radius="0.00000001"/> -->
-  <!--     </geometry> -->
-  <!--   </collision> -->
-  <!--   <inertial> -->
-  <!--     <mass value="0.02"/> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--     <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/> -->
-  <!--   </inertial> -->
-  <!-- </link> -->
-  <!-- <joint name="joint_casterroll_casterpitch" type="continuous"> -->
-  <!--   <parent link="link_caster_roll"/> -->
-  <!--   <child link="link_caster_pitch"/> -->
-  <!--   <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--   <axis xyz="0 1 0"/> -->
-  <!-- </joint> -->
-  <!-- <link name="link_caster_pitch"> -->
-  <!--   <visual> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--     <geometry> -->
-  <!--       <sphere radius="0.00000001"/> -->
-  <!--     </geometry> -->
-  <!--     <material name="white"/> -->
-  <!--   </visual> -->
-  <!--   <collision> -->
-  <!--     <origin rpy=" 0 0 0" xyz="0 0 0"/> -->
-  <!--     <geometry> -->
-  <!--       <sphere radius="0.00000001"/> -->
-  <!--     </geometry> -->
-  <!--   </collision> -->
-  <!--   <inertial> -->
-  <!--     <mass value="0.02"/> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--     <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/> -->
-  <!--   </inertial> -->
-  <!-- </link> -->
-  <!-- <joint name="joint_casterpitch_casteryaw" type="continuous"> -->
-  <!--   <parent link="link_caster_pitch"/> -->
-  <!--   <child link="link_caster_yaw"/> -->
-  <!--   <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--   <axis xyz="0 0 1"/> -->
-  <!-- </joint> -->
-  <!-- <link name="link_caster_yaw"> -->
-  <!--   <visual> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--     <geometry> -->
-  <!--       <sphere radius="0.04"/> -->
-  <!--     </geometry> -->
-  <!--     <material name="grey"/> -->
-  <!--   </visual> -->
-  <!--   <collision> -->
-  <!--     <origin rpy=" 0 0 0" xyz="0 0 0"/> -->
-  <!--     <geometry> -->
-  <!--       <sphere radius="0.04"/> -->
-  <!--     </geometry> -->
-  <!--   </collision> -->
-  <!--   <inertial> -->
-  <!--     <mass value="0.04"/> -->
-  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
-  <!--     <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/> -->
-  <!--   </inertial> -->
-  <!-- </link> -->
-
-  <joint name="joint_chassis_leftwheel" type="continuous">
-    <origin rpy="0 0 0" xyz="-0.16 0.12 0.01"/>
-    <child link="link_left_wheel" />
+  <joint name="joint_chassis_lwheel" type="continuous">
+    <origin rpy="0 0 0" xyz="${R_CHASSIS/2} ${R_CHASSIS/2} 0"/>
     <parent link="link_chassis"/>
-    <axis rpy="0 0 0" xyz="0 1 0"/>
-  </joint>  
+    <child link="link_left_wheel" />
+    <axis rpy="0 0 0" xyz="1 0 0"/>
+  </joint>
 
-  <link name="link_left_wheel">    
+  <link name="link_left_wheel">
     <visual>
-      <origin rpy="${PI/2} 0 0" xyz="0 0 0"/>
+      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
       <geometry>
-        <cylinder length="0.04" radius="0.1"/>
+        <cylinder length="${L_WHEEL}" radius="${R_WHEEL}"/>
       </geometry>
-      <material name="black"/>
+      <material name="orange"/>
     </visual>
     <collision>
-      <origin rpy="${PI/2} 0 0" xyz="0 0 0" />
+      <origin rpy="0 ${PI/2} 0" xyz="0 0 0" />
       <geometry>
-        <cylinder length="0.04" radius="0.1"/>
+        <cylinder length="${L_WHEEL}" radius="${R_WHEEL}"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.2"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      <mass value="${M_WHEEL}"/>
+      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
+      <inertia ixx="${1/12*M_WHEEL*(3*R_WHEEL*R_WHEEL+L_WHEEL*L_WHEEL)}" ixy="0" ixz="0" iyy="${1/12*M_WHEEL*(3*R_WHEEL*R_WHEEL+L_WHEEL*L_WHEEL)}" iyz="0" izz="${1/2*M_WHEEL*R_WHEEL*R_WHEEL}"/>
     </inertial>
   </link>
           
-  <joint name="joint_chassis_rightwheel" type="continuous">
-    <origin rpy="0 0 0" xyz="-0.16 -0.12 0.01"/>
+  <joint name="joint_chassis_rwheel" type="continuous">
+    <origin rpy="0 0 0" xyz="${-R_CHASSIS/2} ${R_CHASSIS/2} 0"/>
     <child link="link_right_wheel" />
     <parent link="link_chassis"/>
-    <axis rpy="0 0 0" xyz="0 1 0"/>
-  </joint>    
+    <axis rpy="0 0 0" xyz="1 0 0"/>
+  </joint>
     
-  <link name="link_right_wheel">    
+  <link name="link_right_wheel">
     <collision>
-      <origin rpy="${PI/2} 0 0" xyz="0 0 0" />
+      <origin rpy="0 ${PI/2} 0" xyz="0 0 0" />
       <geometry>
-        <cylinder length="0.04" radius="0.1"/>
+        <cylinder length="${L_WHEEL}" radius="${R_WHEEL}"/>
       </geometry>
     </collision>
     <visual>
-      <origin rpy="${PI/2} 0 0" xyz="0 0 0"/>
+      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
       <geometry>
-        <cylinder length="0.04" radius="0.1"/>
+        <cylinder length="${L_WHEEL}" radius="${R_WHEEL}"/>
       </geometry>
-      <material name="black"/>
+      <material name="orange"/>
     </visual>
     <inertial>
-      <mass value="0.2"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      <mass value="${M_WHEEL}"/>
+      <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
+      <inertia ixx="${1/12*M_WHEEL*(3*R_WHEEL*R_WHEEL+L_WHEEL*L_WHEEL)}" ixy="0" ixz="0" iyy="${1/12*M_WHEEL*(3*R_WHEEL*R_WHEEL+L_WHEEL*L_WHEEL)}" iyz="0" izz="${1/2*M_WHEEL*R_WHEEL*R_WHEEL}"/>
     </inertial>
-  </link>
+  </link>  
 
-  <joint name="joint_chassis_hat" type="revolute">
-    <origin rpy="0 0 0" xyz="0.0 0 0.05"/>
-    <limit effort="0" lower="0" upper="0" velocity="0"/>
-    <child link="link_hat" />
-    <parent link="link_chassis"/>
-    <axis rpy="0 0 0" xyz="0 0 1"/>
-  </joint>    
+  <!-- <transmission name="trans_leftwheel"> -->
+  <!--   <type>transmission_interface/SimpleTransmission</type> -->
+  <!--   <joint name="joint_chassis_leftwheel"> -->
+  <!--     <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+  <!--   </joint> -->
+  <!--   <actuator name="motor_leftwheel"> -->
+  <!--     <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+  <!--     <mechanicalReduction>1</mechanicalReduction> -->
+  <!--   </actuator> -->
+  <!-- </transmission> -->
 
-  <link name="link_hat">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.04"/>
-      <geometry>
-        <cylinder length="0.08" radius="0.02"/>
-      </geometry>
-      <material name="uc_red"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.04"/>
-      <geometry>
-        <cylinder length="0.08" radius="0.02"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.1"/>
-      <origin rpy="0 0 0" xyz="0 0 0.04"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
-    </inertial>
-  </link>
-
-  <transmission name="trans_leftwheel">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="joint_chassis_leftwheel">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="motor_leftwheel">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-
-  <transmission name="trans_rightwheel">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="joint_chassis_rightwheel">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="motor_rightwheel">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
+  <!-- <transmission name="trans_rightwheel"> -->
+  <!--   <type>transmission_interface/SimpleTransmission</type> -->
+  <!--   <joint name="joint_chassis_rightwheel"> -->
+  <!--     <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+  <!--   </joint> -->
+  <!--   <actuator name="motor_rightwheel"> -->
+  <!--     <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+  <!--     <mechanicalReduction>1</mechanicalReduction> -->
+  <!--   </actuator> -->
+  <!-- </transmission> -->
 
 </robot>
