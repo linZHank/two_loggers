@@ -125,10 +125,33 @@ Open another terminal and check available ROS topics:
 ```console
 rostopic list
 ```
-You'll see /cmd_vel appearing in this ROS topic list.
+You'll see `/cmd_vel` appearing in this ROS topic list.
 
 ![rostopic_list](https://github.com/linZHank/two_loggers/blob/master/Docs/images/rostopic_list.png)
 
 ## Make a World for Your Robot
-
+Using Gazebo's GUI to create a world is pretty straightforward, you can refer to its official [Tutorial](http://gazebosim.org/tutorials?tut=build_world&cat=build_world) to quickly build a world for your robot. The world for this project is stored at [here](https://github.com/linZHank/two_loggers/tree/master/loggers_gazebo/worlds). A simple walled cell with one exit. Now we can spawn the logger robot within such world. Open a text editor from terminal.
+```console
+gedit ~/ros_ws/src/two_loggers/loggers_gazebo/launch/single_logger_world.launch
+```
+Substitue following part
+```xml
+<!-- launch robot in an empty world -->
+<include file="$(find gazebo_ros)/launch/empty_world.launch">
+</include>
+```
+with
+```xml
+<!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
+<include file="$(find gazebo_ros)/launch/empty_world.launch">
+  <arg name="world_name" value="$(find loggers_gazebo)/worlds/wall_exit.world"/>
+  <arg name="debug" value="$(arg debug)" />
+  <arg name="gui" value="$(arg gui)" />
+  <arg name="paused" value="$(arg paused)"/>
+  <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+  <arg name="headless" value="$(arg headless)"/>
+</include>
+```
+Your new simulation should look like below
+![robot_cell](https://github.com/linZHank/two_loggers/blob/master/Docs/images/robot_cell.png)
 ## Control Robot in Gazebo with ROS
