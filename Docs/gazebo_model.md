@@ -178,4 +178,31 @@ Basically, we just want this new launch file repeat what we have done in the `lo
 
 </launch>
 ```
-In a new terminal, run `roslaunch loggers_control single_logger_control.launch`. An you are good to go.
+In a new terminal, run `roslaunch loggers_control single_logger_control.launch`.
+
+### Sending command to the robot
+The differential drive plugin uses a **topic** to sending command to the driver. In this project, `/cmd_vel` is the one. The only two parameters we should concern about are `linear.x` and `angular.z`. **`linear.x`** gives a velocity command that drives the robot moving straight forward. **`angular.z`** gives a velocity command that drives the robot spinning around the center of the two wheels. An example of driving the robot using ROS command in terminal could be
+```console
+rostopic pub /cmd_vel geometry_msgs/Twist "linear:
+  x: 1.0
+  y: 0.0
+  z: 0.0
+angular:
+  x: 0.0
+  y: 0.0
+  z: 1.0"
+```
+You can manipulate the values in `linear:x` and `angular:z`
+
+### Getting state of the robot
+We have no simulated sensor attached to the robot, so we cannot have any sensing data. However, Gazebo tracks the states of the model in the simulation. So, we can use Gazebo generated `ModelState` and `LinkState` to serve as sensing data as the moment. An example of ROS command for getting `ModelState` could be:
+```console
+rostopic echo /gazebo/model_states
+```
+In this situation, Gazebo use the very first link in the [urdf](https://github.com/linZHank/two_loggers/blob/master/loggers_description/urdf/single_logger.urdf.xacro) to represent the whole robot. If the state of a specific link is needed, run the following command instead.
+```console
+rostopic echo /gazebo/link_states
+```
+
+### A random move script in python
+A test code of driving the robot moving randomly according to `/cmd_vel` topic is shown [here](https://github.com/linZHank/two_loggers/blob/master/loggers_control/scripts/single_logger_test.py)
