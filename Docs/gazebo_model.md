@@ -155,3 +155,27 @@ with
 Your new simulation should look like below
 ![robot_cell](https://github.com/linZHank/two_loggers/blob/master/Docs/images/robot_cell.png)
 ## Control Robot in Gazebo with ROS
+For the sake of seperating the controlling code apart, we might want to create another package for all kinds of control implementations.
+```console
+cd ~/ros_ws/src/
+catkin create pkg loggers_control
+cd loggers_control
+mkdir launch
+gedit single_logger_control.launch
+```
+Basically, we just want this new launch file repeat what we have done in the `loggers_gazebo` package.
+```xml
+<launch>
+
+    <!-- ros_control rrbot launch file -->
+    <include file="$(find loggers_gazebo)/launch/single_logger_world.launch" />
+
+    <!-- convert joint states to TF transforms for rviz, etc -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
+        respawn="false" output="screen">
+        <remap from="/joint_states" to="/single_logger/joint_states" />
+    </node>
+
+</launch>
+```
+In a new terminal, run `roslaunch loggers_control single_logger_control.launch`. An you are good to go.
