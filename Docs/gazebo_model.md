@@ -206,3 +206,5 @@ rostopic echo /gazebo/link_states
 
 ### A random move script in python
 A test code of driving the robot moving randomly according to `/cmd_vel` topic is shown [here](https://github.com/linZHank/two_loggers/blob/master/loggers_control/scripts/single_logger_test.py)
+
+[![logger_random_move_test(http://i3.ytimg.com/vi/xqkG5bBXyY8/hqdefault.jpg)]([![IMAGE ALT TEXT HERE](http://i3.ytimg.com/vi/iplA3IkJmnw/hqdefault.jpg)](https://youtu.be/iplA3IkJmnw))
