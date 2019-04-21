@@ -1,4 +1,5 @@
 # Two Loggers Gazebo Simulation
+**Tutorials of the contents in this repo are all located at [Docs](https://github.com/linZHank/two_loggers/tree/master/Docs). The order is: [system_setup](https://github.com/linZHank/two_loggers/blob/master/Docs/system_setup.md)-->[create_urdf_tutorial](https://github.com/linZHank/two_loggers/blob/master/Docs/create_urdf_tutorial.md)-->[gazebo_ros_tutorial](https://github.com/linZHank/two_loggers/blob/master/Docs/gazebo_ros_tutorial.md)**
 
 ## Pre-requisites
 - [Ubuntu 16.04](http://releases.ubuntu.com/16.04/)
@@ -29,12 +30,12 @@ source devel/setup.bash
 source /opt/ros/kinetic/setup.bash
 source /home/linzhank/ros_ws/devel/setup.bash
 ```
+
+## Policy Gradient Example
 - Launch a single logger robot simulation
 ``` console
-roslaunch loggers_control single_logger_control.launch 
+roslaunch loggers_control single_logger_control.launch
 ```
-
-## Notes
 - To test out single logger environment`rosrun loggers_control single_logger_test.py`
 - To train a neural network model with **Vanilla Policy Gradient** algorithm: `rosrun loggers_control solo_escape_vpg_train.py`
 - Trained multilayer perceptrons models are stored at `this_repo/loggers_control/vpg_model`

@@ -33,9 +33,9 @@ rosrun loggers_control double_escape_env_test.py
 
 ## Functions
 The environments use `reset` function to get back to the initial state and `step` function to take an action to change the environment. `reset` function returns two values: `observation` and `information`. `step` function returns four values: `observation`, `reward`, `done` and `information`.
-- observation (dict): detailed description of the environment, for example, the *position*, *orientation*, *linear velocity* and *angular velocity* of every link in the robot model at a certain time step.
-- reward (float): amount of reward achieved by the previous action. In reinforcement learning, your goal is always maximize your total reward.
-- done (boolean): flag for whether to terminate the current episode. Each time an environemnt was reset, a new episode was created. When certain conditions fufilled, an episode will be marked as **done=True** and will be reset.
-- information (dict): diagnostic information useful for debugging.
+- **observation** (dict): detailed description of the environment, for example, the *position*, *orientation*, *linear velocity* and *angular velocity* of every link in the robot model at a certain time step.
+- **reward** (float): amount of reward achieved by the previous action. In reinforcement learning, your goal is always maximize your total reward.
+- **done** (boolean): flag for whether to terminate the current episode. Each time an environemnt was reset, a new episode was created. When certain conditions fufilled, an episode will be marked as **done=True** and will be reset.
+- **information** (dict): diagnostic information useful for debugging.
 
-Please refer to the example above for the use of environmental functions. 
+Please refer to the example above for the use of environmental functions.
