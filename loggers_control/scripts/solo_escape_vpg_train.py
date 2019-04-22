@@ -149,7 +149,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str,
     default=os.path.dirname(sys.path[0])+"/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
-    parser.add_argument("--hidden_sizes", type=int, default=64)
+    parser.add_argument("--hidden_sizes", nargs="+", type=int, default=64)
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--num_epochs", type=int, default=400)
     parser.add_argument("--batch_size", type=int, default=1e4)
