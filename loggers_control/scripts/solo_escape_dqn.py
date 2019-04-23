@@ -9,6 +9,7 @@ import tensorflow as tf
 from envs.solo_escape_task_env import SoloEscapeEnv
 from utils import gen_utils, solo_utils, tf_utils
 from utils.gen_utils import bcolors
+from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
     # Main really starts here
@@ -16,11 +17,17 @@ if __name__ == "__main__":
     rospy.init_node("solo_escape_dqn", anonymous=True, log_level=rospy.INFO)
     # make an instance from env class
     env = SoloEscapeEnv()
-    env.reset()
-    dim_state = len(solo_utils.obs_to_state(env.observation))
-    actions = np.array([np.array([.5, -1]), np.array([.5, 1])])
-    num_actions = len(actions)
-    agent = DQN()
+    obs, _ = env.reset()
+    # hyper-parameters
+    hyp_params["dim_state"] = len(solo_utils.obs_to_state(env.observation))
+    hyp_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
+    hyp_params["num_episodes"] = 500
+    hyp_params["num_steps"] = 512
+    hyp_params["epsilon"] = 0.2
+    hyp_params["gamma"] = 0.99
+
+
+    agent = DQNAgent(hyp_params)
     agent.train(env)
 
 #     def train(self, env):
