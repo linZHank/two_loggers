@@ -26,38 +26,50 @@ class Memory:
 
 class DQNAgent:
     def __init__(self):
+        super(DQNAgent, self).__init__()
+        # init Q(s,a)
+        self.qnet_active = tf.keras.models.Sequential([
+            tf.keras.layers.Dense(128, input_shape=(dim_state, ), activation='relu'),
+            tf.keras.layers.Dense(128, activation='relu'),
+            tf.keras.layers.Dense(num_actions, activation='softmax')
+        ])
+        self.qnet_active.compile(optimizer="adam",
+                            loss="sparse_categorical_crossentropy",
+                            metrics=["accuracy"])
+        # init Q^(s,a)
+        self.qnet_stable = tf.keras.models.Sequential([
+            tf.keras.layers.Dense(128, input_shape=(dim_state, ), activation='relu'),
+            tf.keras.layers.Dense(128, activation='relu'),
+            tf.keras.layers.Dense(num_actions, activation='softmax')
+        ])
+        # init replay memory
+        self.replay_memory = Memory(memory_cap=50000)
+
+    def epsilon_greedy(self, state, epsilon):
+        pass
+
+    def compute_target_q(self, sampled_batch):
         pass
 
     def train(self, env, actions, dim_state, num_actions,
               batch_size=1000, num_episodes=512, num_steps=1000):
-        replay_memory = Memory(memory_cap=50000) # init replay memory
-        qnet_active = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(128, input_shape=(7, ), activation='relu'),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dense(num_actions, activation='softmax')
-        ]) # init Q(s,a)
-        qnet_stable = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(128, input_shape=(7, ), activation='relu'),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dense(num_actions, activation='softmax')
-        ]) # init Q^(s,a)
-        states = np.empty((batch_size, dim_state))
-        actions = np.empty((batch_size,), dtype=np.int32)
-        update_counter = 10000
+        update_step = 1000
+        total_step = 0
         for ep in range(num_episodes):
             obs, _ = env.reset()
             state_0 = utils.obs_to_state(obs)
             done, ep_rewards = False, []
             for st in range(num_steps):
-                action =  utils.epsilon_greedy(qnet_active, state_0, epsilon)
+                action = epsilon_greedy(qnet_active, state_0, epsilon)
                 obs, rew, done, info = env.step(action)
                 state_1 = utils.obs_to_state(obs)
                 replay_memory.store((state_0, action, rew, done, state_1))
-                sample = replay_memory.sample_batch(batch_size)
+                minibatch = replay_memory.sample_batch(batch_size)
                 # create dataset
-                utils.set_q_target(utils.sample_batch(replay_memory, batch_size), self.qnet_hat)
-                utils.train_batch
-                if update_weights:
-                    self.qnet_hat = self.qnet
+                x = np.array(minibatch[0])
+                y = compute_target_q(minibatch, qnet_stable)
+                total_step += 1
+                if total_step % update_step == 0:
+                    self.qnet_stable.set_weights(qnet_active.get_weights())
                 if done:
                     break
