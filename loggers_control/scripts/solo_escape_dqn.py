@@ -23,11 +23,12 @@ if __name__ == "__main__":
     hyp_params = {}
     hyp_params["dim_state"] = len(solo_utils.obs_to_state(env.observation))
     hyp_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
-    hyp_params["num_episodes"] = 400
+    hyp_params["num_episodes"] = 10
     hyp_params["num_steps"] = 200
     hyp_params["batch_size"] = 100
     hyp_params["epsilon"] = 0.2
     hyp_params["gamma"] = 0.99
+    hyp_params["update_step"] = 50
     # instantiate agent
     agent = DQNAgent(hyp_params)
     agent.train(env)

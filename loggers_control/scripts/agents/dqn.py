@@ -3,7 +3,10 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import random
 import tensorflow as tf
+import rospy
+
 from utils import env_utils
+from utils.gen_utils import bcolors
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 
@@ -40,14 +43,15 @@ class DQNAgent:
         self.num_episodes = hyp_params["num_episodes"]
         self.num_steps = hyp_params["num_steps"]
         self.batch_size = hyp_params["batch_size"]
+        self.update_step = hyp_params["update_step"]
         # Q(s,a;theta)
         self.qnet_active = tf.keras.models.Sequential([
             tf.keras.layers.Dense(128, input_shape=(self.dim_state, ), activation='relu'),
             tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.Dense(len(self.actions), activation='softmax')
         ])
-        self.qnet_active.compile(optimizer="adam",
-                            loss="sparse_categorical_crossentropy",
+        self.qnet_active.compile(optimizer="sgd",
+                            loss="mean_squared_error",
                             metrics=["accuracy"])
         # Q^(s,a;theta_)
         self.qnet_stable = tf.keras.models.Sequential([
@@ -66,10 +70,11 @@ class DQNAgent:
         if np.random.rand() > self.epsilon:
             return np.argmax(self.qnet_active.predict(state.reshape(1,-1)))
         else:
+            print(bcolors.WARNING, "Take a random action!", bcolors.ENDC)
             return np.random.randint(len(self.actions))
 
     def epsilon_decay(self, epi):
-        return 1./(epi + 20)
+        return 1./(epi+1)
 
     def compute_target_q(self, sampled_batch):
         present_value = self.qnet_active.predict(np.array(sampled_batch[0]))
@@ -81,8 +86,9 @@ class DQNAgent:
             else:
                 target_q[i,sampled_batch[1][i]] = sampled_batch[2][i] + self.gamma * np.max(future_value[i])
 
+        return target_q
+
     def train(self, env):
-        update_step = 1000
         total_step = 0
         for ep in range(self.num_episodes):
             self.epsilon = self.epsilon_decay(ep)
@@ -99,8 +105,24 @@ class DQNAgent:
                 # create dataset
                 x = np.array(minibatch[0])
                 y = self.compute_target_q(minibatch)
+                self.qnet_active.fit(x, y, epochs=1)
+                print(
+                    bcolors.OKGREEN,
+                    "Episode: {}, Step: {} \naction: {}--{}, state: {}, reward: {}, status: {}".format(
+                        ep,
+                        st,
+                        act_id,
+                        action,
+                        state_1,
+                        rew,
+                        info
+                    ),
+                    bcolors.ENDC
+                )
+                state_0 = state_1
                 total_step += 1
-                if total_step % update_step == 0:
+                if total_step % self.update_step == 0:
                     self.qnet_stable.set_weights(self.qnet_active.get_weights())
+                    print(bcolors.BOLD, "Q-net weights updated!", bcolors.ENDC)
                 if done:
                     break
