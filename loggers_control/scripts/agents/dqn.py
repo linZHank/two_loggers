@@ -5,7 +5,7 @@ import random
 import tensorflow as tf
 import rospy
 
-from utils import env_utils
+from utils import solo_utils
 from utils.gen_utils import bcolors
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
@@ -44,15 +44,25 @@ class DQNAgent:
         self.num_steps = hyp_params["num_steps"]
         self.batch_size = hyp_params["batch_size"]
         self.update_step = hyp_params["update_step"]
+        self.wall_bonus = hyp_params["wall_bonus"]
+        self.door_bonus = hyp_params["door_bonus"]
+        self.dist_bonus = hyp_params["dist_bonus"]
+        self.model_path = hyp_params["model_path"]
         # Q(s,a;theta)
         self.qnet_active = tf.keras.models.Sequential([
             tf.keras.layers.Dense(128, input_shape=(self.dim_state, ), activation='relu'),
             tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.Dense(len(self.actions), activation='softmax')
         ])
-        self.qnet_active.compile(optimizer="sgd",
+        self.qnet_active.compile(optimizer="adam",
                             loss="mean_squared_error",
                             metrics=["accuracy"])
+        self.qnet_active.summary()
+        self.qnet_callback = tf.keras.callbacks.ModelCheckpoint(
+            self.model_path,
+            save_weights_only=True,
+            verbose=1
+        )
         # Q^(s,a;theta_)
         self.qnet_stable = tf.keras.models.Sequential([
             tf.keras.layers.Dense(128, input_shape=(self.dim_state, ), activation='relu'),
@@ -93,19 +103,24 @@ class DQNAgent:
         for ep in range(self.num_episodes):
             self.epsilon = self.epsilon_decay(ep)
             obs, _ = env.reset()
-            state_0 = env_utils.obs_to_state(obs)
+            state_0 = solo_utils.obs_to_state(obs)
+            dist_0 = np.linalg.norm(state_0[:2]-np.array([0,-6.0001]))
             done, ep_rewards = False, []
             for st in range(self.num_steps):
                 act_id = self.epsilon_greedy(state_0)
                 action = self.actions[act_id]
                 obs, rew, done, info = env.step(action)
-                state_1 = env_utils.obs_to_state(obs)
+                state_1 = solo_utils.obs_to_state(obs)
+                dist_1 = np.linalg.norm(state_1[:2]-np.array([0,-6.0001]))
+                delta_dist = dist_0 - dist_1
+                # adjust reward based on relative distance to the exit
+                rew, done = solo_utils.adjust_reward(rew, info, delta_dist, done, self.wall_bonus, self.door_bonus, self.dist_bonus)
                 self.replay_memory.store((state_0, act_id, rew, done, state_1))
                 minibatch = self.replay_memory.sample_batch(self.batch_size)
                 # create dataset
                 x = np.array(minibatch[0])
                 y = self.compute_target_q(minibatch)
-                self.qnet_active.fit(x, y, epochs=1)
+                self.qnet_active.fit(x, y, epochs=1, callbacks=[self.qnet_callback])
                 print(
                     bcolors.OKGREEN,
                     "Episode: {}, Step: {} \naction: {}--{}, state: {}, reward: {}, status: {}".format(
@@ -120,6 +135,7 @@ class DQNAgent:
                     bcolors.ENDC
                 )
                 state_0 = state_1
+                dist_0 = dist_1
                 total_step += 1
                 if total_step % self.update_step == 0:
                     self.qnet_stable.set_weights(self.qnet_active.get_weights())
