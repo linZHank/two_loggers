@@ -5,6 +5,7 @@ import random
 import tensorflow as tf
 import rospy
 
+from utils import gen_utils
 from utils import solo_utils
 from utils.gen_utils import bcolors
 from tensorflow.keras.layers import Dense
@@ -100,6 +101,7 @@ class DQNAgent:
 
     def train(self, env):
         total_step = 0
+        ep_returns = []
         for ep in range(self.num_episodes):
             self.epsilon = self.epsilon_decay(ep)
             obs, _ = env.reset()
@@ -136,9 +138,13 @@ class DQNAgent:
                 )
                 state_0 = state_1
                 dist_0 = dist_1
+                ep_rewards.append(rew)
                 total_step += 1
                 if total_step % self.update_step == 0:
                     self.qnet_stable.set_weights(self.qnet_active.get_weights())
                     print(bcolors.BOLD, "Q-net weights updated!", bcolors.ENDC)
                 if done:
+                    ep_returns.append(sum(ep_rewards))
+                    print(bcolors.OKBLUE, "Episode: {}, Success Count: {}".format(ep, env.success_count),bcolors.ENDC)
                     break
+        gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=self.model_path)
