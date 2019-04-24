@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-Version: 2019-04-07
+Version: 2019-04-22
 Model free on policy control for logger robot with vanilla policy gradient in wall-celled environment
 Navigate to escape from the only exit
 Author: LinZHanK (linzhank@gmail.com)
@@ -22,8 +22,10 @@ from envs.solo_escape_task_env import SoloEscapeEnv
 from utils import gen_utils, solo_utils, tf_utils
 from utils.gen_utils import bcolors
 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
-VERSION="2019-04-07" # make sure this is same as on line #3
+VERSION="2019-04-22" # make sure this is same as on line #3
 
 def train(env, model_path,
           dim_state=7, num_actions=3, actions=np.zeros((2,2)),
@@ -149,7 +151,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str,
     default=os.path.dirname(sys.path[0])+"/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt")
-    parser.add_argument("--hidden_sizes", type=int, default=64)
+    parser.add_argument("--hidden_sizes", nargs="+", type=int, default=64)
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--num_epochs", type=int, default=400)
     parser.add_argument("--batch_size", type=int, default=1e4)
