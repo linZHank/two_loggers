@@ -1,4 +1,9 @@
 #! /usr/bin/env python
+"""
+An implementation of Deep Q-network (DQN) for solo_escape_task
+DQN is a Model free, off policy, reinforcement learning algorithm (https://deepmind.com/research/dqn/)
+Author: LinZHanK (linzhank@gmail.com)
+"""
 from __future__ import absolute_import, division, print_function
 
 import sys
@@ -27,7 +32,7 @@ if __name__ == "__main__":
     hyp_params["num_episodes"] = 500
     hyp_params["num_steps"] = 200
     hyp_params["batch_size"] = 128
-    hyp_params["epsilon"] = 0.2
+    hyp_params["epsilon"] = 1
     hyp_params["gamma"] = 0.99
     hyp_params["update_step"] = 1000
     hyp_params["wall_bonus"] = True
@@ -37,6 +42,3 @@ if __name__ == "__main__":
     # instantiate agent
     agent = DQNAgent(hyp_params)
     agent.train(env)
-
-#     def train(self, env):
-#         pass

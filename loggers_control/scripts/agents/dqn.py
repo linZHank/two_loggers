@@ -51,8 +51,8 @@ class DQNAgent:
         # Q(s,a;theta)
         self.qnet_active = tf.keras.models.Sequential([
             tf.keras.layers.Dense(128, input_shape=(self.dim_state, ), activation='relu'),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dense(len(self.actions), activation='softmax')
+            # tf.keras.layers.Dense(128, activation='relu'),
+            tf.keras.layers.Dense(len(self.actions))
         ])
         self.qnet_active.compile(optimizer="adam",
                             loss="mean_squared_error",
@@ -66,8 +66,8 @@ class DQNAgent:
         # Q^(s,a;theta_)
         self.qnet_stable = tf.keras.models.Sequential([
             tf.keras.layers.Dense(128, input_shape=(self.dim_state, ), activation='relu'),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dense(len(self.actions), activation='softmax')
+            # tf.keras.layers.Dense(128, activation='relu'),
+            tf.keras.layers.Dense(len(self.actions))
         ])
         # init replay memory
         self.replay_memory = Memory(memory_cap=50000)
