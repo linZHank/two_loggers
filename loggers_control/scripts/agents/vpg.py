@@ -73,5 +73,25 @@ class VPGAgent:
     def train_one_epoch(self):
         pass
 
+
     def train(self, env):
-        pass
+        for epoch in range(num_epochs):
+            obs, _ = env.reset()
+            done, ep_rewards = False, []
+            state = solo_utils.obs_to_state(obs)
+            dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.0001]))
+            self.train_one_epoch()
+            while True:
+                act_id = self.policy_net(state)
+                action = self.actions[act_id]
+                obs, rew, done, info = env.step(action)
+                state = solo_utils.obs_to_state(obs)
+                dist_1 = np.linalg.norm(state[:2]-np.array([0,-6.0001]))
+                delta_dist = dist_0 - dist
+                # adjust reward based on relative distance to the exit
+                rew, done = solo_utils.adjust_reward(rew, info, delta_dist, done, self.wall_bonus, self.door_bonus, self.dist_bonus)
+                ep_rewards.append(rew)
+                if done:
+                    obs, _ = env.reset()
+                    done, ep_rewards = False, []
+                    state = solo_utils.obs_to_state(obs)
