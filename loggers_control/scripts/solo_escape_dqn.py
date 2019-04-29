@@ -31,10 +31,10 @@ if __name__ == "__main__":
     hyp_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
     hyp_params["num_episodes"] = 500
     hyp_params["num_steps"] = 500
-    hyp_params["batch_size"] = 512
+    hyp_params["batch_size"] = 1000
     hyp_params["epsilon"] = 1
     hyp_params["gamma"] = 0.99
-    hyp_params["update_step"] = 1000
+    hyp_params["update_step"] = 10000
     hyp_params["wall_bonus"] = True
     hyp_params["door_bonus"] = True
     hyp_params["dist_bonus"] = False
