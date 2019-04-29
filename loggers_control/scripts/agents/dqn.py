@@ -51,28 +51,20 @@ class DQNAgent:
         self.model_path = hyp_params["model_path"]
         # Q(s,a;theta)
         self.qnet_active = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(128, input_shape=(self.dim_state, ), activation='relu'),
+            Dense(128, input_shape=(self.dim_state, ), activation='relu'),
             # tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dense(len(self.actions))
+            Dense(len(self.actions))
         ])
-        adam = tf.keras.optimizers.Adam(lr=1e-3)
-        self.qnet_active.compile(optimizer=adam,
-                            loss="mean_squared_error",
-                            metrics=["accuracy"])
-        self.qnet_active.summary()
-        self.qnet_callback = tf.keras.callbacks.ModelCheckpoint(
-            self.model_path,
-            save_weights_only=True,
-            verbose=1
-        )
         # Q^(s,a;theta_)
         self.qnet_stable = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(128, input_shape=(self.dim_state, ), activation='relu'),
+            Dense(128, input_shape=(self.dim_state, ), activation='relu'),
             # tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dense(len(self.actions))
+            Dense(len(self.actions))
         ])
+        # optimizer
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
         # init replay memory
-        self.replay_memory = Memory(memory_cap=50000)
+        self.replay_memory = Memory(memory_cap=100000)
 
     def epsilon_greedy(self, state):
         """
@@ -85,23 +77,27 @@ class DQNAgent:
             print(bcolors.WARNING, "Take a random action!", bcolors.ENDC)
             return np.random.randint(len(self.actions))
 
-    def epsilon_decay(self, epi):
-        return 1./(epi+1)
+    def epsilon_decay(self, i_episode):
+        return 1 - i_episode/self.num_episodes
 
-    def compute_target_q(self, sampled_batch):
-        present_value = self.qnet_active.predict(np.array(sampled_batch[0]))
-        future_value = self.qnet_stable.predict(np.array(sampled_batch[-1]))
-        target_q = present_value
-        for i, s in enumerate(sampled_batch[3]):
-            if sampled_batch[3][i]:
-                target_q[i,sampled_batch[1]] = sampled_batch[2]
-            else:
-                target_q[i,sampled_batch[1][i]] = sampled_batch[2][i] + self.gamma * np.max(future_value[i])
+    def loss(self, batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states):
+        loss_object = tf.keras.losses.MeanSquaredError()
+        q_values = tf.math.reduce_sum(self.qnet_active(batch_states) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
+        target_q = batch_rewards + (1. - batch_done_flags) * 0.99 * tf.math.reduce_max(self.qnet_stable(batch_next_states),axis=-1)
 
-        return target_q
+        return loss_object(y_true=target_q, y_pred=q_values)
+
+    def grad(self, batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states):
+        with tf.GradientTape() as tape:
+            loss_value = self.loss(batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states)
+
+        return loss_value, tape.gradient(loss_value, self.qnet_active.trainable_variables)
+
+    def save_model(self):
+        self.qnet_active.save_weights(self.model_path)
 
     def train(self, env):
-        total_step = 0
+        update_counter = 0
         ep_returns = []
         for ep in range(self.num_episodes):
             self.epsilon = self.epsilon_decay(ep)
@@ -118,15 +114,10 @@ class DQNAgent:
                 delta_dist = dist_0 - dist_1
                 # adjust reward based on relative distance to the exit
                 rew, done = solo_utils.adjust_reward(rew, info, delta_dist, done, self.wall_bonus, self.door_bonus, self.dist_bonus)
-                self.replay_memory.store((state_0, act_id, rew, done, state_1))
-                minibatch = self.replay_memory.sample_batch(self.batch_size)
-                # create dataset
-                x = np.array(minibatch[0])
-                y = self.compute_target_q(minibatch)
-                self.qnet_active.fit(x, y, epochs=1, callbacks=[self.qnet_callback])
+                # log the progress
                 print(
                     bcolors.OKGREEN,
-                    "Episode: {}, Step: {} \naction: {}--{}, state: {}, reward: {}, status: {}".format(
+                    "Episode: {}, Step: {} \naction: {}->{}, state: {}, reward: {}, status: {}".format(
                         ep,
                         st,
                         act_id,
@@ -137,15 +128,26 @@ class DQNAgent:
                     ),
                     bcolors.ENDC
                 )
+                # train an epoch
+                self.replay_memory.store((state_0, act_id, rew, done, state_1))
+                minibatch = self.replay_memory.sample_batch(self.batch_size)
+                (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
+                # compute gradient for one epoch
+                loss_value, grads = self.grad(batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states)
+                self.optimizer.apply_gradients(zip(grads, self.qnet_active.trainable_variables))
+                loss_value = self.loss(batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states)
+                print("loss: {}".format(loss_value))
                 state_0 = state_1
                 dist_0 = dist_1
                 ep_rewards.append(rew)
-                total_step += 1
-                if total_step % self.update_step == 0:
+                update_counter += 1
+                if not update_counter % self.update_step:
                     self.qnet_stable.set_weights(self.qnet_active.get_weights())
                     print(bcolors.BOLD, "Q-net weights updated!", bcolors.ENDC)
                 if done:
                     ep_returns.append(sum(ep_rewards))
                     print(bcolors.OKBLUE, "Episode: {}, Success Count: {}".format(ep, env.success_count),bcolors.ENDC)
+                    self.save_model()
+                    print("model saved at {}".format(self.model_path))
                     break
         gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=self.model_path)
