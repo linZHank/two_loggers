@@ -29,15 +29,17 @@ if __name__ == "__main__":
     hyp_params = {}
     hyp_params["dim_state"] = len(solo_utils.obs_to_state(env.observation))
     hyp_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
-    hyp_params["num_episodes"] = 500
+    hyp_params["num_episodes"] = 1000
     hyp_params["num_steps"] = 500
-    hyp_params["batch_size"] = 1000
+    hyp_params["batch_size"] = 2000
+    hyp_params["memory_cap"] = 500000
     hyp_params["epsilon"] = 1
     hyp_params["gamma"] = 0.99
+    hyp_params["learning_rate"] = 3e-4
     hyp_params["update_step"] = 10000
     hyp_params["wall_bonus"] = True
     hyp_params["door_bonus"] = True
-    hyp_params["dist_bonus"] = False
+    hyp_params["dist_bonus"] = True
     hyp_params["model_path"] = os.path.dirname(sys.path[0])+"/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
     # instantiate agent
     agent = DQNAgent(hyp_params)

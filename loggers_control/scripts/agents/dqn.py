@@ -40,10 +40,12 @@ class DQNAgent:
         self.epsilon = hyp_params["epsilon"]
         self.actions = hyp_params["actions"]
         self.gamma = hyp_params["gamma"]
+        self.learning_rate = hyp_params["learning_rate"]
         self.dim_state = hyp_params["dim_state"]
         self.num_episodes = hyp_params["num_episodes"]
         self.num_steps = hyp_params["num_steps"]
         self.batch_size = hyp_params["batch_size"]
+        self.memory_cap = hyp_params["memory_cap"]
         self.update_step = hyp_params["update_step"]
         self.wall_bonus = hyp_params["wall_bonus"]
         self.door_bonus = hyp_params["door_bonus"]
@@ -51,20 +53,20 @@ class DQNAgent:
         self.model_path = hyp_params["model_path"]
         # Q(s,a;theta)
         self.qnet_active = tf.keras.models.Sequential([
-            Dense(128, input_shape=(self.dim_state, ), activation='relu'),
-            # tf.keras.layers.Dense(128, activation='relu'),
+            Dense(64, input_shape=(self.dim_state, ), activation='relu'),
+            Dense(64, activation='relu'),
             Dense(len(self.actions))
         ])
         # Q^(s,a;theta_)
         self.qnet_stable = tf.keras.models.Sequential([
-            Dense(128, input_shape=(self.dim_state, ), activation='relu'),
-            # tf.keras.layers.Dense(128, activation='relu'),
+            Dense(64, input_shape=(self.dim_state, ), activation='relu'),
+            Dense(64, activation='relu'),
             Dense(len(self.actions))
         ])
         # optimizer
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
         # init replay memory
-        self.replay_memory = Memory(memory_cap=100000)
+        self.replay_memory = Memory(memory_cap=self.memory_cap)
 
     def epsilon_greedy(self, state):
         """
@@ -78,7 +80,10 @@ class DQNAgent:
             return np.random.randint(len(self.actions))
 
     def epsilon_decay(self, i_episode):
-        return 1 - i_episode/self.num_episodes
+        if 1 - 2*(i_episode/self.num_episodes) >= 1e-3:
+            return 1 - 2*(i_episode/self.num_episodes)
+        else:
+            return 1e-3
 
     def loss(self, batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states):
         loss_object = tf.keras.losses.MeanSquaredError()
