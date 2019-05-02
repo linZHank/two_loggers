@@ -29,7 +29,7 @@ if __name__ == "__main__":
     hyp_params = {}
     hyp_params["dim_state"] = len(solo_utils.obs_to_state(env.observation))
     hyp_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
-    hyp_params["num_episodes"] = 1000
+    hyp_params["num_episodes"] = 2000
     hyp_params["num_steps"] = 500
     hyp_params["batch_size"] = 2000
     hyp_params["memory_cap"] = 500000
