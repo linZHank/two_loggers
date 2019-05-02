@@ -25,13 +25,18 @@ if __name__ == "__main__":
     env = SoloEscapeEnv()
     env.reset()
     # hyper-parameters
+    hyp_param_path = os.path.join(os.path.dirname(model_path),"hyper_parameters.pkl")
+    with open(hyp_param_path, "rb") as f:
+        hyp_params = pickle.load(f)
+    dim_state = hyp_params["dim_state"]
+    actions = hyp_params["actions"]
     num_episodes = 10
     num_steps = 200
-    actions = np.array([np.array([.5, -1]), np.array([.5, 1])])
+    # qnet model
     qnet = tf.keras.models.Sequential([
-        Dense(64, input_shape=(7, ), activation='relu'),
+        Dense(64, input_shape=(dim_state), ), activation='relu'),
         Dense(64, activation='relu'),
-        Dense(2)
+        Dense(len(actions))
     ])
     qnet.load_weights(model_path)
     for ep in range(num_episodes):

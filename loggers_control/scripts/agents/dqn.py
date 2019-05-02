@@ -80,10 +80,10 @@ class DQNAgent:
             return np.random.randint(len(self.actions))
 
     def epsilon_decay(self, i_episode):
-        if 1 - 2*(i_episode/self.num_episodes) >= 1e-3:
+        if 1 - 2*(i_episode/self.num_episodes) >= 5e-2:
             return 1 - 2*(i_episode/self.num_episodes)
         else:
-            return 1e-3
+            return 5e-2
 
     def loss(self, batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states):
         loss_object = tf.keras.losses.MeanSquaredError()
