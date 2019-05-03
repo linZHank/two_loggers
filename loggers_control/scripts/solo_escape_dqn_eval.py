@@ -34,7 +34,7 @@ if __name__ == "__main__":
     num_steps = 200
     # qnet model
     qnet = tf.keras.models.Sequential([
-        Dense(64, input_shape=(dim_state), ), activation='relu'),
+        Dense(64, input_shape=(dim_state, ), activation='relu'),
         Dense(64, activation='relu'),
         Dense(len(actions))
     ])
