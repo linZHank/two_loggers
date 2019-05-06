@@ -118,7 +118,7 @@ class SoloEscapeEnv(object):
         robot_state.pose.orientation.w = w
         robot_state.reference_frame = "world"
         # Give the system a little time to finish initialization
-        for _ in range(8):
+        for _ in range(10):
             self.set_robot_state_pub.publish(robot_state)
             self.rate.sleep()
         self._take_action(np.zeros(2))
