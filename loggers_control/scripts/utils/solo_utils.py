@@ -73,7 +73,7 @@ def adjust_reward(hyp_params, env, agent):
                 adj_reward = 0.1/hyp_params["num_steps"] # positive, if getting closer to exit
         if hyp_params["time_bonus"]:
             adj_reward = -1./hyp_params["num_steps"]
-    else:
+    else: # hit wall
         if hyp_params["wall_bonus"]:
             adj_reward = hyp_params["wall_bonus"]
         done = True
