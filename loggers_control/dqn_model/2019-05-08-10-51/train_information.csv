@@ -1,0 +1,17 @@
+update_step,10000
+num_episodes,6000
+memory_cap,500000
+model_shape,[64, 64]
+epsilon,1
+learning_rate,0.0003
+num_steps,500
+batch_size,2000
+dim_state,7
+dist_bonus,False
+success_count,3001
+actions,[[ 0.5 -1. ]
+ [ 0.5  1. ]]
+door_bonus,True
+wall_bonus,True
+gamma,0.99
+model_path,/home/linzhank/ros_ws/src/two_loggers/loggers_control/dqn_model/2019-05-08-10-51/model.ckpt
