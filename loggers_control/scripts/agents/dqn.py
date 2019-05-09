@@ -40,17 +40,13 @@ class DQNAgent:
         self.epsilon = hyp_params["epsilon"]
         self.actions = hyp_params["actions"]
         self.gamma = hyp_params["gamma"]
-        self.learning_rate = hyp_params["learning_rate"]
         self.dim_state = hyp_params["dim_state"]
-        self.num_episodes = hyp_params["num_episodes"]
-        self.num_steps = hyp_params["num_steps"]
+        self.learning_rate = hyp_params["learning_rate"]
         self.batch_size = hyp_params["batch_size"]
         self.memory_cap = hyp_params["memory_cap"]
         self.update_step = hyp_params["update_step"]
-        self.wall_bonus = hyp_params["wall_bonus"]
-        self.door_bonus = hyp_params["door_bonus"]
-        self.dist_bonus = hyp_params["dist_bonus"]
         self.model_path = hyp_params["model_path"]
+        self.delta_dist = 0
         # Q(s,a;theta)
         self.qnet_active = tf.keras.models.Sequential([
             Dense(64, input_shape=(self.dim_state, ), activation='relu'),
@@ -79,80 +75,33 @@ class DQNAgent:
             print(bcolors.WARNING, "Take a random action!", bcolors.ENDC)
             return np.random.randint(len(self.actions))
 
-    def epsilon_decay(self, i_episode):
-        if 1 - 2*(i_episode/self.num_episodes) >= 5e-2:
-            return 1 - 2*(i_episode/self.num_episodes)
-        else:
-            return 5e-2
+    def epsilon_decay(self, episode_index, num_episodes):
+        self.epsilon = np.clip(1-2*(episode_index/num_episodes), 5e-2, 1)
 
-    def loss(self, batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states):
+        return self.epsilon
+
+    def loss(self, minibatch):
+        (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
         loss_object = tf.keras.losses.MeanSquaredError()
         q_values = tf.math.reduce_sum(self.qnet_active(batch_states) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
-        target_q = batch_rewards + (1. - batch_done_flags) * 0.99 * tf.math.reduce_max(self.qnet_stable(batch_next_states),axis=-1)
+        target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states),axis=-1)
 
         return loss_object(y_true=target_q, y_pred=q_values)
 
-    def grad(self, batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states):
+    def grad(self, minibatch):
         with tf.GradientTape() as tape:
-            loss_value = self.loss(batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states)
+            loss_value = self.loss(minibatch)
 
         return loss_value, tape.gradient(loss_value, self.qnet_active.trainable_variables)
 
     def save_model(self):
         self.qnet_active.save_weights(self.model_path)
 
-    def train(self, env):
-        update_counter = 0
-        ep_returns = []
-        for ep in range(self.num_episodes):
-            self.epsilon = self.epsilon_decay(ep)
-            obs, _ = env.reset()
-            state_0 = solo_utils.obs_to_state(obs)
-            dist_0 = np.linalg.norm(state_0[:2]-np.array([0,-6.0001]))
-            done, ep_rewards = False, []
-            for st in range(self.num_steps):
-                act_id = self.epsilon_greedy(state_0)
-                action = self.actions[act_id]
-                obs, rew, done, info = env.step(action)
-                state_1 = solo_utils.obs_to_state(obs)
-                dist_1 = np.linalg.norm(state_1[:2]-np.array([0,-6.0001]))
-                delta_dist = dist_0 - dist_1
-                # adjust reward based on relative distance to the exit
-                rew, done = solo_utils.adjust_reward(rew, info, delta_dist, done, self.wall_bonus, self.door_bonus, self.dist_bonus)
-                # log the progress
-                print(
-                    bcolors.OKGREEN,
-                    "Episode: {}, Step: {} \naction: {}->{}, state: {}, reward: {}, status: {}".format(
-                        ep,
-                        st,
-                        act_id,
-                        action,
-                        state_1,
-                        rew,
-                        info
-                    ),
-                    bcolors.ENDC
-                )
-                # train an epoch
-                self.replay_memory.store((state_0, act_id, rew, done, state_1))
-                minibatch = self.replay_memory.sample_batch(self.batch_size)
-                (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
-                # compute gradient for one epoch
-                loss_value, grads = self.grad(batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states)
-                self.optimizer.apply_gradients(zip(grads, self.qnet_active.trainable_variables))
-                loss_value = self.loss(batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states)
-                print("loss: {}".format(loss_value))
-                state_0 = state_1
-                dist_0 = dist_1
-                ep_rewards.append(rew)
-                update_counter += 1
-                if not update_counter % self.update_step:
-                    self.qnet_stable.set_weights(self.qnet_active.get_weights())
-                    print(bcolors.BOLD, "Q-net weights updated!", bcolors.ENDC)
-                if done:
-                    ep_returns.append(sum(ep_rewards))
-                    print(bcolors.OKBLUE, "Episode: {}, Success Count: {}".format(ep, env.success_count),bcolors.ENDC)
-                    self.save_model()
-                    print("model saved at {}".format(self.model_path))
-                    break
-        gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=self.model_path)
+    def train(self):
+        # sample a minibatch
+        minibatch = self.replay_memory.sample_batch(self.batch_size)
+        # compute gradient for one epoch
+        loss_value, grads = self.grad(minibatch)
+        self.optimizer.apply_gradients(zip(grads, self.qnet_active.trainable_variables))
+        loss_value = self.loss(minibatch)
+        print("loss: {}".format(loss_value))

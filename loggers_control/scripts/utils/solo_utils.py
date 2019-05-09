@@ -46,28 +46,36 @@ def obs_to_state(observation):
 
     return state
 
-def adjust_reward(rew, info, delta_d, done,
-                  wall_bonus_flag, door_bonus_flag, dist_bonus_flag):
-    adj_reward = rew
+def adjust_reward(hyp_params, env, agent):
+                  # rew, info, delta_d, done, num_episodes
+                  # time_bonus_flag, wall_bonus_flag,
+                  # door_bonus_flag, dist_bonus_flag):
+    done = env._episode_done
+    adj_reward = env.reward
+    info = env.info
+    assert hyp_params["time_bonus"] != hyp_params["dist_bonus"]
     if info["status"] == "escaped":
-        adj_reward = 10*rew
+        if hyp_params["success_bonus"]:
+            adj_reward = hyp_params["success_bonus"]
         done = True
     elif info["status"] == "sdoor":
-        if door_bonus_flag:
-            adj_reward = 1./100
+        if hyp_params["door_bonus"]:
+            adj_reward = hyp_params["door_bonus"]
         done = True
     elif info["status"] == "tdoor":
-        if door_bonus_flag:
-            adj_reward = 1./100
+        if hyp_params["door_bonus"]:
+            adj_reward = hyp_params["door_bonus"]
     elif info["status"] == "trapped":
-        if dist_bonus_flag:
-            if delta_d < 0:
-                adj_reward = -1./1e3 # negative, if getting further from exit
+        if hyp_params["dist_bonus"]:
+            if agent.delta_dist <= 0:
+                adj_reward = -1./hyp_params["num_steps"] # negative, if getting further from exit
             else:
-                adj_reward = 1./1e4 # positive, if getting closer to exit
+                adj_reward = 0.1/hyp_params["num_steps"] # positive, if getting closer to exit
+        if hyp_params["time_bonus"]:
+            adj_reward = -1./hyp_params["num_steps"]
     else:
-        if wall_bonus_flag:
-            adj_reward = -1./1e2
+        if hyp_params["wall_bonus"]:
+            adj_reward = hyp_params["wall_bonus"]
         done = True
 
     return adj_reward, done
