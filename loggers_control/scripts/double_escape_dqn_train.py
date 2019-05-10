@@ -47,7 +47,7 @@ if __name__ == "__main__":
         epsilon_0 = agent_0.epsilon_decay(ep, hyp_params["num_episodes"])
         print("epsilon: {}".format(epsilon))
         obs, _ = env.reset()
-        state_0 = double_utils.obs_to_state(obs)
+        state = double_utils.obs_to_state(obs, "all")
         done, ep_rewards = False, []
         for st in range(hyp_params["num_steps"]):
             act_id = agent.epsilon_greedy(state_0)

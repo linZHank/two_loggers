@@ -7,7 +7,7 @@ import rospy
 import tf
 from geometry_msgs.msg import Pose, Twist
 
-def obs_to_state(observation, robot_name):
+def obs_to_state(observation, mode):
     """
     Convert observation to state
     Args:
@@ -16,7 +16,7 @@ def obs_to_state(observation, robot_name):
             "logger_0": {Pose(), Twist()}
             "logger_1": {Pose(), Twist()}
         }
-        robot_name: "logger_0" or "logger_1"
+        mode: "logger_0", "logger_1" or "all"
     Returns:
         state = [state_log, state_robot]
             state_log = [x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot]
@@ -38,21 +38,42 @@ def obs_to_state(observation, robot_name):
     sin_yaw = np.sin(euler[2])
     yaw_dot = observation["log"]["twist"].angular.z
     state_log = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
-    # compute robot state
-    x = observation[robot_name]["pose"].position.x
-    y = observation[robot_name]["pose"].position.y
-    v_x = observation[robot_name]["twist"].linear.x
-    v_y = observation[robot_name]["twist"].linear.y
+    # compute logger_0 state
+    x = observation["logger_0"]["pose"].position.x
+    y = observation["logger_0"]["pose"].position.y
+    v_x = observation["logger_0"]["twist"].linear.x
+    v_y = observation["logger_0"]["twist"].linear.y
     quat = (
-        observation[robot_name]["pose"].orientation.x,
-        observation[robot_name]["pose"].orientation.y,
-        observation[robot_name]["pose"].orientation.z,
-        observation[robot_name]["pose"].orientation.w
+        observation["logger_0"]["pose"].orientation.x,
+        observation["logger_0"]["pose"].orientation.y,
+        observation["logger_0"]["pose"].orientation.z,
+        observation["logger_0"]["pose"].orientation.w
     )
     euler = tf.transformations.euler_from_quaternion(quat)
     cos_yaw = np.cos(euler[2])
     sin_yaw = np.sin(euler[2])
-    yaw_dot = observation[robot_name]["twist"].angular.z
-    state_robot = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
+    yaw_dot = observation["logger_0"]["twist"].angular.z
+    state_logger0 = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
+    # compute logger_1 state
+    x = observation["logger_1"]["pose"].position.x
+    y = observation["logger_1"]["pose"].position.y
+    v_x = observation["logger_1"]["twist"].linear.x
+    v_y = observation["logger_1"]["twist"].linear.y
+    quat = (
+        observation["logger_1"]["pose"].orientation.x,
+        observation["logger_1"]["pose"].orientation.y,
+        observation["logger_1"]["pose"].orientation.z,
+        observation["logger_1"]["pose"].orientation.w
+    )
+    euler = tf.transformations.euler_from_quaternion(quat)
+    cos_yaw = np.cos(euler[2])
+    sin_yaw = np.sin(euler[2])
+    yaw_dot = observation["logger_1"]["twist"].angular.z
+    state_logger1 = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
 
-    return np.concatenate((state_log, state_robot), axis=0)
+    if mode == "logger_0":
+        return np.concatenate((state_log, state_logger0), axis=0)
+    elif mode == "logger_1":
+        return np.concatenate((state_log, state_logger1), axis=0)
+    elif mode == "all":
+        return np.concatenate((state_log, state_logger0, state_logger1), axis=0)
