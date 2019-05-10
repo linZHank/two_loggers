@@ -11,8 +11,6 @@ from utils.gen_utils import bcolors
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 
-import pdb
-
 
 class Memory:
     def __init__(self, memory_cap):
@@ -34,31 +32,37 @@ class Memory:
         return zip(*batch)
 
 class DQNAgent:
-    def __init__(self, hyp_params):
+    def __init__(self, params):
         # super(DQNAgent, self).__init__()
         # hyper-parameters
-        self.epsilon = hyp_params["epsilon"]
-        self.actions = hyp_params["actions"]
-        self.gamma = hyp_params["gamma"]
-        self.dim_state = hyp_params["dim_state"]
-        self.learning_rate = hyp_params["learning_rate"]
-        self.batch_size = hyp_params["batch_size"]
-        self.memory_cap = hyp_params["memory_cap"]
-        self.update_step = hyp_params["update_step"]
-        self.model_path = hyp_params["model_path"]
+        self.dim_state = params["dim_state"]
+        self.actions = params["actions"]
+        self.layer_size = params["layer_size"]
+        self.epsilon = params["epsilon"]
+        self.gamma = params["gamma"]
+        self.learning_rate = params["learning_rate"]
+        self.batch_size = params["batch_size"]
+        self.memory_cap = params["memory_cap"]
+        self.update_step = params["update_step"]
+        self.model_path = params["model_path"]
         self.delta_dist = 0
         # Q(s,a;theta)
-        self.qnet_active = tf.keras.models.Sequential([
-            Dense(64, input_shape=(self.dim_state, ), activation='relu'),
-            Dense(64, activation='relu'),
-            Dense(len(self.actions))
-        ])
+        self.qnet_active = tf.keras.models.Sequential()
+        for i in range(len(self.layer_size)):
+            self.qnet_active.add(Dense(self.layer_size[i], activation="relu"))
+        self.qnet_active.add(Dense(len(self.actions)))
+        # self.qnet_active = tf.keras.models.Sequential([
+        #     Dense(64, input_shape=(self.dim_state, ), activation='relu'),
+        #     Dense(64, activation='relu'),
+        #     Dense(len(self.actions))
+        # ])
         # Q^(s,a;theta_)
-        self.qnet_stable = tf.keras.models.Sequential([
-            Dense(64, input_shape=(self.dim_state, ), activation='relu'),
-            Dense(64, activation='relu'),
-            Dense(len(self.actions))
-        ])
+        self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
+        # self.qnet_stable = tf.keras.models.Sequential([
+        #     Dense(64, input_shape=(self.dim_state, ), activation='relu'),
+        #     Dense(64, activation='relu'),
+        #     Dense(len(self.actions))
+        # ])
         # optimizer
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
         # init replay memory
@@ -83,8 +87,8 @@ class DQNAgent:
     def loss(self, minibatch):
         (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
         loss_object = tf.keras.losses.MeanSquaredError()
-        q_values = tf.math.reduce_sum(self.qnet_active(batch_states) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
-        target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states),axis=-1)
+        q_values = tf.math.reduce_sum(tf.cast(self.qnet_active(batch_states), tf.float32) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
+        target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
 
         return loss_object(y_true=target_q, y_pred=q_values)
 

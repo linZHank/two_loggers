@@ -5,7 +5,6 @@ Tensorflow related tools
 import numpy as np
 import tensorflow as tf
 
-
 def mlp(x, sizes, activation=tf.tanh, output_activation=None):
     # Build a feedforward neural network.
     for size in sizes[:-1]:
