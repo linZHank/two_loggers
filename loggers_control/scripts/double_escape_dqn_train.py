@@ -27,26 +27,38 @@ if __name__ == "__main__":
     # make an instance from env class
     env = DoubleEscapeEnv()
     env.reset()
-    agent_params = {}
+    agent0_params = {}
+    agent1_params = {}
     train_params = {}
-    # agent parameters
-    agent_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
-    agent_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
-    agent_params["layer_size"] = [256,128]
-    agent_params["epsilon"] = 1
-    agent_params["gamma"] = 0.99
-    agent_params["learning_rate"] = 3e-4
-    agent_params["batch_size"] = 2000
-    agent_params["memory_cap"] = 500000
-    agent_params["update_step"] = 10000
-    agent_params["model_path"] = os.path.dirname(sys.path[0])+"/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
+    # agent_0 parameters
+    agent0_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
+    agent0_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
+    agent0_params["layer_size"] = [256,128]
+    agent0_params["epsilon"] = 1
+    agent0_params["gamma"] = 0.99
+    agent0_params["learning_rate"] = 3e-4
+    agent0_params["batch_size"] = 2000
+    agent0_params["memory_cap"] = 500000
+    agent0_params["update_step"] = 10000
+    agent0_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent0/model.ckpt"
+    # agent_1 parameters
+    agent1_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
+    agent1_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
+    agent1_params["layer_size"] = [256,128]
+    agent1_params["epsilon"] = 1
+    agent1_params["gamma"] = 0.99
+    agent1_params["learning_rate"] = 3e-4
+    agent1_params["batch_size"] = 2000
+    agent1_params["memory_cap"] = 500000
+    agent1_params["update_step"] = 10000
+    agent1_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent1/model.ckpt"
     # training parameters
-    train_params["num_episodes"] = 6
-    train_params["num_steps"] = 50
+    train_params["num_episodes"] = 4
+    train_params["num_steps"] = 20
 
     # instantiate agents
-    agent_0 = DQNAgent(agent_params)
-    agent_1 = DQNAgent(agent_params)
+    agent_0 = DQNAgent(agent0_params)
+    agent_1 = DQNAgent(agent1_params)
     update_counter = 0
     ep_returns = []
     for ep in range(train_params["num_episodes"]):
@@ -106,16 +118,16 @@ if __name__ == "__main__":
         agent_1.save_model()
         print("model saved")
     # plot deposit returns
-    gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=agent_params["model_path"])
+    gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=os.path.dirname(agent0_params["model_path"]))
 
     # save hyper-parameters
     # model_shape = []
     # for i in range(1,len(agent.qnet_active.weights)):
     #     if not i%2:
     #         model_shape.append(agent.qnet_active.weights[i].shape[0])
-    gen_utils.save_pkl(content=train_params, path=agent_params["model_path"], fname="hyper_parameters.pkl")
+    gen_utils.save_pkl(content=agent0_params, path=agent0_params["model_path"], fname="agent0_parameters.pkl")
+    gen_utils.save_pkl(content=agent1_params, path=agent1_params["model_path"], fname="agent1_parameters.pkl")
     # save results
     train_info = train_params
-    train_info["model_shape"] = model_shape
     train_info["success_count"] = env.success_count
-    gen_utils.save_csv(content=train_info, path=agent_params["model_path"], fname="train_information.csv")
+    gen_utils.save_csv(content=train_info, path=os.path.dirname(agent0_params["model_path"]), fname="train_information.csv")

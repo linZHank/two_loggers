@@ -86,11 +86,11 @@ if __name__ == "__main__":
                 agent.qnet_stable.set_weights(agent.qnet_active.get_weights())
                 print(bcolors.BOLD, "Q-net weights updated!", bcolors.ENDC)
             if done:
-                ep_returns.append(sum(ep_rewards))
-                print(bcolors.OKBLUE, "Episode: {}, Success Count: {}".format(ep, env.success_count),bcolors.ENDC)
-                agent.save_model()
-                print("model saved at {}".format(agent.model_path))
                 break
+        ep_returns.append(sum(ep_rewards))
+        print(bcolors.OKBLUE, "Episode: {}, Success Count: {}".format(ep, env.success_count),bcolors.ENDC)
+        agent.save_model()
+        print("model saved at {}".format(agent.model_path))
     # plot deposit returns
     gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=agent.model_path)
 
