@@ -14,7 +14,7 @@ import tensorflow as tf
 import rospy
 
 from envs.double_escape_task_env import DoubleEscapeEnv
-from utils import gen_utils, solo_utils, tf_utils
+from utils import gen_utils, double_utils, tf_utils
 from utils.gen_utils import bcolors
 from agents.dqn import DQNAgent
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     env.reset()
     # hyper-parameters
     hyp_params = {}
-    hyp_params["dim_state"] = len(solo_utils.obs_to_state(env.observation))
+    hyp_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
     hyp_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
     hyp_params["num_episodes"] = 6000
     hyp_params["num_steps"] = 500
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     hyp_params["gamma"] = 0.99
     hyp_params["learning_rate"] = 3e-4
     hyp_params["update_step"] = 10000
-    hyp_params["model_path"] = os.path.dirname(sys.path[0])+"/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
+    hyp_params["model_path"] = os.path.dirname(sys.path[0])+"/dqn_model/double_escape/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
 
     # instantiate agents
     agent_0 = DQNAgent(hyp_params)
@@ -45,41 +45,53 @@ if __name__ == "__main__":
     ep_returns = []
     for ep in range(hyp_params["num_episodes"]):
         epsilon_0 = agent_0.epsilon_decay(ep, hyp_params["num_episodes"])
-        print("epsilon: {}".format(epsilon))
+        epsilon_1 = agent_1.epsilon_decay(ep, hyp_params["num_episodes"])
+        print("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         obs, _ = env.reset()
-        state = double_utils.obs_to_state(obs, "all")
+        agent0_state = double_utils.obs_to_state(obs, "all")
+        agent1_state = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 could be same if using "all" option, when converting obs
         done, ep_rewards = False, []
         for st in range(hyp_params["num_steps"]):
-            act_id = agent.epsilon_greedy(state_0)
-            action = agent.actions[act_id]
-            obs, rew, done, info = env.step(action)
-            state_1 = solo_utils.obs_to_state(obs)
-            dist_1 = np.linalg.norm(state_1[:2]-np.array([0,-6.0001]))
-            agent.delta_dist = dist_0 - dist_1
+            agent0_acti = agent_0.epsilon_greedy(agent0_state)
+            agent0_action = agent_0.actions[agent0_acti]
+            agent1_acti = agent_1.epsilon_greedy(agent1_state)
+            agent1_action = agent_1.actions[agent1_acti]
+            obs, rew, done, info = env.step(agent0_action, agent1_action)
+            agent0_state_next = double_utils.obs_to_state(obs, "all")
+            agent1_state_next = double_utils.obs_to_state(obs, "all")
             # adjust reward based on bonus options
-            rew, done = solo_utils.adjust_reward(hyp_params, env, agent)
+            # rew, done = double_utils.adjust_reward(hyp_params, env, agent)
             print(
                 bcolors.OKGREEN,
-                "Episode: {}, Step: {} \naction: {}->{}, state: {}, reward: {}, status: {}".format(
+                "Episode: {}, Step: {} \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward: {}, status: {}".format(
                     ep,
                     st,
-                    act_id,
-                    action,
-                    state_1,
+                    agent0_acti,
+                    agent0_action,
+                    agent1_acti,
+                    agent1_action,
+                    agent0_state_next,
+                    agent1_state_next,
                     rew,
                     info
                 ),
                 bcolors.ENDC
             )
             # store transition
-            agent.replay_memory.store((state_0, act_id, rew, done, state_1))
-            agent.train()
-            state_0 = state_1
+            agent_0.replay_memory.store((agent0_state, agent0_acti, rew, done, agent0_state_next))
+            agent_1.replay_memory.store((agent1_state, agent1_acti, rew, done, agent1_state_next))
+            agent_0.train()
+            agent_1.train()
+            agent0_state = agent0_state_next
+            agent1_state = agent1_state_next
             ep_rewards.append(rew)
             update_counter += 1
-            if not update_counter % agent.update_step:
-                agent.qnet_stable.set_weights(agent.qnet_active.get_weights())
-                print(bcolors.BOLD, "Q-net weights updated!", bcolors.ENDC)
+            if not update_counter % agent_0.update_step:
+                agent_0.qnet_stable.set_weights(agent_0.qnet_active.get_weights())
+                print(bcolors.BOLD, "agent_0 Q-net weights updated!", bcolors.ENDC)
+            if not update_counter % agent_1.update_step:
+                agent_1.qnet_stable.set_weights(agent_1.qnet_active.get_weights())
+                print(bcolors.BOLD, "agent_1 Q-net weights updated!", bcolors.ENDC)
             if done:
                 ep_returns.append(sum(ep_rewards))
                 print(bcolors.OKBLUE, "Episode: {}, Success Count: {}".format(ep, env.success_count),bcolors.ENDC)
@@ -87,13 +99,13 @@ if __name__ == "__main__":
                 print("model saved at {}".format(agent.model_path))
                 break
     # plot deposit returns
-    gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=agent.model_path)
+    gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=hyp_params["model_path"])
 
     # save hyper-parameters
-    model_shape = []
-    for i in range(1,len(agent.qnet_active.weights)):
-        if not i%2:
-            model_shape.append(agent.qnet_active.weights[i].shape[0])
+    # model_shape = []
+    # for i in range(1,len(agent.qnet_active.weights)):
+    #     if not i%2:
+    #         model_shape.append(agent.qnet_active.weights[i].shape[0])
     gen_utils.save_pkl(content=hyp_params, path=hyp_params["model_path"], fname="hyper_parameters.pkl")
     # save results
     train_info = hyp_params
