@@ -53,8 +53,8 @@ if __name__ == "__main__":
     agent1_params["update_step"] = 10000
     agent1_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent1/model.ckpt"
     # training parameters
-    train_params["num_episodes"] = 256
-    train_params["num_steps"] = 4000
+    train_params["num_episodes"] = 4000
+    train_params["num_steps"] = 256
 
     # instantiate agents
     agent_0 = DQNAgent(agent0_params)
