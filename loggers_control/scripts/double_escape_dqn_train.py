@@ -34,7 +34,6 @@ if __name__ == "__main__":
     agent0_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
     agent0_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
     agent0_params["layer_size"] = [256,128]
-    agent0_params["epsilon"] = 1
     agent0_params["gamma"] = 0.99
     agent0_params["learning_rate"] = 3e-4
     agent0_params["batch_size"] = 2000

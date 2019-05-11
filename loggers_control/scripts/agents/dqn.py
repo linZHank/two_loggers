@@ -38,7 +38,6 @@ class DQNAgent:
         self.dim_state = params["dim_state"]
         self.actions = params["actions"]
         self.layer_size = params["layer_size"]
-        self.epsilon = params["epsilon"]
         self.gamma = params["gamma"]
         self.learning_rate = params["learning_rate"]
         self.batch_size = params["batch_size"]
@@ -46,6 +45,7 @@ class DQNAgent:
         self.update_step = params["update_step"]
         self.model_path = params["model_path"]
         self.delta_dist = 0
+        self.epsilon = 1
         # Q(s,a;theta)
         self.qnet_active = tf.keras.models.Sequential()
         for i in range(len(self.layer_size)):
@@ -64,7 +64,7 @@ class DQNAgent:
         #     Dense(len(self.actions))
         # ])
         # optimizer
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+        self.optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
         # init replay memory
         self.replay_memory = Memory(memory_cap=self.memory_cap)
 
