@@ -37,8 +37,8 @@ if __name__ == "__main__":
     agent_params["update_step"] = 10000
     agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
     # training params
-    train_params["num_episodes"] = 4
-    train_params["num_steps"] = 10
+    train_params["num_episodes"] = 6000
+    train_params["num_steps"] = 256
     train_params["time_bonus"] = True
     train_params["dist_bonus"] = False
     train_params["success_bonus"] = 10
