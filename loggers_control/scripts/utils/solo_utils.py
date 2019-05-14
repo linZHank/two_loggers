@@ -53,7 +53,7 @@ def adjust_reward(train_params, env, agent):
     done = env._episode_done
     adj_reward = env.reward
     info = env.info
-    assert train_params["time_bonus"] != train_params["dist_bonus"]
+    assert train_params["time_bonus"]==True and train_params["dist_bonus"]==True
     if info["status"] == "escaped":
         if train_params["success_bonus"]:
             adj_reward = train_params["success_bonus"]

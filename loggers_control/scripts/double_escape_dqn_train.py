@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-An implementation of Deep Q-network (DQN) for double_escape_task
+Training two logger robots escaping a cell with Deep Q-network (DQN)
 DQN is a model free, off policy, reinforcement learning algorithm (https://deepmind.com/research/dqn/)
 Author: LinZHanK (linzhank@gmail.com)
 """
@@ -54,7 +54,10 @@ if __name__ == "__main__":
     # training parameters
     train_params["num_episodes"] = 4000
     train_params["num_steps"] = 256
-
+    train_params["time_bonus"] = False
+    train_params["success_bonus"] = 20
+    train_params["wall_bonus"] = -1./100
+    train_params["door_bonus"] = 1./100
     # instantiate agents
     agent_0 = DQNAgent(agent0_params)
     agent_1 = DQNAgent(agent1_params)
@@ -65,17 +68,18 @@ if __name__ == "__main__":
         epsilon_1 = agent_1.epsilon_decay(ep, train_params["num_episodes"])
         print("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         obs, _ = env.reset()
-        agent0_state = double_utils.obs_to_state(obs, "all")
-        agent1_state = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 could be same if using "all" option, when converting obs
+        state_agt0 = double_utils.obs_to_state(obs, "all")
+        state_agt1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 could be same if using "all" option, when converting obs
         done, ep_rewards = False, []
         for st in range(train_params["num_steps"]):
-            agent0_acti = agent_0.epsilon_greedy(agent0_state)
+            agent0_acti = agent_0.epsilon_greedy(state_agt0)
             agent0_action = agent_0.actions[agent0_acti]
-            agent1_acti = agent_1.epsilon_greedy(agent1_state)
+            agent1_acti = agent_1.epsilon_greedy(state_agt1)
             agent1_action = agent_1.actions[agent1_acti]
             obs, rew, done, info = env.step(agent0_action, agent1_action)
-            agent0_state_next = double_utils.obs_to_state(obs, "all")
-            agent1_state_next = double_utils.obs_to_state(obs, "all")
+            next_state_agt0 = double_utils.obs_to_state(obs, "all")
+            next_state_agt1 = double_utils.obs_to_state(obs, "all")
+            rew, done = double_utils.adjust_reward(train_params, env)
             # adjust reward based on bonus options
             # rew, done = double_utils.adjust_reward(hyp_params, env, agent)
             print(
@@ -87,20 +91,20 @@ if __name__ == "__main__":
                     agent0_action,
                     agent1_acti,
                     agent1_action,
-                    agent0_state_next,
-                    agent1_state_next,
+                    next_state_agt0,
+                    next_state_agt1,
                     rew,
                     info
                 ),
                 bcolors.ENDC
             )
             # store transition
-            agent_0.replay_memory.store((agent0_state, agent0_acti, rew, done, agent0_state_next))
-            agent_1.replay_memory.store((agent1_state, agent1_acti, rew, done, agent1_state_next))
+            agent_0.replay_memory.store((state_agt0, agent0_acti, rew, done, next_state_agt0))
+            agent_1.replay_memory.store((state_agt1, agent1_acti, rew, done, next_state_agt1))
             agent_0.train()
             agent_1.train()
-            agent0_state = agent0_state_next
-            agent1_state = agent1_state_next
+            state_agt0 = next_state_agt0
+            state_agt1 = next_state_agt1
             ep_rewards.append(rew)
             update_counter += 1
             if not update_counter % agent_0.update_step:
