@@ -96,6 +96,8 @@ def adjust_reward(train_params, env):
     elif info["status"] == "trapped":
         if train_params["time_bonus"]:
             adj_reward = -1./train_params["num_steps"]
+    elif info["status"] == "blew":
+        done = True
     else: # hit wall
         if train_params["wall_bonus"]:
             adj_reward = train_params["wall_bonus"]

@@ -178,6 +178,8 @@ class DoubleEscapeEnv(object):
                     self.status = "tdoor" # through door
         elif self.observation["logger_0"]["pose"].position.y < -6 and self.observation["logger_1"]["pose"].position.y < -6:
             self.status = "escaped"
+        elif self.observation["logger_0"]["pose"].position.z > 0.1 or self.observation["logger_1"]["pose"].position.z > 0.1:
+            self.status = "blew"
         else:
             self.status = "trapped"
         # logging
