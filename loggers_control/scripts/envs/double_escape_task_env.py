@@ -161,7 +161,22 @@ class DoubleEscapeEnv(object):
         self.observation["logger_1"]["pose"] = link_states.pose[id_logger_1]
         self.observation["logger_1"]["twist"] = link_states.twist[id_logger_1]
         # env status
-        if self.observation["logger_0"]["pose"].position.y < -6 and self.observation["logger_1"]["pose"].position.y < -6:
+        # compute status
+        if self.observation["logger_0"]["pose"].position.x > 4.79 or self.observation["logger_1"]["pose"].position.x > 4.79:
+            self.status = "east"
+        elif self.observation["logger_0"]["pose"].position.x < -4.79 or self.observation["logger_1"]["pose"].position.x < -4.79:
+            self.status = "west"
+        elif self.observation["logger_0"]["pose"].position.y > 4.79 or self.observation["logger_1"]["pose"].position.y > 4.79:
+            self.status = "north"
+        elif -6<=self.observation["logger_0"]["pose"].position.y < -4.79 or -6<=self.observation["logger_1"]["pose"].position.y < -4.79:
+            if np.absolute(self.observation["logger_0"]["pose"].position.x) > 1 or np.absolute(self.observation["logger_1"]["pose"].position.x) > 1:
+                self.status = "south"
+            else:
+                if np.absolute(self.observation["logger_0"]["pose"].position.x) > 0.79 or np.absolute(self.observation["logger_1"]["pose"].position.x) > 0.79:
+                    self.status = "sdoor" # stuck at door
+                else:
+                    self.status = "tdoor" # through door
+        elif self.observation["logger_0"]["pose"].position.y < -6 and self.observation["logger_1"]["pose"].position.y < -6:
             self.status = "escaped"
         else:
             self.status = "trapped"
@@ -206,7 +221,6 @@ class DoubleEscapeEnv(object):
             rospy.logerr("\nDouble Escape Succeed!\n")
         else:
             self.reward = -0.
-            self.status = "trapped"
             self._episode_done = False
             rospy.loginfo("The log is trapped in the cell...")
         rospy.logdebug("Stepwise Reward: {}, Success Count: {}".format(self.reward, self.success_count))

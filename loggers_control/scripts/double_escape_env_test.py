@@ -33,6 +33,6 @@ if __name__ == "__main__":
             state_logger0 = double_utils.obs_to_state(obs, "logger_0")
             state_logger1 = double_utils.obs_to_state(obs, "logger_1")
             state_all = double_utils.obs_to_state(obs, "all")
-            rospy.loginfo("Episode: {}, Step: {}, \nlogger_0 state: {}, logger_1 state: {}, state_all: {} \naction_0: {}, action_1".format(ep, st, state_logger0, state_logger1, state_all, action_0, action_1))
+            rospy.loginfo("Episode: {}, Step: {}, \nlogger_0 state: {}, logger_1 state: {}, state_all: {} \naction_0: {}, action_1: {} \ninfo: {}".format(ep, st, state_logger0, state_logger1, state_all, action_0, action_1, info))
     # stop loggers in the end
     escaper.step(np.zeros(2), np.zeros(2))

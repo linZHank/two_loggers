@@ -210,7 +210,6 @@ class SoloEscapeEnv(object):
             info: {"status": "where the robot at"}
         """
         rospy.logdebug("\nStart Posting Information")
-
         self.info["status"] = self.status
         rospy.logdebug("End Posting Information\n")
 
