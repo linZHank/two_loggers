@@ -32,7 +32,7 @@ if __name__ == "__main__":
     train_params = {}
     # agent_0 parameters
     agent0_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
-    agent0_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
+    agent0_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1]), np.array([-.5, -1]), np.array([-.5, 1]), np.array([0, 0])])
     agent0_params["layer_size"] = [256,128]
     agent0_params["gamma"] = 0.99
     agent0_params["learning_rate"] = 3e-4
@@ -52,12 +52,12 @@ if __name__ == "__main__":
     agent1_params["update_step"] = 10000
     agent1_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent1/model.ckpt"
     # training parameters
-    train_params["num_episodes"] = 4000
-    train_params["num_steps"] = 256
-    train_params["time_bonus"] = False
+    train_params["num_episodes"] = 6000
+    train_params["num_steps"] = 400
+    train_params["time_bonus"] = True
     train_params["success_bonus"] = 20
-    train_params["wall_bonus"] = -1./100
-    train_params["door_bonus"] = 1./100
+    train_params["wall_bonus"] = -2./100
+    train_params["door_bonus"] = 2./100
     # instantiate agents
     agent_0 = DQNAgent(agent0_params)
     agent_1 = DQNAgent(agent1_params)
