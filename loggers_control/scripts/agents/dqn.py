@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+import sys
+import os
 import numpy as np
 import random
 import tensorflow as tf
@@ -47,9 +49,13 @@ class DQNAgent:
         self.delta_dist = 0
         self.epsilon = 1
         # Q(s,a;theta)
-        self.qnet_active = tf.keras.models.Sequential()
-        for i in range(len(self.layer_size)):
-            self.qnet_active.add(Dense(self.layer_size[i], activation="relu"))
+        assert len(self.layer_size) >= 1
+        self.qnet_active = tf.keras.models.Sequential([
+            Dense(self.layer_size[0], activation='relu', input_shape=(self.dim_state,))
+        ])
+        if len(self.layer_size) >= 2:
+            for i in range(1,len(self.layer_size)):
+                self.qnet_active.add(Dense(self.layer_size[i], activation="relu"))
         self.qnet_active.add(Dense(len(self.actions)))
         # self.qnet_active = tf.keras.models.Sequential([
         #     Dense(64, input_shape=(self.dim_state, ), activation='relu'),
@@ -98,9 +104,6 @@ class DQNAgent:
 
         return loss_value, tape.gradient(loss_value, self.qnet_active.trainable_variables)
 
-    def save_model(self):
-        self.qnet_active.save_weights(self.model_path)
-
     def train(self):
         # sample a minibatch
         minibatch = self.replay_memory.sample_batch(self.batch_size)
@@ -109,3 +112,12 @@ class DQNAgent:
         self.optimizer.apply_gradients(zip(grads, self.qnet_active.trainable_variables))
         loss_value = self.loss(minibatch)
         print("loss: {}".format(loss_value))
+
+    def save_model(self):
+        self.qnet_active.summary()
+        # create model saving directory if not exist
+        model_dir = os.path.dirname(self.model_path)
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+
+        self.qnet_active.save(self.model_path)
