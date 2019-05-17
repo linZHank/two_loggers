@@ -5,7 +5,8 @@
 - [Ubuntu 16.04](http://releases.ubuntu.com/16.04/)
 - [ROS-Kinetic](http://wiki.ros.org/kinetic), `ros-kinetic-desktop-full`
 - [catkin-command-line-tools](https://catkin-tools.readthedocs.io/en/latest/)
-- [TensorFlow](https://www.tensorflow.org/)
+- [Python 2.7](https://www.python.org/download/releases/2.7/)
+- [TensorFlow 2.0](https://www.tensorflow.org/)
 
 ## Quick Start
 - Install gazebo_ros_pkgs
