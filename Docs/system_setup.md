@@ -162,14 +162,16 @@ echo "source ~/ros_ws/devel/setup.bash" >> ~/.bashrc
     ```bash
     rosrun loggers_control two_loggers_test.py
     ```
-# Install TensorFlow
-To save time, you want to install TensorFlow using [pip package manager](https://pip.pypa.io/en/stable/) that is compatible with [Python 2.7](https://www.python.org/) (ROS-Kinetic not supports Python 3.x). Refer to the [TensorFlow official guide](https://www.tensorflow.org/install/) for more installation options.
+# Install TensorFlow-2.0
+To save time, you want to install TensorFlow using [pip package manager](https://pip.pypa.io/en/stable/) that is compatible with [Python 2.7](https://www.python.org/) (ROS-Kinetic not supports Python 3.x). The CPU only version should be a good starting point. 
 ```bash
 sudo apt update
 sudo apt install python-dev python-pip
-sudo pip install --upgrade tensorflow
+sudo pip install tensorflow==2.0.0-alpha0
 ```
 > Verify your TensorFlow installation with this command in a terminal
 ```bash
-python -c "import tensorflow as tf; tf.enable_eager_execution(); print(tf.reduce_sum(tf.random_normal([1000, 1000])))"
+python -c "import tensorflow as tf; print(tf.__version__); print(tf.reduce_sum(tf.random.normal([1000, 1000])))"
 ```
+
+If you have (an) Nvidia [GPUs](https://developer.nvidia.com/cuda-gpus) with compute capability 3.5 or higher, you can refer to the [GPU installation guide](https://www.tensorflow.org/install/gpu) to install GPU enabled TensorFlow-2.0.
