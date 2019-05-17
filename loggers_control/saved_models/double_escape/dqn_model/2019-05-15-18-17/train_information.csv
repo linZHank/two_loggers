@@ -1,0 +1,7 @@
+num_episodes,6000
+wall_bonus,-0.02
+num_steps,400
+door_bonus,0.02
+success_bonus,20
+success_count,471
+time_bonus,True
