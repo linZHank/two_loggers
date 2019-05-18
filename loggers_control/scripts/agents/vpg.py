@@ -34,64 +34,47 @@ import pdb
 #         return zip(*batch)
 
 class VPGAgent:
-    def __init__(self, hyp_params):
+    def __init__(self, params):
         # super(VPGAgent, self).__init__()
         # hyper-parameters
-        self.epsilon = hyp_params["epsilon"]
-        self.actions = hyp_params["actions"]
-        self.gamma = hyp_params["gamma"]
-        self.dim_state = hyp_params["dim_state"]
-        self.num_episodes = hyp_params["num_episodes"]
-        self.num_steps = hyp_params["num_steps"]
-        self.batch_size = hyp_params["batch_size"]
-        self.update_step = hyp_params["update_step"]
-        self.wall_bonus = hyp_params["wall_bonus"]
-        self.door_bonus = hyp_params["door_bonus"]
-        self.dist_bonus = hyp_params["dist_bonus"]
-        self.model_path = hyp_params["model_path"]
+        self.dim_state = params["dim_state"]
+        self.actions = params["actions"]
+        self.layer_size = params["layer_size"]
+        self.gamma = params["gamma"]
+        self.learning_rate = params["learning_rate"]
+        self.batch_size = params["batch_size"]
+        self.update_step = params["update_step"]
+        # init Memory
+
         # pi(a|s;theta)
+        assert len(self.layer_size) >= 1
         self.policy_net = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(128, input_shape=(self.dim_state, ), activation='relu'),
-            # tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dense(len(self.actions), activation="softmax")
+            tf.keras.layers.Dense(128, input_shape=(self.dim_state, ), activation='relu')
         ])
+        for i in range(1, len(self.layer_size)):
+            self.policy_net.add(Dense(self.layer_size[i], activation='relu'))
+            self.policy_net.add(Dense(len(self.actions)))
+        self.optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
         adam = tf.keras.optimizers.Adam(lr=1e-3)
-        self.policy_net.compile(
-            optimizer=adam
-            loss="mean_squared_error",
-            metrics=["accuracy"]
-        )
+
         self.policy_net.summary()
-        self.pnet_callback = tf.keras.callbacks.ModelCheckpoint(
-            self.model_path,
-            save_weights_only=True,
-            verbose=1
-        )
-        # init replay memory
-        # self.replay_memory = Memory(memory_cap=50000)
 
     def train_one_epoch(self):
         pass
 
+    def loss(self, states_memory):
+
+        loss_object = tf.keras.losses.MeanSquaredError()
+        q_values = tf.math.reduce_sum(tf.cast(self.qnet_active(batch_states), tf.float32) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
+        target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
+
+        return loss_object(y_true=target_q, y_pred=q_values)
+
+    def grad(self, minibatch):
+        with tf.GradientTape() as tape:
+            loss_value = self.loss(minibatch)
+
+        return loss_value, tape.gradient(loss_value, self.qnet_active.trainable_variables)
 
     def train(self, env):
-        for epoch in range(num_epochs):
-            obs, _ = env.reset()
-            done, ep_rewards = False, []
-            state = solo_utils.obs_to_state(obs)
-            dist_0 = np.linalg.norm(state[:2]-np.array([0,-6.0001]))
-            self.train_one_epoch()
-            while True:
-                act_id = self.policy_net(state)
-                action = self.actions[act_id]
-                obs, rew, done, info = env.step(action)
-                state = solo_utils.obs_to_state(obs)
-                dist_1 = np.linalg.norm(state[:2]-np.array([0,-6.0001]))
-                delta_dist = dist_0 - dist
-                # adjust reward based on relative distance to the exit
-                rew, done = solo_utils.adjust_reward(rew, info, delta_dist, done, self.wall_bonus, self.door_bonus, self.dist_bonus)
-                ep_rewards.append(rew)
-                if done:
-                    obs, _ = env.reset()
-                    done, ep_rewards = False, []
-                    state = solo_utils.obs_to_state(obs)
+        loss_value, grads = self.grad(states_memory)
