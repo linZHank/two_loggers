@@ -63,7 +63,6 @@ class VPGAgent:
         pass
 
     def loss(self, states_memory):
-
         loss_object = tf.keras.losses.MeanSquaredError()
         q_values = tf.math.reduce_sum(tf.cast(self.qnet_active(batch_states), tf.float32) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
         target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
@@ -78,3 +77,5 @@ class VPGAgent:
 
     def train(self, env):
         loss_value, grads = self.grad(states_memory)
+        self.optimizer.apply_gradients(zip(grads, self.policy_net.trainable_variables))
+        print("loss: {}".format(loss_value))
