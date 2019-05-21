@@ -49,11 +49,11 @@ class VPGAgent:
         # pi(a|s;theta)
         assert len(self.layer_size) >= 1
         self.policy_net = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(128, input_shape=(self.dim_state, ), activation='relu')
+            tf.keras.layers.Dense(self.layer_size[0], input_shape=(self.dim_state, ), activation='relu')
         ])
         for i in range(1, len(self.layer_size)):
             self.policy_net.add(Dense(self.layer_size[i], activation='relu'))
-            self.policy_net.add(Dense(len(self.actions)))
+        self.policy_net.add(Dense(len(self.actions), activation='softmax'))
         self.optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
         adam = tf.keras.optimizers.Adam(lr=1e-3)
 
@@ -62,11 +62,13 @@ class VPGAgent:
     def train_one_epoch(self):
         pass
 
-    def loss(self, states_memory):
-        loss_object = tf.keras.losses.MeanSquaredError()
-        q_values = tf.math.reduce_sum(tf.cast(self.qnet_active(batch_states), tf.float32) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
-        target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
-
+    def loss(self, minibatch):
+        batch_states = np.array(minibatch[0])
+        batch_rtaus = np.array(minibatch[1])
+        act_probs = self.policy_net(batch_states)
+        multinomial = np.zeros(act_probs.shape)
+        for i in range(act_probs.shape[0]):
+            multinomial[i] = np.random.multinomial(1,act_probs[i])
         return loss_object(y_true=target_q, y_pred=q_values)
 
     def grad(self, minibatch):
