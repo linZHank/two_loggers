@@ -13,26 +13,6 @@ from tensorflow.keras import Model
 
 import pdb
 
-
-# class Memory:
-#     def __init__(self, memory_cap):
-#         self.memory_cap = memory_cap
-#         self.memory = []
-#     def store(self, experience):
-#         # pop a random experience if memory full
-#         if len(self.memory) >= self.memory_cap:
-#             self.memory.pop(random.randint(0, len(self.memory)-1))
-#         self.memory.append(experience)
-#
-#     def sample_batch(self, batch_size):
-#         # Select batch
-#         if len(self.memory) < batch_size:
-#             batch = random.sample(self.memory, len(self.memory))
-#         else:
-#             batch = random.sample(self.memory, batch_size)
-#
-#         return zip(*batch)
-
 class VPGAgent:
     def __init__(self, params):
         # super(VPGAgent, self).__init__()
@@ -49,7 +29,7 @@ class VPGAgent:
         # pi(a|s;theta)
         assert len(self.layer_size) >= 1
         self.policy_net = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(self.layer_size[0], input_shape=(self.dim_state, ), activation='relu')
+            Dense(self.layer_size[0], input_shape=(self.dim_state, ), activation='relu')
         ])
         for i in range(1, len(self.layer_size)):
             self.policy_net.add(Dense(self.layer_size[i], activation='relu'))
@@ -59,25 +39,21 @@ class VPGAgent:
 
         self.policy_net.summary()
 
-    def train_one_epoch(self):
-        pass
-
-    def loss(self, minibatch):
-        batch_states = np.array(minibatch[0])
-        batch_rtaus = np.array(minibatch[1])
-        act_probs = self.policy_net(batch_states)
-        multinomial = np.zeros(act_probs.shape)
+    def loss(self, batch_states, batch_rtaus):
+        acts_prob = self.policy_net(batch_states)
+        acts_onehot = np.zeros(acts_prob.shape)
         for i in range(act_probs.shape[0]):
-            multinomial[i] = np.random.multinomial(1,act_probs[i])
-        return loss_object(y_true=target_q, y_pred=q_values)
+            acts_onehot[i] = np.random.multinomial(1,acts_prob[i])
+        log_probs = tf.reduce_sum(acts_onehot * tf.math.log(acts_prob), axis=1)
+        return -tf.reduce_mean(batch_rtaus * log_probs)#loss_object(y_true=target_q, y_pred=q_values)
 
-    def grad(self, minibatch):
+    def grad(self, batch_states, batch_rtaus):
         with tf.GradientTape() as tape:
-            loss_value = self.loss(minibatch)
+            loss_value = self.loss(batch_states, batch_rtaus)
 
-        return loss_value, tape.gradient(loss_value, self.qnet_active.trainable_variables)
+        return loss_value, tape.gradient(loss_value, self.policy_net.trainable_variables)
 
     def train(self, env):
-        loss_value, grads = self.grad(states_memory)
+        loss_value, grads = self.grad(batch_states, batch_rtaus)
         self.optimizer.apply_gradients(zip(grads, self.policy_net.trainable_variables))
         print("loss: {}".format(loss_value))
