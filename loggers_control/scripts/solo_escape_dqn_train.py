@@ -35,7 +35,7 @@ if __name__ == "__main__":
     agent_params["batch_size"] = 2000
     agent_params["memory_cap"] = 500000
     agent_params["update_step"] = 10000
-    agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
+    agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
     # training params
     train_params["num_episodes"] = 6000
     train_params["num_steps"] = 256
