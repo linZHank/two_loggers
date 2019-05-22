@@ -53,22 +53,11 @@ class DQNAgent:
         self.qnet_active = tf.keras.models.Sequential([
             Dense(self.layer_size[0], activation='relu', input_shape=(self.dim_state,))
         ])
-        if len(self.layer_size) >= 2:
-            for i in range(1,len(self.layer_size)):
-                self.qnet_active.add(Dense(self.layer_size[i], activation="relu"))
+        for i in range(1,len(self.layer_size)):
+            self.qnet_active.add(Dense(self.layer_size[i], activation="relu"))
         self.qnet_active.add(Dense(len(self.actions)))
-        # self.qnet_active = tf.keras.models.Sequential([
-        #     Dense(64, input_shape=(self.dim_state, ), activation='relu'),
-        #     Dense(64, activation='relu'),
-        #     Dense(len(self.actions))
-        # ])
         # Q^(s,a;theta_)
         self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
-        # self.qnet_stable = tf.keras.models.Sequential([
-        #     Dense(64, input_shape=(self.dim_state, ), activation='relu'),
-        #     Dense(64, activation='relu'),
-        #     Dense(len(self.actions))
-        # ])
         # optimizer
         self.optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
         # init replay memory
@@ -110,7 +99,7 @@ class DQNAgent:
         # compute gradient for one epoch
         loss_value, grads = self.grad(minibatch)
         self.optimizer.apply_gradients(zip(grads, self.qnet_active.trainable_variables))
-        loss_value = self.loss(minibatch)
+        # loss_value = self.loss(minibatch)
         print("loss: {}".format(loss_value))
 
     def save_model(self):

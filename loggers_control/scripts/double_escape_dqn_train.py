@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # agent_0 parameters
     agent0_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
     agent0_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1]), np.array([-.5, -1]), np.array([-.5, 1]), np.array([0, 0])])
-    agent0_params["layer_size"] = [256,256]
+    agent0_params["layer_size"] = [512,512]
     agent0_params["gamma"] = 0.99
     agent0_params["learning_rate"] = 3e-4
     agent0_params["batch_size"] = 2000
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     # agent_1 parameters
     agent1_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
     agent1_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1]), np.array([-.5, -1]), np.array([-.5, 1]), np.array([0, 0])])
-    agent1_params["layer_size"] = [256,256]
+    agent1_params["layer_size"] = [512,512]
     agent1_params["epsilon"] = 1
     agent1_params["gamma"] = 0.99
     agent1_params["learning_rate"] = 3e-4
@@ -52,11 +52,11 @@ if __name__ == "__main__":
     agent1_params["update_step"] = 10000
     agent1_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent1/model.h5"
     # training parameters
-    train_params["num_episodes"] = 6000
-    train_params["num_steps"] = 256
+    train_params["num_episodes"] = 5000
+    train_params["num_steps"] = 300
     train_params["time_bonus"] = True
-    train_params["success_bonus"] = 20
-    train_params["wall_bonus"] = -2./100
+    train_params["success_bonus"] = 10
+    train_params["wall_bonus"] = -1./100
     train_params["door_bonus"] = 0
     # instantiate agents
     agent_0 = DQNAgent(agent0_params)
@@ -120,17 +120,17 @@ if __name__ == "__main__":
         agent_0.save_model()
         agent_1.save_model()
         print("model saved")
+
+    # end of training
+    env.reset()
     # plot deposit returns
     gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=os.path.dirname(agent0_params["model_path"]))
-
-    # save hyper-parameters
-    # model_shape = []
-    # for i in range(1,len(agent.qnet_active.weights)):
-    #     if not i%2:
-    #         model_shape.append(agent.qnet_active.weights[i].shape[0])
+    # save results
     gen_utils.save_pkl(content=agent0_params, path=agent0_params["model_path"], fname="agent0_parameters.pkl")
     gen_utils.save_pkl(content=agent1_params, path=agent1_params["model_path"], fname="agent1_parameters.pkl")
     # save results
     train_info = train_params
     train_info["success_count"] = env.success_count
+    train_info["agent_0"] = agent0_params
+    train_info["agent_1"] = agent1_params
     gen_utils.save_csv(content=train_info, path=os.path.dirname(agent0_params["model_path"]), fname="train_information.csv")
