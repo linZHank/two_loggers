@@ -62,10 +62,15 @@ if __name__ == "__main__":
             act_id = agent.sample_action(state_0)
             action = agent.actions[act_id]
             obs, rew, done, info = env.step(action)
+            state_1 = solo_utils.obs_to_state(obs)
             # adjust reward
             rew, done = solo_utils.adjust_reward(train_params, env, agent)
-            state_1 = solo_utils.obs_to_state(obs)
+            # fill training batch
+            batch_acts.append(act_id)
+            batch_states.append(state_0)
+            # update
             ep_rewards.append(rew)
+            state_0 = state_1
             print(
                 bcolors.OKGREEN,
                 "Episode: {}, Step: {} \naction: {}->{}, state: {}, reward/episodic_return: {}/{}, status: {}, success: {}".format(
@@ -81,9 +86,6 @@ if __name__ == "__main__":
                 ),
                 bcolors.ENDC
             )
-            # fill training batch
-            batch_states.append(state_0)
-            batch_acts.append(act_id)
             # step increment
             step += 1
             if done:
@@ -95,7 +97,7 @@ if __name__ == "__main__":
                 # reset to a new episode
                 obs, _ = env.reset()
                 done, ep_rewards = False, []
-                state = solo_utils.obs_to_state(obs)
+                state_0 = solo_utils.obs_to_state(obs)
                 episode += 1
                 step = 0
                 print(

@@ -42,7 +42,7 @@ class VPGAgent:
         self.policy_net.summary()
 
     def sample_action(self, state):
-        return np.argmax(self.policy_net.predict(state.reshape(1,-1)))
+        return np.argmax(np.random.multinomial(1, self.policy_net.predict(state.reshape(1,-1))[0]))
 
     def loss(self, batch_states, batch_acts, batch_rtaus):
         acts_prob = self.policy_net(np.array(batch_states))
