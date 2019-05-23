@@ -95,7 +95,7 @@ if __name__ == "__main__":
                     next_state_agt0,
                     next_state_agt1,
                     rew,
-                    ep_rewards,
+                    sum(ep_rewards),
                     info,
                     env.success_count
                 ),
