@@ -79,12 +79,13 @@ if __name__ == "__main__":
             obs, rew, done, info = env.step(agent0_action, agent1_action)
             next_state_agt0 = double_utils.obs_to_state(obs, "all")
             next_state_agt1 = double_utils.obs_to_state(obs, "all")
-            rew, done = double_utils.adjust_reward(train_params, env)
             # adjust reward based on bonus options
+            rew, done = double_utils.adjust_reward(train_params, env)
+            ep_rewards.append(rew)
             # rew, done = double_utils.adjust_reward(hyp_params, env, agent)
             print(
                 bcolors.OKGREEN,
-                "Episode: {}, Step: {} \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward: {}, status: {}".format(
+                "Episode: {}, Step: {}: \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward/episodic_return: {}/{}, status: {}, succeeds: {}".format(
                     ep,
                     st,
                     agent0_acti,
@@ -94,7 +95,9 @@ if __name__ == "__main__":
                     next_state_agt0,
                     next_state_agt1,
                     rew,
-                    info
+                    ep_rewards,
+                    info,
+                    env.success_count
                 ),
                 bcolors.ENDC
             )
@@ -105,7 +108,6 @@ if __name__ == "__main__":
             agent_1.train()
             state_agt0 = next_state_agt0
             state_agt1 = next_state_agt1
-            ep_rewards.append(rew)
             update_counter += 1
             if not update_counter % agent_0.update_step:
                 agent_0.qnet_stable.set_weights(agent_0.qnet_active.get_weights())
@@ -116,10 +118,8 @@ if __name__ == "__main__":
             if done:
                 break
         ep_returns.append(sum(ep_rewards))
-        print(bcolors.OKBLUE, "Episode: {}, Success Count: {}".format(ep, env.success_count),bcolors.ENDC)
         agent_0.save_model()
         agent_1.save_model()
-        print("model saved")
 
     # end of training
     env.reset()
