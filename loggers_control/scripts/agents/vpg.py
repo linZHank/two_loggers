@@ -39,22 +39,23 @@ class VPGAgent:
 
         self.policy_net.summary()
 
-    def loss(self, batch_states, batch_rtaus):
+    def sample_action(self, state):
+        return np.argmax(self.policy_net.predict(state.reshape(1,-1)))
+
+    def loss(self, batch_states, batch_acts, batch_rtaus):
         acts_prob = self.policy_net(batch_states)
-        acts_onehot = np.zeros(acts_prob.shape)
-        for i in range(act_probs.shape[0]):
-            acts_onehot[i] = np.random.multinomial(1,acts_prob[i])
+        acts_onehot = tf.one_hot(batch_acts)
         log_probs = tf.reduce_sum(acts_onehot * tf.math.log(acts_prob), axis=1)
         return -tf.reduce_mean(batch_rtaus * log_probs)
 
-    def grad(self, batch_states, batch_rtaus):
+    def grad(self, batch_states, batch_acts, batch_rtaus):
         with tf.GradientTape() as tape:
             loss_value = self.loss(batch_states, batch_rtaus)
 
         return loss_value, tape.gradient(loss_value, self.policy_net.trainable_variables)
 
-    def train(self, env):
-        loss_value, grads = self.grad(batch_states, batch_rtaus)
+    def train(self, batch_states, batch_acts, batch_rtaus):
+        loss_value, grads = self.grad(batch_states, batch_acts, batch_rtaus)
         self.optimizer.apply_gradients(zip(grads, self.policy_net.trainable_variables))
         print("loss: {}".format(loss_value))
 
@@ -64,5 +65,5 @@ class VPGAgent:
         model_dir = os.path.dirname(self.model_path)
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-
         self.policy_net.save(self.model_path)
+        print("policy_net model save at {}".format(self.model_path))

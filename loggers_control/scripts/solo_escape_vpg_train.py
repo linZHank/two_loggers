@@ -33,9 +33,9 @@ if __name__ == "__main__":
     agent_params["gamma"] = 0.99
     agent_params["learning_rate"] = 3e-4
     agent_params["batch_size"] = 2000
-    agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
+    agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
     # training params
-    train_params["num_episodes"] = 6000
+    train_params["num_epochs"] = 6000
     train_params["num_steps"] = 256
     train_params["time_bonus"] = True
     train_params["success_bonus"] = 10
@@ -44,51 +44,74 @@ if __name__ == "__main__":
     # instantiate agent
     agent = VPGAgent(agent_params)
     update_counter = 0
-    ep_returns = []
-    for ep in range(train_params["num_episodes"]):
-        epsilon = agent.epsilon_decay(ep, train_params["num_episodes"])
-        print("epsilon: {}".format(epsilon))
+    episodic_returns = []
+    episode = 0
+    step = 0
+    for ep in range(train_params['num_epochs']):
+        # init training batches
+        batch_states = []
+        batch_acts = []
+        batch_rtaus = []
+        # init episode
         obs, _ = env.reset()
         state_0 = solo_utils.obs_to_state(obs)
-        dist_0 = np.linalg.norm(state_0[:2]-np.array([0,-6.0001]))
         done, ep_rewards = False, []
-        for st in range(train_params["num_steps"]):
-            act_id = agent.epsilon_greedy(state_0)
+        batch_counter = 0
+        while True:
+            # take action by sampling policy_net predictions
+            act_id = agent.sample_action(state_0)
             action = agent.actions[act_id]
             obs, rew, done, info = env.step(action)
-            state_1 = solo_utils.obs_to_state(obs)
-            dist_1 = np.linalg.norm(state_1[:2]-np.array([0,-6.0001]))
-            agent.delta_dist = dist_0 - dist_1
-            # adjust reward based on bonus options
-            rew, done = solo_utils.adjust_reward(train_params, env, agent)
+            # adjust reward
+            rew, done = utils.adjust_reward(train_params, env, agent)
+            state_1 = solo_utils.obs_to_state(obs)                        ep_rewards.append(rew)
             print(
                 bcolors.OKGREEN,
-                "Episode: {}, Step: {} \naction: {}->{}, state: {}, reward: {}, status: {}".format(
-                    ep,
-                    st,
+                "Episode: {}, Step: {} \naction: {}->{}, state: {}, reward/episodic_return: {}/{}, status: {}, success: {}".format(
+                    episode,
+                    step,
                     act_id,
                     action,
                     state_1,
                     rew,
-                    info
+                    sum(ep_rewards),
+                    info,
+                    agent.success_count
                 ),
                 bcolors.ENDC
             )
-            # store transition
-            agent.replay_memory.store((state_0, act_id, rew, done, state_1))
-            agent.train()
-            state_0 = state_1
-            ep_rewards.append(rew)
-            update_counter += 1
-            if not update_counter % agent.update_step:
-                agent.qnet_stable.set_weights(agent.qnet_active.get_weights())
-                print(bcolors.BOLD, "Q-net weights updated!", bcolors.ENDC)
+            # fill training batch
+            batch_states.append(state_0)
+            batch_acts.append(act_id)
+            # step increment
+            step += 1
             if done:
-                break
-        ep_returns.append(sum(ep_rewards))
-        print(bcolors.OKBLUE, "Episode: {}, Success Count: {}".format(ep, env.success_count),bcolors.ENDC)
-        agent.save_model()
-        print("model saved at {}".format(agent.model_path))
+                ep_return, ep_length = sum(ep_rewards), len(ep_rewards)
+                batch_rtaus += [ep_return] * ep_length
+                assert len(batch_rtaus) == len(batch_states)
+                # store episodic_return
+                episodic_returns.append(ep_return)
+                # reset to a new episode
+                obs, _ = env.reset()
+                done, ep_rewards = False, []
+                state = solo_utils.obs_to_state(obs)
+                episode += 1
+                step = 0
+                print(
+                    bcolors.OKGREEN,
+                    "current batch size: {}".format(batch_size),
+                    bcolors.ENDC
+                )
+                if len(batch_rtaus) > agent_params['batch_size']:
+                    break
+        agent.train()
+    # plot deposit returns
+    gen_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=agent_params["model_path"])
+
+
+
+
+
     # plot deposit returns
     gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=agent_params["model_path"])
 

@@ -54,7 +54,9 @@ def adjust_reward(train_params, env, agent):
     adj_reward = env.reward
     info = env.info
     assert train_params["time_bonus"]==True and train_params["dist_bonus"]==True
-    if info["status"] == "escaped":
+    if env.steps > train_params['num_steps']:
+        done = True
+    elif info["status"] == "escaped":
         if train_params["success_bonus"]:
             adj_reward = train_params["success_bonus"]
         done = True
@@ -66,11 +68,6 @@ def adjust_reward(train_params, env, agent):
         if train_params["door_bonus"]:
             adj_reward = train_params["door_bonus"]
     elif info["status"] == "trapped":
-        if train_params["dist_bonus"]:
-            if agent.delta_dist <= 0:
-                adj_reward = -1./train_params["num_steps"] # negative, if getting further from exit
-            else:
-                adj_reward = 0.1/train_params["num_steps"] # positive, if getting closer to exit
         if train_params["time_bonus"]:
             adj_reward = -1./train_params["num_steps"]
     else: # hit wall
