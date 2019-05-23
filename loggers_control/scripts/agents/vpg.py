@@ -45,7 +45,7 @@ class VPGAgent:
         for i in range(act_probs.shape[0]):
             acts_onehot[i] = np.random.multinomial(1,acts_prob[i])
         log_probs = tf.reduce_sum(acts_onehot * tf.math.log(acts_prob), axis=1)
-        return -tf.reduce_mean(batch_rtaus * log_probs)#loss_object(y_true=target_q, y_pred=q_values)
+        return -tf.reduce_mean(batch_rtaus * log_probs)
 
     def grad(self, batch_states, batch_rtaus):
         with tf.GradientTape() as tape:
@@ -57,3 +57,12 @@ class VPGAgent:
         loss_value, grads = self.grad(batch_states, batch_rtaus)
         self.optimizer.apply_gradients(zip(grads, self.policy_net.trainable_variables))
         print("loss: {}".format(loss_value))
+
+    def save_model(self):
+        self.policy_net.summary()
+        # create model saving directory if not exist
+        model_dir = os.path.dirname(self.model_path)
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+
+        self.policy_net.save(self.model_path)
