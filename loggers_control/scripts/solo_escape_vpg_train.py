@@ -32,13 +32,13 @@ if __name__ == "__main__":
     agent_params["layer_size"] = [64,64]
     agent_params["gamma"] = 0.99
     agent_params["learning_rate"] = 3e-4
-    agent_params["batch_size"] = 2000
-    agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
+    agent_params["batch_size"] = 1024
+    agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent/model.h5"
     # training params
-    train_params["num_epochs"] = 6000
+    train_params["num_epochs"] = 1000
     train_params["num_steps"] = 256
-    train_params["time_bonus"] = True
-    train_params["success_bonus"] = 10
+    train_params["time_bonus"] = -1./train_params['num_steps']
+    train_params["success_bonus"] = 0
     train_params["wall_bonus"] = -1./100
     train_params["door_bonus"] = 0
     # instantiate agent
@@ -63,8 +63,9 @@ if __name__ == "__main__":
             action = agent.actions[act_id]
             obs, rew, done, info = env.step(action)
             # adjust reward
-            rew, done = utils.adjust_reward(train_params, env, agent)
-            state_1 = solo_utils.obs_to_state(obs)                        ep_rewards.append(rew)
+            rew, done = solo_utils.adjust_reward(train_params, env, agent)
+            state_1 = solo_utils.obs_to_state(obs)
+            ep_rewards.append(rew)
             print(
                 bcolors.OKGREEN,
                 "Episode: {}, Step: {} \naction: {}->{}, state: {}, reward/episodic_return: {}/{}, status: {}, success: {}".format(
@@ -76,7 +77,7 @@ if __name__ == "__main__":
                     rew,
                     sum(ep_rewards),
                     info,
-                    agent.success_count
+                    env.success_count
                 ),
                 bcolors.ENDC
             )
@@ -99,24 +100,19 @@ if __name__ == "__main__":
                 step = 0
                 print(
                     bcolors.OKGREEN,
-                    "current batch size: {}".format(batch_size),
+                    "current batch size: {}".format(len(batch_rtaus)),
                     bcolors.ENDC
                 )
                 if len(batch_rtaus) > agent_params['batch_size']:
                     break
-        agent.train()
+        agent.train(batch_states, batch_acts, batch_rtaus)
+        agent.save_model()
     # plot deposit returns
-    gen_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=agent_params["model_path"])
-
-
-
-
-
-    # plot deposit returns
-    gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=agent_params["model_path"])
-
+    gen_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=os.path.dirname(agent_params["model_path"]))
+    # save results
     gen_utils.save_pkl(content=agent_params, path=agent_params["model_path"], fname="agent_parameters.pkl")
     # save results
-    train_info = train_params.update(agent_params)
+    train_info = train_params
     train_info["success_count"] = env.success_count
-    gen_utils.save_csv(content=train_info, path=agent_params["model_path"], fname="train_information.csv")
+    train_info["agent"] = agent_params
+    gen_utils.save_csv(content=train_info, path=os.path.dirname(agent_params["model_path"]), fname="train_information.csv")

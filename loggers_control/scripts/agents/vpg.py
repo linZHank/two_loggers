@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+import sys
+import os
 import numpy as np
 import random
 import tensorflow as tf
@@ -23,7 +25,7 @@ class VPGAgent:
         self.gamma = params["gamma"]
         self.learning_rate = params["learning_rate"]
         self.batch_size = params["batch_size"]
-        self.update_step = params["update_step"]
+        self.model_path = params["model_path"]
         # init Memory
 
         # pi(a|s;theta)
@@ -43,14 +45,14 @@ class VPGAgent:
         return np.argmax(self.policy_net.predict(state.reshape(1,-1)))
 
     def loss(self, batch_states, batch_acts, batch_rtaus):
-        acts_prob = self.policy_net(batch_states)
-        acts_onehot = tf.one_hot(batch_acts)
+        acts_prob = self.policy_net(np.array(batch_states))
+        acts_onehot = tf.one_hot(np.array(batch_acts), len(self.actions))
         log_probs = tf.reduce_sum(acts_onehot * tf.math.log(acts_prob), axis=1)
-        return -tf.reduce_mean(batch_rtaus * log_probs)
+        return -tf.reduce_mean(np.array(batch_rtaus) * log_probs)
 
     def grad(self, batch_states, batch_acts, batch_rtaus):
         with tf.GradientTape() as tape:
-            loss_value = self.loss(batch_states, batch_rtaus)
+            loss_value = self.loss(batch_states, batch_acts, batch_rtaus)
 
         return loss_value, tape.gradient(loss_value, self.policy_net.trainable_variables)
 
