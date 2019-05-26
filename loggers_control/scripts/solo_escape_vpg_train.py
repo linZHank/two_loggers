@@ -31,7 +31,7 @@ if __name__ == "__main__":
     agent_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
     agent_params["layer_size"] = [64,64]
     agent_params["gamma"] = 0.99
-    agent_params["learning_rate"] = 3e-4
+    agent_params["learning_rate"] = 1e-3
     agent_params["batch_size"] = 1024
     agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent/model.h5"
     # training params
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     # plot deposit returns
     gen_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=os.path.dirname(agent_params["model_path"]))
     # save results
-    gen_utils.save_pkl(content=agent_params, path=agent_params["model_path"], fname="agent_parameters.pkl")
+    gen_utils.save_pkl(content=agent_params, path=os.path.dirname(agent_params["model_path"]), fname="agent_parameters.pkl")
     # save results
     train_info = train_params
     train_info["success_count"] = env.success_count

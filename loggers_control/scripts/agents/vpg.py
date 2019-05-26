@@ -44,6 +44,9 @@ class VPGAgent:
     def sample_action(self, state):
         return np.argmax(np.random.multinomial(1, self.policy_net.predict(state.reshape(1,-1))[0]))
 
+    def greedy_action(self, state):
+        return np.argmax(self.policy_net.predict(state.reshape(1,-1))[0])
+
     def loss(self, batch_states, batch_acts, batch_rtaus):
         acts_prob = self.policy_net(np.array(batch_states))
         acts_onehot = tf.one_hot(np.array(batch_acts), len(self.actions))
@@ -69,3 +72,7 @@ class VPGAgent:
             os.makedirs(model_dir)
         self.policy_net.save(self.model_path)
         print("policy_net model save at {}".format(self.model_path))
+
+    def load_model(self):
+        self.policy_net = tf.keras.models.load_model(self.model_path)
+        self.policy_net.summary()
