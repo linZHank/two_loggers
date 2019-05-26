@@ -28,7 +28,7 @@ if __name__ == "__main__":
     train_params = {}
     # agent parameters
     agent_params["dim_state"] = len(solo_utils.obs_to_state(env.observation))
-    agent_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
+    agent_params["actions"] = np.array([np.array([1, -1]), np.array([1, 1])])
     agent_params["layer_size"] = [64,64]
     agent_params["gamma"] = 0.99
     agent_params["learning_rate"] = 1e-3
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent/model.h5"
     # training params
     train_params["num_epochs"] = 1000
-    train_params["num_steps"] = 256
+    train_params["num_steps"] = 400
     train_params["time_bonus"] = -1./train_params['num_steps']
     train_params["success_bonus"] = 0
     train_params["wall_bonus"] = -1./100
