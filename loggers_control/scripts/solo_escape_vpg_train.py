@@ -64,7 +64,7 @@ if __name__ == "__main__":
             obs, rew, done, info = env.step(action)
             state_1 = solo_utils.obs_to_state(obs)
             # adjust reward
-            rew, done = solo_utils.adjust_reward(train_params, env, agent)
+            rew, done = solo_utils.adjust_reward(train_params, env)
             # fill training batch
             batch_acts.append(act_id)
             batch_states.append(state_0)
