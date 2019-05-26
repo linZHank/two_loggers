@@ -32,31 +32,31 @@ if __name__ == "__main__":
     train_params = {}
     # agent_0 parameters
     agent0_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
-    agent0_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1]), np.array([-.5, -1]), np.array([-.5, 1]), np.array([0, 0])])
-    agent0_params["layer_size"] = [512,512]
+    agent0_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1]), np.array([-.5, -1]), np.array([-.5, 1])])
+    agent0_params["layer_size"] = [256,256]
     agent0_params["gamma"] = 0.99
-    agent0_params["learning_rate"] = 3e-4
+    agent0_params["learning_rate"] = 1e-3
     agent0_params["batch_size"] = 2000
     agent0_params["memory_cap"] = 500000
     agent0_params["update_step"] = 10000
     agent0_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent0/model.h5"
     # agent_1 parameters
     agent1_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
-    agent1_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1]), np.array([-.5, -1]), np.array([-.5, 1]), np.array([0, 0])])
-    agent1_params["layer_size"] = [512,512]
+    agent1_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1]), np.array([-.5, -1]), np.array([-.5, 1])])
+    agent1_params["layer_size"] = [256,256]
     agent1_params["epsilon"] = 1
     agent1_params["gamma"] = 0.99
-    agent1_params["learning_rate"] = 3e-4
+    agent1_params["learning_rate"] = 1e-3
     agent1_params["batch_size"] = 2000
     agent1_params["memory_cap"] = 500000
     agent1_params["update_step"] = 10000
     agent1_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent1/model.h5"
     # training parameters
     train_params["num_episodes"] = 5000
-    train_params["num_steps"] = 300
-    train_params["time_bonus"] = True
+    train_params["num_steps"] = 400
+    train_params["time_bonus"] = -1./train_params["num_steps"]
     train_params["success_bonus"] = 10
-    train_params["wall_bonus"] = -1./100
+    train_params["wall_bonus"] = -10./train_params["num_steps"]
     train_params["door_bonus"] = 0
     # instantiate agents
     agent_0 = DQNAgent(agent0_params)
@@ -79,12 +79,13 @@ if __name__ == "__main__":
             obs, rew, done, info = env.step(agent0_action, agent1_action)
             next_state_agt0 = double_utils.obs_to_state(obs, "all")
             next_state_agt1 = double_utils.obs_to_state(obs, "all")
-            rew, done = double_utils.adjust_reward(train_params, env)
             # adjust reward based on bonus options
+            rew, done = double_utils.adjust_reward(train_params, env)
+            ep_rewards.append(rew)
             # rew, done = double_utils.adjust_reward(hyp_params, env, agent)
             print(
                 bcolors.OKGREEN,
-                "Episode: {}, Step: {} \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward: {}, status: {}".format(
+                "Episode: {}, Step: {}: \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward/episodic_return: {}/{}, status: {}, succeeds: {}".format(
                     ep,
                     st,
                     agent0_acti,
@@ -94,7 +95,9 @@ if __name__ == "__main__":
                     next_state_agt0,
                     next_state_agt1,
                     rew,
-                    info
+                    sum(ep_rewards),
+                    info,
+                    env.success_count
                 ),
                 bcolors.ENDC
             )
@@ -105,7 +108,6 @@ if __name__ == "__main__":
             agent_1.train()
             state_agt0 = next_state_agt0
             state_agt1 = next_state_agt1
-            ep_rewards.append(rew)
             update_counter += 1
             if not update_counter % agent_0.update_step:
                 agent_0.qnet_stable.set_weights(agent_0.qnet_active.get_weights())
@@ -116,10 +118,8 @@ if __name__ == "__main__":
             if done:
                 break
         ep_returns.append(sum(ep_rewards))
-        print(bcolors.OKBLUE, "Episode: {}, Success Count: {}".format(ep, env.success_count),bcolors.ENDC)
         agent_0.save_model()
         agent_1.save_model()
-        print("model saved")
 
     # end of training
     env.reset()

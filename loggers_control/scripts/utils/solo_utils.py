@@ -46,7 +46,7 @@ def obs_to_state(observation):
 
     return state
 
-def adjust_reward(train_params, env, agent):
+def adjust_reward(train_params, env):
                   # rew, info, delta_d, done, num_episodes
                   # time_bonus_flag, wall_bonus_flag,
                   # door_bonus_flag, dist_bonus_flag):

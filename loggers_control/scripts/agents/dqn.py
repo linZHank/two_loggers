@@ -108,5 +108,5 @@ class DQNAgent:
         model_dir = os.path.dirname(self.model_path)
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-
         self.qnet_active.save(self.model_path)
+        print("policy_net model save at {}".format(self.model_path))
