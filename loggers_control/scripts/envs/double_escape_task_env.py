@@ -176,7 +176,7 @@ class DoubleEscapeEnv(object):
                     self.status = "sdoor" # stuck at door
                 else:
                     self.status = "tdoor" # through door
-        elif -6<=self.observation["logger_0"]["pose"].position.y < -4.79:
+        elif -6<=self.observation["logger_1"]["pose"].position.y < -4.79:
             if np.absolute(self.observation["logger_1"]["pose"].position.x) > 1:
                 self.status = "south"
             else:
