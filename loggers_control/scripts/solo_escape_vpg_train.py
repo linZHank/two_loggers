@@ -32,7 +32,7 @@ if __name__ == "__main__":
     agent_params["layer_size"] = [64,64]
     agent_params["gamma"] = 0.99
     agent_params["learning_rate"] = 1e-3
-    agent_params["batch_size"] = 1024
+    agent_params["batch_size"] = 512
     agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent/model.h5"
     # training params
     train_params["num_epochs"] = 1000
@@ -73,7 +73,8 @@ if __name__ == "__main__":
             state_0 = state_1
             print(
                 bcolors.OKGREEN,
-                "Episode: {}, Step: {} \naction: {}->{}, state: {}, reward/episodic_return: {}/{}, status: {}, success: {}".format(
+                "Epoch: {} \nEpisode: {}, Step: {} \naction: {}->{}, state: {}, reward/episodic_return: {}/{}, status: {}, success: {}".format(
+                    ep,
                     episode,
                     step,
                     act_id,
