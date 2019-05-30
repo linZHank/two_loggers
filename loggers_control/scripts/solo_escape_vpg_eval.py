@@ -21,7 +21,6 @@ from agents.vpg import VPGAgent
 
 if __name__ == "__main__":
     # Main really starts here
-    # start_time = time.time()
     rospy.init_node("double_escape_dqn_test", anonymous=True, log_level=rospy.INFO)
     # load agent parameters
     params_dir = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/2019-05-29-10-25/"
@@ -34,9 +33,10 @@ if __name__ == "__main__":
     # make an instance from env class
     env = SoloEscapeEnv()
     env.reset()
-
+    # eval params
     num_episodes = 10
     num_steps = 256
+    # start evaluation
     for ep in range(num_episodes):
         obs, _ = env.reset()
         done = False
