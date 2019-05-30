@@ -110,3 +110,7 @@ class DQNAgent:
             os.makedirs(model_dir)
         self.qnet_active.save(self.model_path)
         print("policy_net model save at {}".format(self.model_path))
+
+    def load_model(self):
+        self.qnet_active = tf.keras.models.load_model(self.model_path)
+        self.qnet_active.summary()
