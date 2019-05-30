@@ -22,7 +22,6 @@ class VPGAgent:
         self.dim_state = params["dim_state"]
         self.actions = params["actions"]
         self.layer_size = params["layer_size"]
-        self.gamma = params["gamma"]
         self.learning_rate = params["learning_rate"]
         self.batch_size = params["batch_size"]
         self.model_path = params["model_path"]
