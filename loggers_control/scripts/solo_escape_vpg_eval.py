@@ -24,7 +24,7 @@ if __name__ == "__main__":
     # start_time = time.time()
     rospy.init_node("double_escape_dqn_test", anonymous=True, log_level=rospy.INFO)
     # load agent parameters
-    params_dir = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/2019-05-26-12-00/"
+    params_dir = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/2019-05-29-10-25/"
     params_path = os.path.join(os.path.dirname(params_dir),"agent_parameters.pkl")
     with open(params_path, "rb") as f:
         agent_params = pickle.load(f)
