@@ -168,11 +168,19 @@ class DoubleEscapeEnv(object):
             self.status = "west"
         elif self.observation["logger_0"]["pose"].position.y > 4.79 or self.observation["logger_1"]["pose"].position.y > 4.79:
             self.status = "north"
-        elif -6<=self.observation["logger_0"]["pose"].position.y < -4.79 or -6<=self.observation["logger_1"]["pose"].position.y < -4.79:
-            if np.absolute(self.observation["logger_0"]["pose"].position.x) > 1 or np.absolute(self.observation["logger_1"]["pose"].position.x) > 1:
+        elif -6<=self.observation["logger_0"]["pose"].position.y < -4.79:
+            if np.absolute(self.observation["logger_0"]["pose"].position.x) > 1:
                 self.status = "south"
             else:
-                if np.absolute(self.observation["logger_0"]["pose"].position.x) > 0.79 or np.absolute(self.observation["logger_1"]["pose"].position.x) > 0.79:
+                if np.absolute(self.observation["logger_0"]["pose"].position.x) > 0.79:
+                    self.status = "sdoor" # stuck at door
+                else:
+                    self.status = "tdoor" # through door
+        elif -6<=self.observation["logger_1"]["pose"].position.y < -4.79:
+            if np.absolute(self.observation["logger_1"]["pose"].position.x) > 1:
+                self.status = "south"
+            else:
+                if np.absolute(self.observation["logger_1"]["pose"].position.x) > 0.79:
                     self.status = "sdoor" # stuck at door
                 else:
                     self.status = "tdoor" # through door

@@ -32,17 +32,17 @@ if __name__ == "__main__":
     train_params = {}
     # agent_0 parameters
     agent0_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
-    agent0_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1]), np.array([-.5, -1]), np.array([-.5, 1])])
+    agent0_params["actions"] = np.array([np.array([1, -1]), np.array([1, 1])])
     agent0_params["layer_size"] = [256,256]
     agent0_params["gamma"] = 0.99
-    agent0_params["learning_rate"] = 1e-3
+    agent0_params["learning_rate"] = 3e-4
     agent0_params["batch_size"] = 2000
     agent0_params["memory_cap"] = 500000
     agent0_params["update_step"] = 10000
     agent0_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent0/model.h5"
     # agent_1 parameters
     agent1_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
-    agent1_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1]), np.array([-.5, -1]), np.array([-.5, 1])])
+    agent1_params["actions"] = agent0_params["actions"]
     agent1_params["layer_size"] = [256,256]
     agent1_params["epsilon"] = 1
     agent1_params["gamma"] = 0.99
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     agent1_params["update_step"] = 10000
     agent1_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent1/model.h5"
     # training parameters
-    train_params["num_episodes"] = 5000
+    train_params["num_episodes"] = 6000
     train_params["num_steps"] = 400
     train_params["time_bonus"] = -1./train_params["num_steps"]
     train_params["success_bonus"] = 10
