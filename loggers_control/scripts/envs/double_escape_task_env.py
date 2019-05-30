@@ -13,6 +13,7 @@ import tf
 from std_srvs.srv import Empty
 from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
+from utils import double_utils
 
 
 class DoubleEscapeEnv(object):
@@ -108,12 +109,12 @@ class DoubleEscapeEnv(object):
         """
         rospy.logdebug("\nStart Initializing Robots")
         # set model initial pose using pole coordinate
-        mag = random.uniform(0, 3.6) # model vector magnitude
-        ang = random.uniform(-math.pi, math.pi) # model vector orientation
-        x = mag * math.cos(ang)
-        y = mag * math.sin(ang)
-        w = random.uniform(-1.0, 1.0)
-        theta = tf.transformations.euler_from_quaternion([0,0,math.sqrt(1-w**2),w])[2]
+        # generate one random position of rod with random orientation 
+        rodPos = double_utils.random_rod_position(1)
+        #rospy.logdebug(rodPos)
+        x = rodPos[0][0]
+        y = rodPos[0][1]
+        angle = rodPos[0][2]
         model_state = ModelState()
         model_state.model_name = "two_loggers"
         model_state.pose.position.x = x
@@ -121,8 +122,8 @@ class DoubleEscapeEnv(object):
         model_state.pose.position.z = 0.25
         model_state.pose.orientation.x = 0
         model_state.pose.orientation.y = 0
-        model_state.pose.orientation.z = math.sqrt(1 - w**2)
-        model_state.pose.orientation.w = w
+        model_state.pose.orientation.z = math.sin(0.5*angle)
+        model_state.pose.orientation.w = math.cos(0.5*angle)
         model_state.reference_frame = "world"
         # set orientations for logger_0 and logger_1, by spinning them a little
         spin_vel_0 = random.choice([-2*np.pi, 2*np.pi])
