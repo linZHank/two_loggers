@@ -42,9 +42,15 @@ class VPGAgent:
         self.policy_net.summary()
 
     def sample_action(self, state):
+        """
+        Taking the action by sampling from actions distribution
+        """
         return np.argmax(np.random.multinomial(1, self.policy_net.predict(state.reshape(1,-1))[0]))
 
     def greedy_action(self, state):
+        """
+        Taking the most probable action
+        """
         return np.argmax(self.policy_net.predict(state.reshape(1,-1))[0])
 
     def loss(self, batch_states, batch_acts, batch_rtaus):

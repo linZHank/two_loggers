@@ -75,3 +75,13 @@ def adjust_reward(train_params, env):
         done = True
 
     return adj_reward, done
+
+def reward_to_go(ep_rewards):
+    """
+    Don't let past reward affect your current action
+    """
+    n = len(ep_rewards)
+    rtgs = np.zeros_like(ep_rewards)
+    for i in reversed(range(n)):
+        rtgs[i] = ep_rewards[i] + (rtgs[i+1] if i+1 < n else 0)
+    return rtgs
