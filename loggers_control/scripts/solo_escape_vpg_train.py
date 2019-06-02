@@ -29,8 +29,8 @@ if __name__ == "__main__":
     # agent parameters
     agent_params["dim_state"] = len(solo_utils.obs_to_state(env.observation))
     agent_params["actions"] = np.array([np.array([1, -1]), np.array([1, 1])])
-    agent_params["layer_size"] = [16]
-    agent_params["learning_rate"] = 4e-4
+    agent_params["layer_size"] = [8]
+    agent_params["learning_rate"] = 1e-3
     agent_params["batch_size"] = 512
     agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent/model.h5"
     # training params

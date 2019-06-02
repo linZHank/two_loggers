@@ -87,6 +87,7 @@ def plot_returns(returns, mode, save_flag, path):
         ax.grid()
     if save_flag:
         plt.savefig(figure_dir)
+        plt.close(fig)
     else:
         plt.show()
         plt.close(fig)
