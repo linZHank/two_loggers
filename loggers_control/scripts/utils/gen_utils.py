@@ -62,6 +62,7 @@ def plot_returns(returns, mode, save_flag, path):
     path: file path, str
     """
     assert mode==0 or mode==1 or mode==2
+    # compute accumulated returns and averaged returns 
     acc_returns = []
     ave_returns = []
     acc_r = returns[0]
@@ -71,7 +72,8 @@ def plot_returns(returns, mode, save_flag, path):
         ave_r = acc_r/(i+1)
         acc_returns.append(acc_r)
         ave_returns.append(ave_r)
-        fig, ax = plt.subplots()
+    # plot
+    fig, ax = plt.subplots()
     if mode == 0:
         ax.plot(np.arange(len(returns)), returns)
         ax.set(xlabel="Episode", ylabel="Returns")
