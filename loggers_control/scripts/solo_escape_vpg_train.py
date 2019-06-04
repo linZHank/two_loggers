@@ -20,8 +20,7 @@ from agents.vpg import VPGAgent
 
 if __name__ == "__main__":
     # create argument parser
-    parser = gen_utils.create_parser()
-    args = parser.parse_args()
+    args = gen_utils.get_args()
     # start timing training
     start_time = time.time()
     rospy.init_node("solo_escape_dqn", anonymous=True, log_level=rospy.INFO)

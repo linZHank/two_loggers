@@ -26,9 +26,9 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 # make arg parser
-def create_parser():
+def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("datetime", type=str, default="")
+    parser.add_argument("--datetime", type=str, default="")
     parser.add_argument("--num_epochs", type=int, default=512)
     parser.add_argument("--num_episodes", type=int, default=5000)
     parser.add_argument("--num_steps", type=int, default=400)
@@ -37,7 +37,7 @@ def create_parser():
     parser.add_argument("--sample_size", type=int, default=1e4)
     parser.add_argument("--layer_sizes", nargs="+", type=int, help="use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]", default=8)
 
-    return parser
+    return parser.parse_args()
 
 # save pickle
 def save_pkl(content, path, fname):
