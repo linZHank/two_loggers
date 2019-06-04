@@ -19,7 +19,11 @@ from utils.gen_utils import bcolors
 from agents.vpg import VPGAgent
 
 if __name__ == "__main__":
-    # start_time = time.time()
+    # create argument parser
+    parser = gen_utils.create_parser()
+    args = parser.parse_args()
+    # start timing training
+    start_time = time.time()
     rospy.init_node("solo_escape_dqn", anonymous=True, log_level=rospy.INFO)
     # make an instance from env class
     env = SoloEscapeEnv()
@@ -29,13 +33,16 @@ if __name__ == "__main__":
     # agent parameters
     agent_params["dim_state"] = len(solo_utils.obs_to_state(env.observation))
     agent_params["actions"] = np.array([np.array([1, -1]), np.array([1, 1])])
-    agent_params["layer_size"] = [8]
-    agent_params["learning_rate"] = 1e-3
-    agent_params["batch_size"] = 512
-    agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent/model.h5"
+    agent_params["layer_sizes"] = args.layer_sizes
+    agent_params["learning_rate"] = args.learning_rate
+    agent_params["sample_size"] = args.smaple_size
     # training params
-    train_params["num_epochs"] = 512
-    train_params["num_steps"] = 400
+    if args.datetime:
+        train_params["datetime"] = args.datetime
+    else:
+        train_params["datetime"] = datetime.now().strftime("%Y-%m-%d-%H-%M")
+    train_params["num_epochs"] = args.num_epochs
+    train_params["num_steps"] = args.num_steps
     train_params["time_bonus"] = -1./train_params['num_steps']
     train_params["success_bonus"] = 0
     train_params["wall_bonus"] = -1./100
@@ -105,23 +112,35 @@ if __name__ == "__main__":
                     "current batch size: {}".format(len(batch_rtaus)),
                     bcolors.ENDC
                 )
-                if len(batch_rtaus) > agent_params['batch_size']:
+                if len(batch_rtaus) > agent_params['sample_size']:
                     break
         agent.train(batch_states, batch_acts, batch_rtaus)
-        agent.save_model()
-    # plot all returns
-    gen_utils.plot_returns(returns=episodic_returns, mode=0, save_flag=True, path=os.path.dirname(agent_params["model_path"]))
+        # specify model path
+        model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg/"+train_params["datetime"]+"/agent/model.h5"
+        agent.save_model(model_path)
+    # time training
+    end_time = time.time()
+    training_time = end_time - start_time
+
+    # plot episodic returns
+    gen_utils.plot_returns(returns=episodic_returns, mode=0, save_flag=True, path=os.path.dirname(model_path))
     # plot accumulated returns
-    gen_utils.plot_returns(returns=episodic_returns, mode=1, save_flag=True, path=os.path.dirname(agent_params["model_path"]))
-    # plot average returns
+    gen_utils.plot_returns(returns=episodic_returns, mode=1, save_flag=True, path=os.path.dirname(model_path))
+    # plot averaged return
     gen_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True,
-    path=os.path.dirname(agent_params["model_path"]))
+    path=os.path.dirname(model_path))
     # save returns
-    gen_utils.save_pkl(content=episodic_returns, path=os.path.dirname(agent_params["model_path"]), fname="episodic_returns.pkl")
-    # save training parameters
-    gen_utils.save_pkl(content=agent_params, path=os.path.dirname(agent_params["model_path"]), fname="agent_parameters.pkl")
+    gen_utils.save_pkl(content=episodic_returns, path=os.path.dirname(model_path), fname="episodic_returns.pkl")
+    # save agent parameters
+    gen_utils.save_pkl(content=agent_params, path=os.path.dirname(model_path), fname="agent_parameters.pkl")
     # save results
     train_info = train_params
     train_info["success_count"] = env.success_count
-    train_info["agent"] = agent_params
-    gen_utils.save_csv(content=train_info, path=os.path.dirname(agent_params["model_path"]), fname="train_information.csv")
+    train_info["training_time"] = training_time
+    train_info["learning_rate"] = agent_params["learning_rate"]
+    train_info["state_dimension"] = agent_params["dim_stat"]
+    train_info["action_options"] = agent_params["actions"]
+    train_info["layer_sizes"] = agent_params["layer_sizes"]
+    train_info["model_datetime"] = agent_params["learning_rate"]
+
+    gen_utils.save_csv(content=train_info, path=os.path.dirname(model_path), fname="train_information.csv")

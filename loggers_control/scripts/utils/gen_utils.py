@@ -2,11 +2,12 @@
 """
 General helper classes and functions for loggers tasks
 """
+import sys
+import os
 import numpy as np
+import argparse
 import csv
 import pickle
-import tensorflow as tf
-import os
 from datetime import datetime
 import pickle
 import csv
@@ -23,6 +24,20 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+# make arg parser
+def create_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("datetime", type=str, default="")
+    parser.add_argument("--num_epochs", type=int, default=512)
+    parser.add_argument("--num_episodes", type=int, default=5000)
+    parser.add_argument("--num_steps", type=int, default=400)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
+    parser.add_argument("--batch_size", type=int, default=1024)
+    parser.add_argument("--sample_size", type=int, default=1e4)
+    parser.add_argument("--layer_sizes", nargs="+", type=int, help="use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]", default=8)
+
+    return parser
 
 # save pickle
 def save_pkl(content, path, fname):

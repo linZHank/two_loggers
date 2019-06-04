@@ -69,15 +69,15 @@ class VPGAgent:
         self.optimizer.apply_gradients(zip(grads, self.policy_net.trainable_variables))
         print("loss: {}".format(loss_value))
 
-    def save_model(self):
+    def save_model(self, model_path):
         self.policy_net.summary()
         # create model saving directory if not exist
-        model_dir = os.path.dirname(self.model_path)
+        model_dir = os.path.dirname(model_path)
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-        self.policy_net.save(self.model_path)
-        print("policy_net model save at {}".format(self.model_path))
+        self.policy_net.save(model_path)
+        print("policy_net model save at {}".format(model_path))
 
-    def load_model(self):
-        self.policy_net = tf.keras.models.load_model(self.model_path)
+    def load_model(self, model_path):
+        self.policy_net = tf.keras.models.load_model(model_path)
         self.policy_net.summary()
