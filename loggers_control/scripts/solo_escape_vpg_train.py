@@ -109,9 +109,16 @@ if __name__ == "__main__":
                     break
         agent.train(batch_states, batch_acts, batch_rtaus)
         agent.save_model()
-    # plot deposit returns
-    gen_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=os.path.dirname(agent_params["model_path"]))
-    # save results
+    # plot all returns
+    gen_utils.plot_returns(returns=episodic_returns, mode=0, save_flag=True, path=os.path.dirname(agent_params["model_path"]))
+    # plot accumulated returns
+    gen_utils.plot_returns(returns=episodic_returns, mode=1, save_flag=True, path=os.path.dirname(agent_params["model_path"]))
+    # plot average returns
+    gen_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True,
+    path=os.path.dirname(agent_params["model_path"]))
+    # save returns
+    gen_utils.save_pkl(content=episodic_returns, path=os.path.dirname(agent_params["model_path"]), fname="episodic_returns.pkl")
+    # save training parameters
     gen_utils.save_pkl(content=agent_params, path=os.path.dirname(agent_params["model_path"]), fname="agent_parameters.pkl")
     # save results
     train_info = train_params

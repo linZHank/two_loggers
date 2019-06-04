@@ -74,17 +74,21 @@ def plot_returns(returns, mode, save_flag, path):
         ave_returns.append(ave_r)
     # plot
     fig, ax = plt.subplots()
-    if mode == 0:
+    if mode == 0: # plot return of each episode
         ax.plot(np.arange(len(returns)), returns)
         ax.set(xlabel="Episode", ylabel="Returns")
+        ax.set_ylim([-1,1])
         figure_dir = os.path.join(os.path.dirname(path),"episodic_returns.png")
-    elif mode == 1:
+        ax.grid()
+    elif mode == 1: # plot accumulated return of each episode
         ax.plot(np.arange(len(acc_returns)), acc_returns)
         ax.set(xlabel="Episode", ylabel="Accumulated Returns")
         figure_dir = os.path.join(os.path.dirname(path),"accumulated_returns.png")
-    else:
+        ax.grid()
+    else: # plot averaged return of eacj episode
         ax.plot(np.arange(len(ave_returns)), ave_returns)
         ax.set(xlabel="Episode", ylabel="Averaged Returns")
+        ax.set_ylim([-1,1])
         figure_dir = os.path.join(os.path.dirname(path),"averaged_returns.png")
         ax.grid()
     if save_flag:
