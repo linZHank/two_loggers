@@ -1,9 +1,0 @@
-wall_bonus,-0.01
-num_steps,400
-door_bonus,0
-success_bonus,0
-agent,{'learning_rate': 0.001, 'dim_state': 7, 'batch_size': 512, 'model_path': '/home/piofagivens/ros_ws/src/two_loggers/loggers_control/saved_models/solo_escape/vpg_model/2019-05-29-10-25/agent/model.h5', 'actions': array([[ 1, -1],
-       [ 1,  1]]), 'gamma': 0.99, 'layer_size': [64, 64]}
-num_epochs,512
-success_count,2204
-time_bonus,-0.0025
