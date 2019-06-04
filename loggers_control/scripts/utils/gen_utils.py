@@ -62,7 +62,7 @@ def plot_returns(returns, mode, save_flag, path):
     path: file path, str
     """
     assert mode==0 or mode==1 or mode==2
-    # compute accumulated returns and averaged returns 
+    # compute accumulated returns and averaged returns
     acc_returns = []
     ave_returns = []
     acc_r = returns[0]
@@ -92,4 +92,3 @@ def plot_returns(returns, mode, save_flag, path):
         plt.close(fig)
     else:
         plt.show()
-        plt.close(fig)
