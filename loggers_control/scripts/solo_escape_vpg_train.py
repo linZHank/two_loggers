@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 import sys
 import os
+import time
 from datetime import datetime
 import numpy as np
 import tensorflow as tf
@@ -34,7 +35,6 @@ if __name__ == "__main__":
     agent_params["actions"] = np.array([np.array([1, -1]), np.array([1, 1])])
     agent_params["layer_sizes"] = args.layer_sizes
     agent_params["learning_rate"] = args.learning_rate
-    agent_params["sample_size"] = args.smaple_size
     # training params
     if args.datetime:
         train_params["datetime"] = args.datetime
@@ -46,6 +46,7 @@ if __name__ == "__main__":
     train_params["success_bonus"] = 0
     train_params["wall_bonus"] = -1./100
     train_params["door_bonus"] = 0
+    train_params["sample_size"] = args.sample_size
     # instantiate agent
     agent = VPGAgent(agent_params)
     update_counter = 0
@@ -111,7 +112,7 @@ if __name__ == "__main__":
                     "current batch size: {}".format(len(batch_rtaus)),
                     bcolors.ENDC
                 )
-                if len(batch_rtaus) > agent_params['sample_size']:
+                if len(batch_rtaus) > train_params['sample_size']:
                     break
         agent.train(batch_states, batch_acts, batch_rtaus)
         # specify model path
@@ -137,9 +138,7 @@ if __name__ == "__main__":
     train_info["success_count"] = env.success_count
     train_info["training_time"] = training_time
     train_info["learning_rate"] = agent_params["learning_rate"]
-    train_info["state_dimension"] = agent_params["dim_stat"]
+    train_info["state_dimension"] = agent_params["dim_state"]
     train_info["action_options"] = agent_params["actions"]
     train_info["layer_sizes"] = agent_params["layer_sizes"]
-    train_info["model_datetime"] = agent_params["learning_rate"]
-
     gen_utils.save_csv(content=train_info, path=os.path.dirname(model_path), fname="train_information.csv")

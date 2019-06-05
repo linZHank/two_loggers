@@ -21,19 +21,17 @@ class VPGAgent:
         # hyper-parameters
         self.dim_state = params["dim_state"]
         self.actions = params["actions"]
-        self.layer_size = params["layer_size"]
+        self.layer_sizes = params["layer_sizes"]
         self.learning_rate = params["learning_rate"]
-        self.batch_size = params["batch_size"]
-        self.model_path = params["model_path"]
         # init Memory
 
         # pi(a|s;theta)
-        assert len(self.layer_size) >= 1
+        assert len(self.layer_sizes) >= 1
         self.policy_net = tf.keras.models.Sequential([
-            Dense(self.layer_size[0], input_shape=(self.dim_state, ), activation='relu')
+            Dense(self.layer_sizes[0], input_shape=(self.dim_state, ), activation='relu')
         ])
-        for i in range(1, len(self.layer_size)):
-            self.policy_net.add(Dense(self.layer_size[i], activation='relu'))
+        for i in range(1, len(self.layer_sizes)):
+            self.policy_net.add(Dense(self.layer_sizes[i], activation='relu'))
         self.policy_net.add(Dense(len(self.actions), activation='softmax'))
         self.optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
         adam = tf.keras.optimizers.Adam(lr=1e-3)
