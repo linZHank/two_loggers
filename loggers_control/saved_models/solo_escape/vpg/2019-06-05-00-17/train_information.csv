@@ -1,0 +1,15 @@
+state_dimension,7
+layer_sizes,[16, 16]
+wall_bonus,-0.01
+action_options,[[ 1 -1]
+ [ 1  1]]
+num_steps,400
+door_bonus,0
+datetime,2019-06-05-00-17
+learning_rate,0.001
+sample_size,512
+training_time,30159.4834061
+success_bonus,0
+num_epochs,512
+success_count,152
+time_bonus,-0.0025
