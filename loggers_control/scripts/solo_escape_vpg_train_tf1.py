@@ -19,8 +19,8 @@ import time
 from datetime import datetime
 
 from envs.solo_escape_task_env import SoloEscapeEnv
-from utils import gen_utils, solo_utils, tf_utils
-from utils.gen_utils import bcolors
+from utils import data_utils, solo_utils, tf_utils
+from utils.data_utils import bcolors
 
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
@@ -144,7 +144,7 @@ def train(env, model_path,
         rospy.loginfo("Model saved in path : {}".format(save_path))
         rospy.logerr("Success Count: {}".format(env.success_count))
     # plot returns and save figure
-    gen_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=model_path)
+    data_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True, path=model_path)
 
 if __name__ == "__main__":
     # make arg parser
@@ -202,6 +202,6 @@ if __name__ == "__main__":
     train_info["dist_bonus_flag"] = args.dist_bonus_flag
 
     # save hyper-parameters
-    gen_utils.save_pkl(content=hyp_params, path=args.model_path, fname="hyper_parameters.pkl")
+    data_utils.save_pkl(content=hyp_params, path=args.model_path, fname="hyper_parameters.pkl")
     # save results
-    gen_utils.save_csv(content=train_info, path=args.model_path, fname="results.csv")
+    data_utils.save_csv(content=train_info, path=args.model_path, fname="results.csv")

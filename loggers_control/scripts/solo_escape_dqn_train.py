@@ -14,8 +14,8 @@ import tensorflow as tf
 import rospy
 
 from envs.solo_escape_task_env import SoloEscapeEnv
-from utils import gen_utils, solo_utils, tf_utils
-from utils.gen_utils import bcolors
+from utils import data_utils, solo_utils, tf_utils
+from utils.data_utils import bcolors
 from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
@@ -93,10 +93,10 @@ if __name__ == "__main__":
         agent.save_model()
         print("model saved at {}".format(agent.model_path))
     # plot deposit returns
-    gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=agent_params["model_path"])
+    data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=agent_params["model_path"])
 
-    gen_utils.save_pkl(content=agent_params, path=agent_params["model_path"], fname="agent_parameters.pkl")
+    data_utils.save_pkl(content=agent_params, path=agent_params["model_path"], fname="agent_parameters.pkl")
     # save results
     train_info = train_params.update(agent_params)
     train_info["success_count"] = env.success_count
-    gen_utils.save_csv(content=train_info, path=agent_params["model_path"], fname="train_information.csv")
+    data_utils.save_csv(content=train_info, path=agent_params["model_path"], fname="train_information.csv")

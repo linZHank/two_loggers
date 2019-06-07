@@ -61,36 +61,36 @@ class SoloEscapeEnv(object):
     #     rospy.logfatal("/gazebo/unpause_physics service call failed")
 
     def reset(self):
-      """
-      Reset environment
-      obs, info = env.reset()
-      """
-      rospy.logdebug("\nStart Environment Reset")
-      self._take_action(np.zeros(2))
-      self.reset_world()
-      self._set_init()
-      obs = self._get_observation()
-      info = self._post_information()
-      self.steps = 0
-      rospy.logdebug("End Environment Reset\n")
-      rospy.logwarn("\nEnvironment Reset!!!\n")
+        """
+        Reset environment
+        obs, info = env.reset()
+        """
+        rospy.logdebug("\nStart Environment Reset")
+        self._take_action(np.zeros(2))
+        self.reset_world()
+        self._set_init()
+        obs = self._get_observation()
+        info = self._post_information()
+        self.steps = 0
+        rospy.logdebug("End Environment Reset\n")
+        rospy.logwarn("\nEnvironment Reset!!!\n")
 
-      return obs, info
+        return obs, info
 
     def step(self, action):
-      """
-      Manipulate the environment with an action
-      obs, rew, done, info = env.step(action)
-      """
-      rospy.logdebug("\nStart Environment Step")
-      self._take_action(action)
-      obs = self._get_observation()
-      reward, done = self._compute_reward()
-      info = self._post_information()
-      self.steps += 1
-      rospy.logdebug("End Environment Step\n")
+        """
+        Manipulate the environment with an action
+        obs, rew, done, info = env.step(action)
+        """
+        rospy.logdebug("\nStart Environment Step")
+        self._take_action(action)
+        obs = self._get_observation()
+        reward, done = self._compute_reward()
+        info = self._post_information()
+        self.steps += 1
+        rospy.logdebug("End Environment Step\n")
 
-      return obs, reward, done, info
+        return obs, reward, done, info
 
     def _set_init(self):
         """
@@ -105,8 +105,8 @@ class SoloEscapeEnv(object):
         ang = random.uniform(-math.pi, math.pi) # robot vector orientation
         x = mag * math.cos(ang)
         y = mag * math.sin(ang)
+        theta = random.uniform(-np.pi, np.pi)
         w = random.uniform(-1.0, 1.0)
-        theta = tf.transformations.euler_from_quaternion([0,0,math.sqrt(1-w**2),w])[2]
         robot_state = ModelState()
         robot_state.model_name = "logger"
         robot_state.pose.position.x = x
@@ -114,8 +114,8 @@ class SoloEscapeEnv(object):
         robot_state.pose.position.z = 0.2
         robot_state.pose.orientation.x = 0
         robot_state.pose.orientation.y = 0
-        robot_state.pose.orientation.z = math.sqrt(1 - w**2)
-        robot_state.pose.orientation.w = w
+        robot_state.pose.orientation.z = np.sin(theta / 2.0)
+        robot_state.pose.orientation.w = np.cos(theta /2.0)
         robot_state.reference_frame = "world"
         # Give the system a little time to finish initialization
         for _ in range(10):
@@ -163,21 +163,21 @@ class SoloEscapeEnv(object):
         return self.observation
 
     def _take_action(self, action):
-      """
-      Set linear and angular speed for logger to execute.
-      Args:
-      action: np.array([v_lin, v_ang]).
-      """
-      rospy.logdebug("\nStart Taking Action")
-      cmd_vel = Twist()
-      cmd_vel.linear.x = action[0]
-      cmd_vel.angular.z = action[1]
-      for _ in range(10):
+        """
+        Set linear and angular speed for logger to execute.
+        Args:
+        action: np.array([v_lin, v_ang]).
+        """
+        rospy.logdebug("\nStart Taking Action")
+        cmd_vel = Twist()
+        cmd_vel.linear.x = action[0]
+        cmd_vel.angular.z = action[1]
+        for _ in range(10):
           self.cmd_vel_pub.publish(cmd_vel)
           self.rate.sleep()
-      self.action = action
-      rospy.logdebug("Action Taken ===> {}".format(cmd_vel))
-      rospy.logdebug("End Taking Action\n")
+        self.action = action
+        rospy.logdebug("Action Taken ===> {}".format(cmd_vel))
+        rospy.logdebug("End Taking Action\n")
 
     def _compute_reward(self):
         """

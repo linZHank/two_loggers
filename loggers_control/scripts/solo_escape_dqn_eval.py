@@ -13,8 +13,8 @@ import tensorflow as tf
 import rospy
 
 from envs.solo_escape_task_env import SoloEscapeEnv
-from utils import gen_utils, solo_utils, tf_utils
-from utils.gen_utils import bcolors
+from utils import data_utils, solo_utils, tf_utils
+from utils.data_utils import bcolors
 from tensorflow.keras.layers import Dense
 
 if __name__ == "__main__":

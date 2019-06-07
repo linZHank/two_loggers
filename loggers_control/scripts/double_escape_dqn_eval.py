@@ -15,8 +15,8 @@ from tensorflow.keras.layers import Dense
 import rospy
 
 from envs.double_escape_task_env import DoubleEscapeEnv
-from utils import gen_utils, double_utils, tf_utils
-from utils.gen_utils import bcolors
+from utils import data_utils, double_utils, tf_utils
+from utils.data_utils import bcolors
 from agents.dqn import DQNAgent
 
 if __name__ == "__main__":

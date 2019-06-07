@@ -14,8 +14,8 @@ import tensorflow as tf
 import rospy
 
 from envs.double_escape_task_env import DoubleEscapeEnv
-from utils import gen_utils, double_utils, tf_utils
-from utils.gen_utils import bcolors
+from utils import data_utils, double_utils, tf_utils
+from utils.data_utils import bcolors
 from agents.dqn import DQNAgent
 
 import pdb
@@ -124,13 +124,13 @@ if __name__ == "__main__":
     # end of training
     env.reset()
     # plot deposit returns
-    gen_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=os.path.dirname(agent0_params["model_path"]))
+    data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=os.path.dirname(agent0_params["model_path"]))
     # save results
-    gen_utils.save_pkl(content=agent0_params, path=agent0_params["model_path"], fname="agent0_parameters.pkl")
-    gen_utils.save_pkl(content=agent1_params, path=agent1_params["model_path"], fname="agent1_parameters.pkl")
+    data_utils.save_pkl(content=agent0_params, path=agent0_params["model_path"], fname="agent0_parameters.pkl")
+    data_utils.save_pkl(content=agent1_params, path=agent1_params["model_path"], fname="agent1_parameters.pkl")
     # save results
     train_info = train_params
     train_info["success_count"] = env.success_count
     train_info["agent_0"] = agent0_params
     train_info["agent_1"] = agent1_params
-    gen_utils.save_csv(content=train_info, path=os.path.dirname(agent0_params["model_path"]), fname="train_information.csv")
+    data_utils.save_csv(content=train_info, path=os.path.dirname(agent0_params["model_path"]), fname="train_information.csv")

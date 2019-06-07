@@ -15,13 +15,13 @@ import tensorflow as tf
 import rospy
 
 from envs.solo_escape_task_env import SoloEscapeEnv
-from utils import gen_utils, solo_utils, tf_utils
-from utils.gen_utils import bcolors
+from utils import data_utils, solo_utils, tf_utils
+from utils.data_utils import bcolors
 from agents.vpg import VPGAgent
 
 if __name__ == "__main__":
     # create argument parser
-    args = gen_utils.get_args()
+    args = data_utils.get_args()
     # start timing training
     start_time = time.time()
     rospy.init_node("solo_escape_dqn", anonymous=True, log_level=rospy.INFO)
@@ -123,16 +123,16 @@ if __name__ == "__main__":
     training_time = end_time - start_time
 
     # plot episodic returns
-    gen_utils.plot_returns(returns=episodic_returns, mode=0, save_flag=True, path=os.path.dirname(model_path))
+    data_utils.plot_returns(returns=episodic_returns, mode=0, save_flag=True, path=os.path.dirname(model_path))
     # plot accumulated returns
-    gen_utils.plot_returns(returns=episodic_returns, mode=1, save_flag=True, path=os.path.dirname(model_path))
+    data_utils.plot_returns(returns=episodic_returns, mode=1, save_flag=True, path=os.path.dirname(model_path))
     # plot averaged return
-    gen_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True,
+    data_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True,
     path=os.path.dirname(model_path))
     # save returns
-    gen_utils.save_pkl(content=episodic_returns, path=os.path.dirname(model_path), fname="episodic_returns.pkl")
+    data_utils.save_pkl(content=episodic_returns, path=os.path.dirname(model_path), fname="episodic_returns.pkl")
     # save agent parameters
-    gen_utils.save_pkl(content=agent_params, path=os.path.dirname(model_path), fname="agent_parameters.pkl")
+    data_utils.save_pkl(content=agent_params, path=os.path.dirname(model_path), fname="agent_parameters.pkl")
     # save results
     train_info = train_params
     train_info["success_count"] = env.success_count
@@ -141,4 +141,4 @@ if __name__ == "__main__":
     train_info["state_dimension"] = agent_params["dim_state"]
     train_info["action_options"] = agent_params["actions"]
     train_info["layer_sizes"] = agent_params["layer_sizes"]
-    gen_utils.save_csv(content=train_info, path=os.path.dirname(model_path), fname="train_information.csv")
+    data_utils.save_csv(content=train_info, path=os.path.dirname(model_path), fname="train_information.csv")

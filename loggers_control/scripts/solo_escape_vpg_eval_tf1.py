@@ -17,7 +17,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 from envs.solo_escape_task_env import SoloEscapeEnv
-from utils import gen_utils, solo_utils, tf_utils
+from utils import data_utils, solo_utils, tf_utils
 
 
 if __name__ == "__main__":

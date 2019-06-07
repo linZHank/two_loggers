@@ -7,9 +7,9 @@ import random
 import tensorflow as tf
 import rospy
 
-from utils import gen_utils
+from utils import data_utils
 from utils import solo_utils
-from utils.gen_utils import bcolors
+from utils.data_utils import bcolors
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 
