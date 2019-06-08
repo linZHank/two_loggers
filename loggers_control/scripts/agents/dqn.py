@@ -41,7 +41,9 @@ class DQNAgent:
         # hyper-parameters
         self.dim_state = params["dim_state"]
         self.actions = params["actions"]
-        self.layer_size = params["layer_size"]
+        self.layer_sizes = params["layer_sizes"]
+        if type(params["layer_sizes"]) == int:
+            self.layer_sizes = [params["layer_sizes"]]
         self.gamma = params["gamma"]
         self.learning_rate = params["learning_rate"]
         self.batch_size = params["batch_size"]
@@ -50,12 +52,12 @@ class DQNAgent:
         self.delta_dist = 0
         self.epsilon = 1
         # Q(s,a;theta)
-        assert len(self.layer_size) >= 1
+        assert len(self.layer_sizes) >= 1
         self.qnet_active = tf.keras.models.Sequential([
-            Dense(self.layer_size[0], activation='relu', input_shape=(self.dim_state,))
+            Dense(self.layer_sizes[0], activation='relu', input_shape=(self.dim_state,))
         ])
-        for i in range(1,len(self.layer_size)):
-            self.qnet_active.add(Dense(self.layer_size[i], activation="relu"))
+        for i in range(1,len(self.layer_sizes)):
+            self.qnet_active.add(Dense(self.layer_sizes[i], activation="relu"))
         self.qnet_active.add(Dense(len(self.actions)))
         # Q^(s,a;theta_)
         self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)

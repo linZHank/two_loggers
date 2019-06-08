@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 import sys
 import os
+import time
 from datetime import datetime
 import numpy as np
 import tensorflow as tf
@@ -40,18 +41,15 @@ if __name__ == "__main__":
     agent0_params["batch_size"] = args.batch_size
     agent0_params["memory_cap"] = args.memory_cap
     agent0_params["update_step"] = args.update_step
-    agent0_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent0/model.h5"
     # agent_1 parameters
     agent1_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
     agent1_params["actions"] = agent0_params["actions"]
-    agent1_params["layer_size"] = [256,256]
-    agent1_params["epsilon"] = 1
-    agent1_params["gamma"] = 0.99
-    agent1_params["learning_rate"] = 1e-3
-    agent1_params["batch_size"] = 2000
-    agent1_params["memory_cap"] = 500000
-    agent1_params["update_step"] = 10000
-    agent1_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/agent1/model.h5"
+    agent1_params["layer_sizes"] = args.layer_sizes
+    agent1_params["gamma"] = args.gamma
+    agent1_params["learning_rate"] = args.learning_rate
+    agent1_params["batch_size"] = args.batch_size
+    agent1_params["memory_cap"] = args.memory_cap
+    agent1_params["update_step"] = args.update_step
     # training parameters
     if args.datetime:
         train_params["datetime"] = args.datetime
@@ -65,7 +63,11 @@ if __name__ == "__main__":
     train_params["door_bonus"] = 0
     # instantiate agents
     agent_0 = DQNAgent(agent0_params)
+    model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params["datetime"]+"/agent_0/model.h5"
     agent_1 = DQNAgent(agent1_params)
+    model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params["datetime"]+"/agent_1/model.h5"
+    assert os.path.dirname(os.path.dirname(model_path_0)) == os.path.dirname(os.path.dirname(model_path_1))
+    # init misc params
     update_counter = 0
     ep_returns = []
     start_time = time.time()
@@ -124,19 +126,35 @@ if __name__ == "__main__":
             if done:
                 break
         ep_returns.append(sum(ep_rewards))
-        agent_0.save_model()
-        agent_1.save_model()
-
-    # end of training
+        agent_0.save_model(model_path_0)
+        agent_1.save_model(model_path_1)
+    # time training
+    end_time = time.time()
+    training_time = end_time - start_time
     env.reset()
-    # plot deposit returns
-    data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=os.path.dirname(agent0_params["model_path"]))
-    # save results
-    data_utils.save_pkl(content=agent0_params, path=agent0_params["model_path"], fname="agent0_parameters.pkl")
-    data_utils.save_pkl(content=agent1_params, path=agent1_params["model_path"], fname="agent1_parameters.pkl")
+
+    # plot episodic returns
+    data_utils.plot_returns(returns=ep_returns, mode=0, save_flag=True, fdir=os.path.dirname(model_path_0))
+    # plot accumulated returns
+    data_utils.plot_returns(returns=ep_returns, mode=1, save_flag=True, fdir=os.path.dirname(model_path_0))
+    # plot averaged return
+    data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True,
+    fdir=os.path.dirname(model_path_0))
+    # save agent parameters
+    data_utils.save_pkl(content=agent0_params, fdir=os.path.dirname(model_path_0), fname="agent0_parameters.pkl")
+    data_utils.save_pkl(content=agent1_params, fdir=os.path.dirname(model_path_1), fname="agent0_parameters.pkl")
+    # save returns
+    data_utils.save_pkl(content=ep_returns, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="episodic_returns.pkl")
     # save results
     train_info = train_params
     train_info["success_count"] = env.success_count
-    train_info["agent_0"] = agent0_params
-    train_info["agent_1"] = agent1_params
-    data_utils.save_csv(content=train_info, path=os.path.dirname(agent0_params["model_path"]), fname="train_information.csv")
+    train_info["training_time"] = training_time
+    train_info["agent0_learning_rate"] = agent0_params["learning_rate"]
+    train_info["agent0_state_dimension"] = agent0_params["dim_state"]
+    train_info["agent0_action_options"] = agent0_params["actions"]
+    train_info["agent0_layer_sizes"] = agent0_params["layer_sizes"]
+    train_info["agent1_learning_rate"] = agent1_params["learning_rate"]
+    train_info["agent1_state_dimension"] = agent1_params["dim_state"]
+    train_info["agent1_action_options"] = agent1_params["actions"]
+    train_info["agent1_layer_sizes"] = agent1_params["layer_sizes"]
+    data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_information.csv")

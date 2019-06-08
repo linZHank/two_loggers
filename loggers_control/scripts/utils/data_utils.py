@@ -37,13 +37,13 @@ def get_args():
     parser.add_argument("--sample_size", type=int, default=512)
     parser.add_argument("--layer_sizes", nargs="+", type=int, help="use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]", default=8)
     parser.add_argument("--batch_size", type=int, default=2048)
-    parser.add_argument("--memory_cap", type=int, default=800000)
+    parser.add_argument("--memory_cap", type=int, default=400000)
     parser.add_argument("--update_step", type=int, default=10000)
 
     return parser.parse_args()
 
 # save pickle
-def save_pkl(content, path, fname):
+def save_pkl(content, fdir, fname):
     """
     Save content into path/name as pickle file
     Args:
@@ -51,12 +51,11 @@ def save_pkl(content, path, fname):
         content: to be saved, array/dict/list...
         fname: file name, str
     """
-    fdir = os.path.dirname(path)
-    file_path = os.path.join(fdir,fname)
+    file_path = os.path.join(fdir, fname)
     with open(file_path, "wb") as f:
         pickle.dump(content, f, pickle.HIGHEST_PROTOCOL)
 
-def save_csv(content, path, fname):
+def save_csv(content, fdir, fname):
     """
     Save content into path/name as csv file
     Args:
@@ -64,13 +63,12 @@ def save_csv(content, path, fname):
         path: file path, str
         fname: file name, str
     """
-    fdir = os.path.dirname(path)
-    file_path = os.path.join(fdir,fname)
+    file_path = os.path.join(fdir, fname)
     with open(file_path, "w") as f:
         for key in content.keys():
             f.write("{},{}\n".format(key,content[key]))
 
-def plot_returns(returns, mode, save_flag, path):
+def plot_returns(returns, mode, save_flag, fdir):
     """
     Plot rewards
     Args:
@@ -96,18 +94,18 @@ def plot_returns(returns, mode, save_flag, path):
         ax.plot(np.arange(len(returns)), returns)
         ax.set(xlabel="Episode", ylabel="Returns")
         ax.set_ylim([-1,1])
-        figure_dir = os.path.join(os.path.dirname(path),"episodic_returns.png")
+        figure_dir = os.path.join(fdir,"episodic_returns.png")
         ax.grid()
     elif mode == 1: # plot accumulated return of each episode
         ax.plot(np.arange(len(acc_returns)), acc_returns)
         ax.set(xlabel="Episode", ylabel="Accumulated Returns")
-        figure_dir = os.path.join(os.path.dirname(path),"accumulated_returns.png")
+        figure_dir = os.path.join(fdir, "accumulated_returns.png")
         ax.grid()
     else: # plot averaged return of eacj episode
         ax.plot(np.arange(len(ave_returns)), ave_returns)
         ax.set(xlabel="Episode", ylabel="Averaged Returns")
         ax.set_ylim([-1,1])
-        figure_dir = os.path.join(os.path.dirname(path),"averaged_returns.png")
+        figure_dir = os.path.join(fdir, "averaged_returns.png")
         ax.grid()
     if save_flag:
         plt.savefig(figure_dir)

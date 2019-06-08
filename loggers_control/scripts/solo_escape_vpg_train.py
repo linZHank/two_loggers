@@ -43,11 +43,13 @@ if __name__ == "__main__":
     train_params["num_steps"] = args.num_steps
     train_params["time_bonus"] = -1./train_params['num_steps']
     train_params["success_bonus"] = 0
-    train_params["wall_bonus"] = -1./100
+    train_params["wall_bonus"] = -10./train_params["num_steps"]
     train_params["door_bonus"] = 0
     train_params["sample_size"] = args.sample_size
     # instantiate agent
     agent = VPGAgent(agent_params)
+    # specify model path
+    model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg/"+train_params["datetime"]+"/agent/model.h5"
     update_counter = 0
     episodic_returns = []
     episode = 0
@@ -115,24 +117,22 @@ if __name__ == "__main__":
                 if len(batch_rtaus) > train_params['sample_size']:
                     break
         agent.train(batch_states, batch_acts, batch_rtaus)
-        # specify model path
-        model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/vpg/"+train_params["datetime"]+"/agent/model.h5"
         agent.save_model(model_path)
     # time training
     end_time = time.time()
     training_time = end_time - start_time
 
     # plot episodic returns
-    data_utils.plot_returns(returns=episodic_returns, mode=0, save_flag=True, path=os.path.dirname(model_path))
+    data_utils.plot_returns(returns=episodic_returns, mode=0, save_flag=True, fdir=os.path.dirname(model_path))
     # plot accumulated returns
-    data_utils.plot_returns(returns=episodic_returns, mode=1, save_flag=True, path=os.path.dirname(model_path))
+    data_utils.plot_returns(returns=episodic_returns, mode=1, save_flag=True, fdir=os.path.dirname(model_path))
     # plot averaged return
     data_utils.plot_returns(returns=episodic_returns, mode=2, save_flag=True,
-    path=os.path.dirname(model_path))
-    # save returns
-    data_utils.save_pkl(content=episodic_returns, path=os.path.dirname(model_path), fname="episodic_returns.pkl")
+    fdir=os.path.dirname(model_path))
     # save agent parameters
-    data_utils.save_pkl(content=agent_params, path=os.path.dirname(model_path), fname="agent_parameters.pkl")
+    data_utils.save_pkl(content=agent_params, fdir=os.path.dirname(model_path), fname="agent_parameters.pkl")
+    # save returns
+    data_utils.save_pkl(content=episodic_returns, fdir=os.path.dirname(os.path.dirname(model_path)), fname="episodic_returns.pkl")
     # save results
     train_info = train_params
     train_info["success_count"] = env.success_count
@@ -141,4 +141,4 @@ if __name__ == "__main__":
     train_info["state_dimension"] = agent_params["dim_state"]
     train_info["action_options"] = agent_params["actions"]
     train_info["layer_sizes"] = agent_params["layer_sizes"]
-    data_utils.save_csv(content=train_info, path=os.path.dirname(model_path), fname="train_information.csv")
+    data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path)), fname="train_information.csv")
