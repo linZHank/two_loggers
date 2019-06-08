@@ -5,6 +5,8 @@
 
   <!-- Constants for robot dimensions -->
   <xacro:property name="PI" value="3.1415926535897931"/>
+  <!-- properties of joint damping* -->
+  <xacro:property name="DAMP" value="0.9"/>
   <!-- properties of link_log -->
   <xacro:property name="R_LOG" value="0.01"/>
   <xacro:property name="L_LOG" value="2"/>
@@ -65,7 +67,7 @@ p      <material name="red"/>
     <child link="link_hat_0"/>
     <axis rpy="0 0 0" xyz="0 0 1"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
-    <dynamics damping="0.1" friction="0.0"/>
+
   </joint>
 
   <link name="link_hat_0">
@@ -94,7 +96,7 @@ p      <material name="red"/>
     <parent link="link_hat_0"/>
     <child link="link_chassis_0" />
     <axis rpy="0 0 0" xyz="0 0 1"/>
-    <dynamics damping="0.1" friction="0.0"/>
+
   </joint>
 
   <link name="link_chassis_0">
@@ -122,7 +124,7 @@ p      <material name="red"/>
     <origin rpy="0 0 0" xyz="0 ${-R_CHASSIS/2} ${-L_CHASSIS/2}"/>
     <parent link="link_chassis_0"/>
     <child link="link_caster_0"/>
-    <dynamics damping="0.1" friction="0.0"/>
+
   </joint>
 
   <link name="link_caster_0">
@@ -151,7 +153,7 @@ p      <material name="red"/>
     <parent link="link_chassis_0"/>
     <child link="link_left_wheel_0" />
     <axis rpy="0 0 0" xyz="1 0 0"/>
-    <dynamics damping="0.1" friction="0.0"/>
+
   </joint>
 
   <link name="link_left_wheel_0">
@@ -180,7 +182,7 @@ p      <material name="red"/>
     <child link="link_right_wheel_0" />
     <parent link="link_chassis_0"/>
     <axis rpy="0 0 0" xyz="1 0 0"/>
-    <dynamics damping="0.1" friction="0.0"/>
+
   </joint>
 
   <link name="link_right_wheel_0">
@@ -210,7 +212,7 @@ p      <material name="red"/>
     <child link="link_hat_1"/>
     <axis rpy="0 0 0" xyz="0 0 1"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
-    <dynamics damping="0.1" friction="0.0"/>
+
   </joint>
 
   <link name="link_hat_1">
@@ -239,7 +241,7 @@ p      <material name="red"/>
     <parent link="link_hat_1"/>
     <child link="link_chassis_1" />
     <axis rpy="0 0 0" xyz="0 0 1"/>
-    <dynamics damping="0.1" friction="0.0"/>
+
   </joint>
 
   <link name="link_chassis_1">
@@ -267,7 +269,7 @@ p      <material name="red"/>
     <origin rpy="0 0 0" xyz="0 ${-R_CHASSIS/2} ${-L_CHASSIS/2}"/>
     <parent link="link_chassis_1"/>
     <child link="link_caster_1"/>
-    <dynamics damping="0.1" friction="0.0"/>
+
   </joint>
 
   <link name="link_caster_1">
@@ -296,7 +298,7 @@ p      <material name="red"/>
     <parent link="link_chassis_1"/>
     <child link="link_left_wheel_1" />
     <axis rpy="0 0 0" xyz="1 0 0"/>
-    <dynamics damping="0.1" friction="0.0"/>
+
   </joint>
 
   <link name="link_left_wheel_1">
@@ -325,7 +327,7 @@ p      <material name="red"/>
     <child link="link_right_wheel_1" />
     <parent link="link_chassis_1"/>
     <axis rpy="0 0 0" xyz="1 0 0"/>
-    <dynamics damping="0.1" friction="0.0"/>
+
   </joint>
 
   <link name="link_right_wheel_1">
