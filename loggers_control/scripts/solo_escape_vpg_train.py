@@ -23,7 +23,6 @@ if __name__ == "__main__":
     # create argument parser
     args = data_utils.get_args()
     # start timing training
-    start_time = time.time()
     rospy.init_node("solo_escape_dqn", anonymous=True, log_level=rospy.INFO)
     # make an instance from env class
     env = SoloEscapeEnv()
@@ -53,6 +52,7 @@ if __name__ == "__main__":
     episodic_returns = []
     episode = 0
     step = 0
+    start_time = time.time()
     for ep in range(train_params['num_epochs']):
         # init training batches
         batch_states = []
