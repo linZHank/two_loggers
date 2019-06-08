@@ -134,12 +134,12 @@ if __name__ == "__main__":
     env.reset()
 
     # plot episodic returns
-    data_utils.plot_returns(returns=ep_returns, mode=0, save_flag=True, fdir=os.path.dirname(model_path_0))
+    data_utils.plot_returns(returns=ep_returns, mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
     # plot accumulated returns
-    data_utils.plot_returns(returns=ep_returns, mode=1, save_flag=True, fdir=os.path.dirname(model_path_0))
+    data_utils.plot_returns(returns=ep_returns, mode=1, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
     # plot averaged return
     data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True,
-    fdir=os.path.dirname(model_path_0))
+    fdir=os.path.dirname(os.path.dirname(model_path_0)))
     # save agent parameters
     data_utils.save_pkl(content=agent0_params, fdir=os.path.dirname(model_path_0), fname="agent0_parameters.pkl")
     data_utils.save_pkl(content=agent1_params, fdir=os.path.dirname(model_path_1), fname="agent0_parameters.pkl")
