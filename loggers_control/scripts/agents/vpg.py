@@ -22,6 +22,8 @@ class VPGAgent:
         self.dim_state = params["dim_state"]
         self.actions = params["actions"]
         self.layer_sizes = params["layer_sizes"]
+        if type(params["layer_sizes"]) == int:
+            self.layer_sizes = [params["layer_sizes"]]
         self.learning_rate = params["learning_rate"]
         # init Memory
 

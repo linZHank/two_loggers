@@ -15,6 +15,9 @@ from tensorflow.keras import Model
 
 
 class Memory:
+    """
+    This class defines replay buffer
+    """
     def __init__(self, memory_cap):
         self.memory_cap = memory_cap
         self.memory = []
@@ -35,26 +38,26 @@ class Memory:
 
 class DQNAgent:
     def __init__(self, params):
-        # super(DQNAgent, self).__init__()
         # hyper-parameters
         self.dim_state = params["dim_state"]
         self.actions = params["actions"]
-        self.layer_size = params["layer_size"]
+        self.layer_sizes = params["layer_sizes"]
+        if type(params["layer_sizes"]) == int:
+            self.layer_sizes = [params["layer_sizes"]]
         self.gamma = params["gamma"]
         self.learning_rate = params["learning_rate"]
         self.batch_size = params["batch_size"]
         self.memory_cap = params["memory_cap"]
         self.update_step = params["update_step"]
-        self.model_path = params["model_path"]
         self.delta_dist = 0
         self.epsilon = 1
         # Q(s,a;theta)
-        assert len(self.layer_size) >= 1
+        assert len(self.layer_sizes) >= 1
         self.qnet_active = tf.keras.models.Sequential([
-            Dense(self.layer_size[0], activation='relu', input_shape=(self.dim_state,))
+            Dense(self.layer_sizes[0], activation='relu', input_shape=(self.dim_state,))
         ])
-        for i in range(1,len(self.layer_size)):
-            self.qnet_active.add(Dense(self.layer_size[i], activation="relu"))
+        for i in range(1,len(self.layer_sizes)):
+            self.qnet_active.add(Dense(self.layer_sizes[i], activation="relu"))
         self.qnet_active.add(Dense(len(self.actions)))
         # Q^(s,a;theta_)
         self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
@@ -102,15 +105,15 @@ class DQNAgent:
         # loss_value = self.loss(minibatch)
         print("loss: {}".format(loss_value))
 
-    def save_model(self):
+    def save_model(self, model_path):
         self.qnet_active.summary()
         # create model saving directory if not exist
-        model_dir = os.path.dirname(self.model_path)
+        model_dir = os.path.dirname(model_path)
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-        self.qnet_active.save(self.model_path)
-        print("policy_net model save at {}".format(self.model_path))
+        self.qnet_active.save(model_path)
+        print("policy_net model save at {}".format(model_path))
 
-    def load_model(self):
-        self.qnet_active = tf.keras.models.load_model(self.model_path)
+    def load_model(self, model_path):
+        self.qnet_active = tf.keras.models.load_model(model_path)
         self.qnet_active.summary()
