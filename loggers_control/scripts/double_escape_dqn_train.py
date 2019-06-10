@@ -104,14 +104,18 @@ if __name__ == "__main__":
                     next_state_agt1,
                     rew,
                     sum(ep_rewards),
-                    info,
+                    info["status"],
                     env.success_count
                 ),
                 bcolors.ENDC
             )
             # store transition
-            agent_0.replay_memory.store((state_agt0, agent0_acti, rew, done, next_state_agt0))
-            agent_1.replay_memory.store((state_agt1, agent1_acti, rew, done, next_state_agt1))
+            if not info["status"] == "blew":
+                agent_0.replay_memory.store((state_agt0, agent0_acti, rew, done, next_state_agt0))
+                agent_1.replay_memory.store((state_agt1, agent1_acti, rew, done, next_state_agt1))
+                print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
+            else:
+                print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
             agent_0.train()
             agent_1.train()
             state_agt0 = next_state_agt0
