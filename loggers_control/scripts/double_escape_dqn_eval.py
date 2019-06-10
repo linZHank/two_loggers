@@ -23,24 +23,24 @@ if __name__ == "__main__":
     # main really starts here
     rospy.init_node("double_escape_dqn_test", anonymous=True, log_level=rospy.INFO)
     # load agent models
-    params_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn_model/2019-05-29-17-02/"
-    params0_path = os.path.join(params_dir,"agent0/agent0_parameters.pkl")
+    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-06-07-23-52/"
+    params0_path = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
     with open(params0_path, "rb") as f:
         agent0_params = pickle.load(f)
-    params1_path = os.path.join(params_dir,"agent1/agent1_parameters.pkl")
+    params1_path = os.path.join(model_dir,"agent_1/agent1_parameters.pkl")
     with open(params1_path, "rb") as f:
         agent1_params = pickle.load(f)
     # instantiate agents
     agent_0 = DQNAgent(agent0_params)
-    agent_0.load_model()
+    agent_0.load_model(os.path.join(model_dir, "agent_0/model.h5"))
     agent_1 = DQNAgent(agent1_params)
-    agent_1.load_model()
+    agent_1.load_model(os.path.join(model_dir, "agent_1/model.h5"))
     # instantiate env
     env = DoubleEscapeEnv()
     env.reset()
     # evaluation params
-    num_episodes = 10
-    num_steps = 200
+    num_episodes = 100
+    num_steps = 400
     # start evaluating
     for ep in range(num_episodes):
         obs, _ = env.reset()
@@ -62,7 +62,7 @@ if __name__ == "__main__":
             # logging
             print(
                 bcolors.OKGREEN,
-                "Episode: {}, Step: {} \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward: {}, status: {}".format(
+                "Episode: {}, Step: {} \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward: {}, status: {} \nsuccess_count: {}".format(
                     ep,
                     st,
                     agent0_acti,
@@ -72,9 +72,12 @@ if __name__ == "__main__":
                     next_state_agt0,
                     next_state_agt1,
                     rew,
-                    info
+                    info["status"],
+                    env.success_count
                 ),
                 bcolors.ENDC
             )
             if done:
                 break
+
+    print("Loggers succeeded escaping {} out of {}".format(env.success_count, num_episodes))

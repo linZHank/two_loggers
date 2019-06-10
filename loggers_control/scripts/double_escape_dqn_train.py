@@ -146,7 +146,7 @@ if __name__ == "__main__":
     fdir=os.path.dirname(os.path.dirname(model_path_0)))
     # save agent parameters
     data_utils.save_pkl(content=agent0_params, fdir=os.path.dirname(model_path_0), fname="agent0_parameters.pkl")
-    data_utils.save_pkl(content=agent1_params, fdir=os.path.dirname(model_path_1), fname="agent0_parameters.pkl")
+    data_utils.save_pkl(content=agent1_params, fdir=os.path.dirname(model_path_1), fname="agent1_parameters.pkl")
     # save returns
     data_utils.save_pkl(content=ep_returns, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="episodic_returns.pkl")
     # save results
