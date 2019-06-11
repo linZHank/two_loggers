@@ -108,3 +108,67 @@ def adjust_reward(train_params, env):
         done = True
 
     return adj_reward, done
+
+def random_rod_position(number):
+    """
+    generate a random rod position (center of the rod) and orientation
+    in the room with center at (0, 0), width 10 meters and depth 10 meters
+    the robot has 0.2 meters as radius
+    """
+    def angleRange(x, y, room, L):
+        min = 0
+        max = 0
+        dMinX = abs(x-room[0])
+        dMaxX = abs(x-room[1])
+        dMinY = abs(y-room[2])
+        dMaxY = abs(y-room[3])
+        if dMinX < L:
+            if dMinY < L:
+                min = -0.5*math.pi+math.acos(dMinY/L)
+                max = math.pi-math.acos(dMinX/L)
+            elif dMaxY < L:
+                min = -math.pi+math.acos(dMinX/L)
+                max = 0.5*math.pi-math.acos(dMaxY/L)
+            else:
+                min = -math.pi + math.acos(dMinX/L)
+                max = math.pi-math.acos(dMinX/L)
+        elif dMaxX < L:
+            if dMinY < L:
+                min = math.acos(dMaxX/L)
+                max = 1.5*math.pi-math.acos(dMinY/L)
+            elif dMaxY < L:
+                min = 0.5*math.pi+math.acos(dMaxY/L)
+                max = 2*math.pi-math.acos(dMaxX/L)
+            else:
+                min = math.acos(dMaxX/L)
+                max = 2*math.pi-math.acos(dMaxX/L)
+        else:
+            if dMinY < L:
+                min = -0.5*math.pi+math.acos(dMinY/L)
+                max = 1.5*math.pi-math.acos(dMinY/L)
+            elif dMaxY < L:
+                min = 0.5*math.pi+math.acos(dMaxY/L)
+                max = 2.5*math.pi-math.acos(dMaxY/L)
+            else:
+                min = -math.pi
+                max = math.pi
+        return min, max
+
+    rodPostionVec = []
+    # create a room with boundary to initialize the
+    mag = 4.78
+    rodLen = 2
+    room = [-mag, mag, -mag, mag]
+    for i in range(number):
+        rx = random.uniform(-mag, mag)
+        ry = random.uniform(-mag, mag)
+        minAngle, maxAngle = angleRange(rx, ry, room, rodLen)
+        angle = random.uniform(minAngle, maxAngle)
+        rodcx = rx + 0.5*rodLen*math.cos(angle)
+        rodcy = ry + 0.5*rodLen*math.sin(angle)
+        rodPostionVec.append([rodcx, rodcy, angle])
+
+    return rodPostionVec
+
+def create_pose_buffer(num_poses=0):
+    pass
