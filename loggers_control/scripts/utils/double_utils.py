@@ -109,13 +109,20 @@ def adjust_reward(train_params, env):
 
     return adj_reward, done
 
-def random_rod_position(number):
+def create_pose_buffer(num_poses):
     """
-    generate a random rod position (center of the rod) and orientation
-    in the room with center at (0, 0), width 10 meters and depth 10 meters
-    the robot has 0.2 meters as radius
+    generate a random rod pose in the room
+    with center at (0, 0), width 10 meters and depth 10 meters.
+    The robot has 0.2 meters as radius
+    Args:
+        num_poses: int number of poses going to be created
+    Returns:
+        pose_vectors: list of pose vectors, [[x1,y1,th1],[x2,y2,th2],...,[xn,yn,thn]]
     """
     def angleRange(x, y, room, L):
+        """
+        Compute rod angle based on a given robot position
+        """
         min = 0
         max = 0
         dMinX = abs(x-room[0])
@@ -152,23 +159,22 @@ def random_rod_position(number):
             else:
                 min = -math.pi
                 max = math.pi
+
         return min, max
 
-    rodPostionVec = []
-    # create a room with boundary to initialize the
+    pose_vectors = []
     mag = 4.78
-    rodLen = 2
-    room = [-mag, mag, -mag, mag]
+    len_rod = 2
+    room = [-mag, mag, -mag, mag] # create a room with boundary
     for i in range(number):
+        # randomize robot position
         rx = random.uniform(-mag, mag)
         ry = random.uniform(-mag, mag)
-        minAngle, maxAngle = angleRange(rx, ry, room, rodLen)
-        angle = random.uniform(minAngle, maxAngle)
-        rodcx = rx + 0.5*rodLen*math.cos(angle)
-        rodcy = ry + 0.5*rodLen*math.sin(angle)
-        rodPostionVec.append([rodcx, rodcy, angle])
+        # randomize rod pose
+        min_angle, max_angle = angleRange(x, y, room, len_rod)
+        angle = random.uniform(min_angle, max_angle)
+        x = rx + 0.5*len_rod*math.cos(angle)
+        y = ry + 0.5*len_rod*math.sin(angle)
+        pose_vectors.append([x, y, angle])
 
-    return rodPostionVec
-
-def create_pose_buffer(num_poses=0):
-    pass
+    return pose_vectors
