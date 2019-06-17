@@ -166,12 +166,12 @@ def create_pose_buffer(num_poses):
     mag = 4.78
     len_rod = 2
     room = [-mag, mag, -mag, mag] # create a room with boundary
-    for i in range(number):
+    for i in range(num_poses):
         # randomize robot position
         rx = random.uniform(-mag, mag)
         ry = random.uniform(-mag, mag)
         # randomize rod pose
-        min_angle, max_angle = angleRange(x, y, room, len_rod)
+        min_angle, max_angle = angleRange(rx, ry, room, len_rod)
         angle = random.uniform(min_angle, max_angle)
         x = rx + 0.5*len_rod*math.cos(angle)
         y = ry + 0.5*len_rod*math.sin(angle)
