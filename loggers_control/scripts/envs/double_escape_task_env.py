@@ -13,69 +13,7 @@ import tf
 from std_srvs.srv import Empty
 from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
-from utils import double_utils
 
-
-def random_rod_position(number):
-    """
-    generate a random rod position (center of the rod) and orientation
-    in the room with center at (0, 0), width 10 meters and depth 10 meters
-    the robot has 0.2 meters as radius
-    """
-    def angleRange(x, y, room, L):
-        min = 0
-        max = 0
-        dMinX = abs(x-room[0])
-        dMaxX = abs(x-room[1])
-        dMinY = abs(y-room[2])
-        dMaxY = abs(y-room[3])
-        if dMinX < L:
-            if dMinY < L:
-                min = -0.5*math.pi+math.acos(dMinY/L)
-                max = math.pi-math.acos(dMinX/L)
-            elif dMaxY < L:
-                min = -math.pi+math.acos(dMinX/L)
-                max = 0.5*math.pi-math.acos(dMaxY/L)
-            else:
-                min = -math.pi + math.acos(dMinX/L)
-                max = math.pi-math.acos(dMinX/L)
-        elif dMaxX < L:
-            if dMinY < L:
-                min = math.acos(dMaxX/L)
-                max = 1.5*math.pi-math.acos(dMinY/L)
-            elif dMaxY < L:
-                min = 0.5*math.pi+math.acos(dMaxY/L)
-                max = 2*math.pi-math.acos(dMaxX/L)
-            else:
-                min = math.acos(dMaxX/L)
-                max = 2*math.pi-math.acos(dMaxX/L)
-        else:
-            if dMinY < L:
-                min = -0.5*math.pi+math.acos(dMinY/L)
-                max = 1.5*math.pi-math.acos(dMinY/L)
-            elif dMaxY < L:
-                min = 0.5*math.pi+math.acos(dMaxY/L)
-                max = 2.5*math.pi-math.acos(dMaxY/L)
-            else:
-                min = -math.pi
-                max = math.pi
-        return min, max
-
-    rodPostionVec = []
-    # create a room with boundary to initialize the
-    mag = 4.78
-    rodLen = 2
-    room = [-mag, mag, -mag, mag]
-    for i in range(number):
-        rx = random.uniform(-mag, mag)
-        ry = random.uniform(-mag, mag)
-        minAngle, maxAngle = angleRange(rx, ry, room, rodLen)
-        angle = random.uniform(minAngle, maxAngle)
-        rodcx = rx + 0.5*rodLen*math.cos(angle)
-        rodcy = ry + 0.5*rodLen*math.sin(angle)
-        rodPostionVec.append([rodcx, rodcy, angle])
-
-    return rodPostionVec
 
 class DoubleEscapeEnv(object):
     """
@@ -109,8 +47,8 @@ class DoubleEscapeEnv(object):
         self.link_states = LinkStates()
         # init services
         self.reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
-        self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
+        self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         # init topic publisher
         self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
         self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=1)
@@ -120,20 +58,21 @@ class DoubleEscapeEnv(object):
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)
 
-    # def pauseSim(self):
-    #     rospy.wait_for_service("/gazebo/pause_physics")
-    #     try:
-    #         self.pause()
-    #     except rospy.ServiceException as e:
-    #         rospy.logfatal("/gazebo/pause_physics service call failed")
-    # def unpauseSim(self):
-    #     rospy.wait_for_service("/gazebo/unpause_physics")
-    #     try:
-    #         self.unpause()
-    #     except rospy.ServiceException as e:
-    #         rospy.logfatal("/gazebo/unpause_physics service call failed")
+    def pauseSim(self):
+        rospy.wait_for_service("/gazebo/pause_physics")
+        try:
+            self.pause_proxy()
+        except rospy.ServiceException as e:
+            rospy.logfatal("/gazebo/pause_physics service call failed")
 
-    def reset(self):
+    def unpauseSim(self):
+        rospy.wait_for_service("/gazebo/unpause_physics")
+        try:
+            self.unpause_proxy()
+        except rospy.ServiceException as e:
+            rospy.logfatal("/gazebo/unpause_physics service call failed")
+
+    def reset(self, init_pose=[]):
         """
         Reset environment function
         obs, info = env.reset()
@@ -141,7 +80,9 @@ class DoubleEscapeEnv(object):
         rospy.logdebug("\nStart Environment Reset")
         self._take_action(np.zeros(2), np.zeros(2))
         self.reset_world()
-        self._set_init()
+        self._set_init(init_pose)
+        self.pauseSim()
+        self.unpauseSim()
         obs = self._get_observation()
         info = self._post_information()
         self.steps = 0
@@ -164,27 +105,25 @@ class DoubleEscapeEnv(object):
 
         return obs, reward, done, info
 
-    def _set_init(self):
+    def _set_init(self, init_pose):
         """
-        Set initial condition for two_loggers at a random pose
+        Set initial condition of two_loggers to a specific pose
+        Args:
+            init_pose: [x, y, theta], set to a random pose if empty
         """
         rospy.logdebug("\nStart Initializing Robots")
-        # set model initial pose using pole coordinate
-        # generate one random position of rod with random orientation
-        rodPos = random_rod_position(1)
-        #rospy.logdebug(rodPos)
-        x = rodPos[0][0]
-        y = rodPos[0][1]
-        angle = rodPos[0][2]
+        # set model initial pose
+        if not init_pose:
+            init_pose = [0, 0, 0] # if empty, set init_pose to [x=0,y=0,theta=0]
         model_state = ModelState()
         model_state.model_name = "two_loggers"
-        model_state.pose.position.x = x
-        model_state.pose.position.y = y
+        model_state.pose.position.x = init_pose[0]
+        model_state.pose.position.y = init_pose[1]
         model_state.pose.position.z = 0.25
         model_state.pose.orientation.x = 0
         model_state.pose.orientation.y = 0
-        model_state.pose.orientation.z = math.sin(0.5*angle)
-        model_state.pose.orientation.w = math.cos(0.5*angle)
+        model_state.pose.orientation.z = math.sin(0.5*init_pose[2])
+        model_state.pose.orientation.w = math.cos(0.5*init_pose[2])
         model_state.reference_frame = "world"
         # set orientations for logger_0 and logger_1, by spinning them a little
         spin_vel_0 = random.choice([-2*np.pi, 2*np.pi])
