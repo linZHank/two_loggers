@@ -126,6 +126,11 @@ class DoubleEscapeEnv(object):
         model_state.pose.orientation.z = math.sin(0.5*init_pose[2])
         model_state.pose.orientation.w = math.cos(0.5*init_pose[2])
         model_state.reference_frame = "world"
+        # set loggers orientations
+        link_states = self._get_link_states()
+        id_logger_0 = link_states.name.index("two_loggers::link_chassis_0")
+        id_logger_1 = link_states.name.index("two_loggers::link_chassis_1")
+        logger_0_state =
         # set orientations for logger_0 and logger_1, by spinning them a little
         spin_vel_0 = random.choice([-2*np.pi, 2*np.pi])
         spin_vel_1 = random.choice([-2*np.pi, 2*np.pi])
