@@ -11,6 +11,8 @@ import os
 import time
 from datetime import datetime
 import numpy as np
+import random
+import math
 import tensorflow as tf
 import rospy
 
@@ -25,7 +27,6 @@ import pdb
 if __name__ == "__main__":
     # create argument parser
     args = data_utils.get_args()
-    rospy.init_node("double_escape_dqn", anonymous=True, log_level=rospy.INFO)
     # make an instance from env class
     env = DoubleEscapeEnv()
     env.reset()
@@ -75,7 +76,9 @@ if __name__ == "__main__":
         epsilon_0 = agent_0.epsilon_decay(ep, train_params["num_episodes"])
         epsilon_1 = agent_1.epsilon_decay(ep, train_params["num_episodes"])
         print("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
-        obs, _ = env.reset()
+        pose_buffer = double_utils.create_pose_buffer(train_params["num_episodes"])
+        theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
+        obs, _ = env.reset(pose_buffer[ep], theta_0, theta_1)
         state_agt0 = double_utils.obs_to_state(obs, "all")
         state_agt1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 could be same if using "all" option, when converting obs
         done, ep_rewards = False, []

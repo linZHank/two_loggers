@@ -51,10 +51,10 @@ class DoubleEscapeEnv(object):
         self.pause_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         # init topic publisher
-        self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
-        self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=1)
-        self.set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=10)
-        # self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=10)
+        self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=10)
+        self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=10)
+        self.set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
+        self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=100)
         # init topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)
@@ -73,7 +73,7 @@ class DoubleEscapeEnv(object):
         except rospy.ServiceException as e:
             rospy.logfatal("/gazebo/unpause_physics service call failed")
 
-    def reset(self, init_pose=[]):
+    def reset(self, rod_pose=[0,0,0], theta_0=0, theta_1=0):
         """
         Reset environment function
         obs, info = env.reset()
@@ -81,7 +81,7 @@ class DoubleEscapeEnv(object):
         rospy.logdebug("\nStart Environment Reset")
         self._take_action(np.zeros(2), np.zeros(2))
         self.reset_world()
-        self._set_init(init_pose)
+        self._set_init(rod_pose, theta_0, theta_1)
         self.pauseSim()
         self.unpauseSim()
         obs = self._get_observation()
@@ -106,42 +106,58 @@ class DoubleEscapeEnv(object):
 
         return obs, reward, done, info
 
-    def _set_init(self, init_pose):
+    def _set_init(self, rod_pose, theta_0, theta_1):
         """
         Set initial condition of two_loggers to a specific pose
         Args:
-            init_pose: [x, y, theta], set to a random pose if empty
+            rod_pose: [x, y, theta], set to a random pose if empty
+            theta_0: orientation of logger_0 in (-pi, pi)
+            theta_1: orientation of logger_1 in (-pi, pi)
         """
         rospy.logdebug("\nStart Initializing Robots")
         # set model initial pose
-        if not init_pose:
-            init_pose = [0, 0, 0] # if empty, set init_pose to [x=0,y=0,theta=0]
         model_state = ModelState()
         model_state.model_name = "two_loggers"
-        model_state.pose.position.x = init_pose[0]
-        model_state.pose.position.y = init_pose[1]
+        model_state.pose.position.x = rod_pose[0]
+        model_state.pose.position.y = rod_pose[1]
         model_state.pose.position.z = 0.25
         model_state.pose.orientation.x = 0
         model_state.pose.orientation.y = 0
-        model_state.pose.orientation.z = math.sin(0.5*init_pose[2])
-        model_state.pose.orientation.w = math.cos(0.5*init_pose[2])
+        model_state.pose.orientation.z = math.sin(0.5*rod_pose[2])
+        model_state.pose.orientation.w = math.cos(0.5*rod_pose[2])
         model_state.reference_frame = "world"
-        # set loggers orientations
-        link_states = self._get_link_states()
-        id_logger_0 = link_states.name.index("two_loggers::link_chassis_0")
-        id_logger_1 = link_states.name.index("two_loggers::link_chassis_1")
-        logger_0_state =
-        # set orientations for logger_0 and logger_1, by spinning them a little
-        spin_vel_0 = random.choice([-2*np.pi, 2*np.pi])
-        spin_vel_1 = random.choice([-2*np.pi, 2*np.pi])
-        # give the system a little time to finish initialization
+        # # set orientations for logger_0 and logger_1, by spinning them a little
+        # spin_vel_0 = random.choice([-2*np.pi, 2*np.pi])
+        # spin_vel_1 = random.choice([-2*np.pi, 2*np.pi])
+        # give the system a little time to set model
         for _ in range(10):
             self.set_model_state_pub.publish(model_state)
             self.rate.sleep()
-        # spin robots a little then stop 'em
-        self._take_action(np.array([0,spin_vel_0]), np.array([0,spin_vel_1]))
-        self._take_action(np.zeros(2), np.zeros(2)) # stop spinning
-        rospy.logwarn("two_loggers were initialized at {}".format(model_state))
+        self._take_action(np.zeros(2), np.zeros(2)) # stablize model setting
+        # compute link_state for logger_0 and logger_1
+        link_states = self._get_link_states()
+        link_name_0 = "two_loggers::link_chassis_0"
+        link_name_1 = "two_loggers::link_chassis_1"
+        link_state_0 = LinkState()
+        link_state_0.link_name = link_name_0
+        link_state_0.pose = link_states.pose[link_states.name.index(link_name_0)]
+        link_state_0.pose.orientation.z = math.sin(0.5*theta_0)
+        link_state_0.pose.orientation.w = math.cos(0.5*theta_0)
+        link_state_1 = LinkState()
+        link_state_1.link_name = link_name_1
+        link_state_1.pose = link_states.pose[link_states.name.index(link_name_1)]
+        link_state_1.pose.orientation.z = math.sin(0.5*theta_1)
+        link_state_1.pose.orientation.w = math.cos(0.5*theta_1)
+        # set orientation for both logger_0 and logger_1
+        for _ in range(10):
+            self.set_link_state_pub.publish(link_state_0)
+            self.set_link_state_pub.publish(link_state_1)
+            self.rate.sleep()
+        self._take_action(np.zeros(2), np.zeros(2)) # stablize link setting
+        # # spin robots a little then stop 'em
+        # self._take_action(np.array([0,spin_vel_0]), np.array([0,spin_vel_1]))
+        # self._take_action(np.zeros(2), np.zeros(2)) # stop spinning
+        rospy.logdebug("\ntwo_loggers initialized at {} \nlogger_0 orientation: {} \nlogger_1 orientation".format(model_state, theta_0, theta_1))
         # episode should not be done
         self._episode_done = False
         rospy.logdebug("End Initializing Robots\n")
@@ -239,12 +255,12 @@ class DoubleEscapeEnv(object):
         else:
             self.reward = -0.
             self._episode_done = False
-            rospy.loginfo("The log is trapped in the cell...")
+            rospy.logdebug("The log is trapped in the cell...")
         rospy.logdebug("Stepwise Reward: {}, Success Count: {}".format(self.reward, self.success_count))
         # check if steps out of range
         if self.steps > self.max_step:
             self._episode_done = True
-            rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.steps))
+            rospy.logdebug("Step: {}, \nMax step reached, env will reset...".format(self.steps))
         rospy.logdebug("End Computing Reward\n")
 
         return self.reward, self._episode_done
@@ -252,7 +268,7 @@ class DoubleEscapeEnv(object):
     def _post_information(self):
         """
         Return:
-            info: {"init_pose", "curr_pose", "prev_pose"}
+            info: {"system status"}
         """
         rospy.logdebug("\nStart Posting Information")
         self.info["status"] = self.status

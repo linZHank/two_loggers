@@ -18,14 +18,14 @@ from utils import double_utils
 if __name__ == "__main__":
     num_episodes = 10
     num_steps = 100
-    # rospy.init_node("double_escape_env_test" , anonymous=True, log_level=rospy.INFO)
 
     escaper = DoubleEscapeEnv()
     actions = np.array([[1,-1],[1,1]])
     escaper.reset() # the first reset always set the model at (0,0)
     pose_buffer = double_utils.create_pose_buffer(num_episodes)
+    theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
     for ep in range(num_episodes):
-        obs, info = escaper.reset(pose_buffer[ep])
+        obs, info = escaper.reset(pose_buffer[ep], theta_0, theta_1)
         # state_logger0 = double_utils.obs_to_state(obs, "logger_0")
         rospy.loginfo("Loggers were reset with observation: {} \nwith information: {}".format(obs, info))
         for st in range(num_steps):
