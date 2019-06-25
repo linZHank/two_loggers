@@ -33,6 +33,15 @@ if __name__ == "__main__":
     agent0_params = {}
     agent1_params = {}
     train_params = {}
+    # training parameters
+    train_params["datetime"] = datetime.now().strftime("%Y-%m-%d-%H-%M")
+    train_params["source"] = args.source # specify previous datatime
+    train_params["num_episodes"] = args.num_episodes
+    train_params["num_steps"] = args.num_steps
+    train_params["time_bonus"] = -1./train_params["num_steps"]
+    train_params["success_bonus"] = 0
+    train_params["wall_bonus"] = -10./train_params["num_steps"]
+    train_params["door_bonus"] = 0
     # agent_0 parameters
     agent0_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
     agent0_params["actions"] = np.array([np.array([1, -1]), np.array([1, 1])])
@@ -51,17 +60,20 @@ if __name__ == "__main__":
     agent1_params["batch_size"] = args.batch_size
     agent1_params["memory_cap"] = args.memory_cap
     agent1_params["update_step"] = args.update_step
-    # training parameters
-    if args.datetime:
-        train_params["datetime"] = args.datetime
-    else:
-        train_params["datetime"] = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    train_params["num_episodes"] = args.num_episodes
-    train_params["num_steps"] = args.num_steps
-    train_params["time_bonus"] = -1./train_params["num_steps"]
-    train_params["success_bonus"] = 0
-    train_params["wall_bonus"] = -10./train_params["num_steps"]
-    train_params["door_bonus"] = 0
+    # load model if possible
+    if not train_params['source']:
+        model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params['source']
+        train_params_path = os.path.join(model_dir, "train_params.pkl")
+        with open(train_params_path, 'rb') as f:
+            train_params = pickle.load(f) # load train_params
+        params0_path = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
+        with open(params0_path, 'rb') as f:
+            agent0_params = pickle.load(f) # load agent_0 model
+        params1_path = os.path.join(model_dir,"agent_1/agent1_parameters.pkl")
+        with open(params1_path, 'rb') as f:
+            agent1_params = pickle.load(f) # load agent_1 model
+        train_params['datetime'] = datetime.now().strftime("%Y-%m-%d-%H-%M")
+
     # instantiate agents
     agent_0 = DQNAgent(agent0_params)
     model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params["datetime"]+"/agent_0/model.h5"
@@ -79,17 +91,19 @@ if __name__ == "__main__":
         pose_buffer = double_utils.create_pose_buffer(train_params["num_episodes"])
         theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
         obs, _ = env.reset(pose_buffer[ep], theta_0, theta_1)
-        state_agt0 = double_utils.obs_to_state(obs, "all")
-        state_agt1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 could be same if using "all" option, when converting obs
+        state_0 = double_utils.obs_to_state(obs, "all")
+        state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 could be same if using "all" option, when converting obs
         done, ep_rewards = False, []
         for st in range(train_params["num_steps"]):
-            agent0_acti = agent_0.epsilon_greedy(state_agt0)
+            agent0_acti = agent_0.epsilon_greedy(state_0)
             agent0_action = agent_0.actions[agent0_acti]
-            agent1_acti = agent_1.epsilon_greedy(state_agt1)
+            agent1_acti = agent_1.epsilon_greedy(state_1)
             agent1_action = agent_1.actions[agent1_acti]
             obs, rew, done, info = env.step(agent0_action, agent1_action)
-            next_state_agt0 = double_utils.obs_to_state(obs, "all")
-            next_state_agt1 = double_utils.obs_to_state(obs, "all")
+            next_state_0 = double_utils.obs_to_state(obs, "all")
+            next_state_1 = double_utils.obs_to_state(obs, "all")
+            if sum(np.isnan(next_state_0)) >= 1 or sum(np.isnan(next_state_1)) >= 1:
+                sys.exit() # terminate script if gazebo crashed
             # adjust reward based on bonus options
             rew, done = double_utils.adjust_reward(train_params, env)
             ep_rewards.append(rew)
@@ -103,8 +117,8 @@ if __name__ == "__main__":
                     agent0_action,
                     agent1_acti,
                     agent1_action,
-                    next_state_agt0,
-                    next_state_agt1,
+                    next_state_0,
+                    next_state_1,
                     rew,
                     sum(ep_rewards),
                     info["status"],
@@ -114,15 +128,15 @@ if __name__ == "__main__":
             )
             # store transition
             if not info["status"] == "blew":
-                agent_0.replay_memory.store((state_agt0, agent0_acti, rew, done, next_state_agt0))
-                agent_1.replay_memory.store((state_agt1, agent1_acti, rew, done, next_state_agt1))
+                agent_0.replay_memory.store((state_0, agent0_acti, rew, done, next_state_0))
+                agent_1.replay_memory.store((state_1, agent1_acti, rew, done, next_state_1))
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
             agent_0.train()
             agent_1.train()
-            state_agt0 = next_state_agt0
-            state_agt1 = next_state_agt1
+            state_0 = next_state_0
+            state_1 = next_state_1
             update_counter += 1
             if not update_counter % agent_0.update_step:
                 agent_0.qnet_stable.set_weights(agent_0.qnet_active.get_weights())
@@ -164,4 +178,5 @@ if __name__ == "__main__":
     train_info["agent1_state_dimension"] = agent1_params["dim_state"]
     train_info["agent1_action_options"] = agent1_params["actions"]
     train_info["agent1_layer_sizes"] = agent1_params["layer_sizes"]
+    data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_params.pkl")
     data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_information.csv")

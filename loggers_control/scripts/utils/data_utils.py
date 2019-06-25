@@ -28,17 +28,18 @@ class bcolors:
 # make arg parser
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--datetime", type=str, default="")
-    parser.add_argument("--num_epochs", type=int, default=512)
-    parser.add_argument("--num_episodes", type=int, default=8000)
-    parser.add_argument("--num_steps", type=int, default=400)
-    parser.add_argument("--learning_rate", type=float, default=1e-3)
-    parser.add_argument("--gamma", type=float, default=0.99)
-    parser.add_argument("--sample_size", type=int, default=512)
-    parser.add_argument("--layer_sizes", nargs="+", type=int, help="use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]", default=8)
-    parser.add_argument("--batch_size", type=int, default=2048)
-    parser.add_argument("--memory_cap", type=int, default=400000)
-    parser.add_argument("--update_step", type=int, default=10000)
+    parser.add_argument('--datetime', type=str, default='')
+    parser.add_argument('--source', type=str, default='')
+    parser.add_argument('--num_epochs', type=int, default=512)
+    parser.add_argument('--num_episodes', type=int, default=8000)
+    parser.add_argument('--num_steps', type=int, default=400)
+    parser.add_argument('--learning_rate', type=float, default=1e-3)
+    parser.add_argument('--gamma', type=float, default=0.99)
+    parser.add_argument('--sample_size', type=int, default=512)
+    parser.add_argument('--layer_sizes', nargs='+', type=int, help='use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]', default=8)
+    parser.add_argument('--batch_size', type=int, default=2048)
+    parser.add_argument('--memory_cap', type=int, default=400000)
+    parser.add_argument('--update_step', type=int, default=10000)
 
     return parser.parse_args()
 
@@ -52,7 +53,7 @@ def save_pkl(content, fdir, fname):
         fname: file name, str
     """
     file_path = os.path.join(fdir, fname)
-    with open(file_path, "wb") as f:
+    with open(file_path, 'wb') as f:
         pickle.dump(content, f, pickle.HIGHEST_PROTOCOL)
 
 def save_csv(content, fdir, fname):
@@ -64,18 +65,19 @@ def save_csv(content, fdir, fname):
         fname: file name, str
     """
     file_path = os.path.join(fdir, fname)
-    with open(file_path, "w") as f:
+    with open(file_path, 'w') as f:
         for key in content.keys():
             f.write("{},{}\n".format(key,content[key]))
 
 def plot_returns(returns, mode, save_flag, fdir):
     """
     Plot rewards
-    Args:
-    returns: episodic returns, list
-    mode: 0 - returns; 1 - accumulated returns; 2 - averaged returns, int
-    save_flag: save figure to file or not, bool
-    path: file path, str
+        Args:
+        returns:
+            episodic returns: list
+            mode: 0 - returns; 1 - accumulated returns; 2 - averaged returns, int
+            save_flag: save figure to file or not, bool
+            path: file path, str
     """
     assert mode==0 or mode==1 or mode==2
     # compute accumulated returns and averaged returns
@@ -92,20 +94,20 @@ def plot_returns(returns, mode, save_flag, fdir):
     fig, ax = plt.subplots()
     if mode == 0: # plot return of each episode
         ax.plot(np.arange(len(returns)), returns)
-        ax.set(xlabel="Episode", ylabel="Returns")
+        ax.set(xlabel='Episode', ylabel='Returns')
         ax.set_ylim([-1,1])
-        figure_dir = os.path.join(fdir,"episodic_returns.png")
+        figure_dir = os.path.join(fdir,'episodic_returns.png')
         ax.grid()
     elif mode == 1: # plot accumulated return of each episode
         ax.plot(np.arange(len(acc_returns)), acc_returns)
-        ax.set(xlabel="Episode", ylabel="Accumulated Returns")
-        figure_dir = os.path.join(fdir, "accumulated_returns.png")
+        ax.set(xlabel='Episode', ylabel='Accumulated Returns')
+        figure_dir = os.path.join(fdir, 'accumulated_returns.png')
         ax.grid()
     else: # plot averaged return of eacj episode
         ax.plot(np.arange(len(ave_returns)), ave_returns)
-        ax.set(xlabel="Episode", ylabel="Averaged Returns")
+        ax.set(xlabel='Episode', ylabel='Averaged Returns')
         ax.set_ylim([-1,1])
-        figure_dir = os.path.join(fdir, "averaged_returns.png")
+        figure_dir = os.path.join(fdir, 'averaged_returns.png')
         ax.grid()
     if save_flag:
         plt.savefig(figure_dir)

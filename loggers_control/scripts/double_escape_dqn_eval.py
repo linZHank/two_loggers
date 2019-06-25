@@ -20,8 +20,6 @@ from utils.data_utils import bcolors
 from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
-    # main really starts here
-    rospy.init_node("double_escape_dqn_test", anonymous=True, log_level=rospy.INFO)
     # load agent models
     model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-06-07-23-52/"
     params0_path = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
