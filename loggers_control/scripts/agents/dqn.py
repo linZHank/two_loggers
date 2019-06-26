@@ -51,6 +51,7 @@ class DQNAgent:
         self.update_step = params["update_step"]
         self.delta_dist = 0
         self.epsilon = 1
+        self.loss_value = np.inf
         # Q(s,a;theta)
         assert len(self.layer_sizes) >= 1
         self.qnet_active = tf.keras.models.Sequential([
@@ -77,8 +78,18 @@ class DQNAgent:
             print(bcolors.WARNING, "Take a random action!", bcolors.ENDC)
             return np.random.randint(len(self.actions))
 
-    def epsilon_decay(self, episode_index, num_episodes):
-        self.epsilon = np.clip(1-2*(episode_index/num_episodes), 5e-2, 1)
+    def epsilon_decay(self, episode_index, denominator, lower=5e-2, upper=1):
+        """
+        Construct an epsilon decay function
+            Args:
+                episode_index
+                denominator
+                upper: upper bound of epsilon
+                lower: lower bound of epsilon
+            Returns:
+                self.epsilon: epsilon at current episode
+        """
+        self.epsilon = np.clip(1-2*(episode_index/denominator), lower, upper)
 
         return self.epsilon
 
@@ -100,10 +111,10 @@ class DQNAgent:
         # sample a minibatch
         minibatch = self.replay_memory.sample_batch(self.batch_size)
         # compute gradient for one epoch
-        loss_value, grads = self.grad(minibatch)
+        self.loss_value, grads = self.grad(minibatch)
         self.optimizer.apply_gradients(zip(grads, self.qnet_active.trainable_variables))
         # loss_value = self.loss(minibatch)
-        print("loss: {}".format(loss_value))
+        print("loss: {}".format(self.loss_value))
 
     def save_model(self, model_path):
         self.qnet_active.summary()

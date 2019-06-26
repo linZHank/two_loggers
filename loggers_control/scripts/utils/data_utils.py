@@ -5,7 +5,6 @@ General helper classes and functions for loggers tasks
 import sys
 import os
 import numpy as np
-import argparse
 import csv
 import pickle
 from datetime import datetime
@@ -25,23 +24,6 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-# make arg parser
-def get_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--datetime', type=str, default='')
-    parser.add_argument('--source', type=str, default='')
-    parser.add_argument('--num_epochs', type=int, default=512)
-    parser.add_argument('--num_episodes', type=int, default=8000)
-    parser.add_argument('--num_steps', type=int, default=400)
-    parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--sample_size', type=int, default=512)
-    parser.add_argument('--layer_sizes', nargs='+', type=int, help='use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]', default=8)
-    parser.add_argument('--batch_size', type=int, default=2048)
-    parser.add_argument('--memory_cap', type=int, default=400000)
-    parser.add_argument('--update_step', type=int, default=10000)
-
-    return parser.parse_args()
 
 # save pickle
 def save_pkl(content, fdir, fname):

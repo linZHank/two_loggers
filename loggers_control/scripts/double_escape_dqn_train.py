@@ -3,6 +3,11 @@
 Training two logger robots escaping a cell with Deep Q-network (DQN)
 DQN is a model free, off policy, reinforcement learning algorithm (https://deepmind.com/research/dqn/)
 Author: LinZHanK (linzhank@gmail.com)
+
+Train new models example:
+    python double_escape_dqn_train.py --num_epochs 512 --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000
+Continue training models example:
+    python double_escape_dqn_train.py --datetime '2019-06-12-09-54' --num_epochs 512 --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --epsilon_upper 0.1 --epsilon_lower 5e-2
 """
 from __future__ import absolute_import, division, print_function
 
@@ -26,74 +31,87 @@ import pdb
 
 if __name__ == "__main__":
     # create argument parser
-    args = data_utils.get_args()
+    args = double_utils.get_args()
     # make an instance from env class
     env = DoubleEscapeEnv()
     env.reset()
-    agent0_params = {}
-    agent1_params = {}
+    agent_params_0 = {}
+    agent_params_1 = {}
     train_params = {}
-    # training parameters
-    train_params["datetime"] = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    train_params["source"] = args.source # specify previous datatime
-    train_params["num_episodes"] = args.num_episodes
-    train_params["num_steps"] = args.num_steps
-    train_params["time_bonus"] = -1./train_params["num_steps"]
-    train_params["success_bonus"] = 0
-    train_params["wall_bonus"] = -10./train_params["num_steps"]
-    train_params["door_bonus"] = 0
     # agent_0 parameters
-    agent0_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
-    agent0_params["actions"] = np.array([np.array([1, -1]), np.array([1, 1])])
-    agent0_params["layer_sizes"] = args.layer_sizes
-    agent0_params["gamma"] = args.gamma
-    agent0_params["learning_rate"] = args.learning_rate
-    agent0_params["batch_size"] = args.batch_size
-    agent0_params["memory_cap"] = args.memory_cap
-    agent0_params["update_step"] = args.update_step
+    agent_params_0["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
+    agent_params_0["actions"] = np.array([np.array([1, -1]), np.array([1, 1])])
+    agent_params_0["layer_sizes"] = args.layer_sizes
+    agent_params_0["gamma"] = args.gamma
+    agent_params_0["learning_rate"] = args.learning_rate
+    agent_params_0["batch_size"] = args.batch_size
+    agent_params_0["memory_cap"] = args.memory_cap
+    agent_params_0["update_step"] = args.update_step
+    agent_params_0['epsilon_upper'] = args.epsilon_upper
+    agent_params_0['epsilon_lower'] = args.epsilon_lower
     # agent_1 parameters
-    agent1_params["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
-    agent1_params["actions"] = agent0_params["actions"]
-    agent1_params["layer_sizes"] = args.layer_sizes
-    agent1_params["gamma"] = args.gamma
-    agent1_params["learning_rate"] = args.learning_rate
-    agent1_params["batch_size"] = args.batch_size
-    agent1_params["memory_cap"] = args.memory_cap
-    agent1_params["update_step"] = args.update_step
-    # load model if possible
-    if not train_params['source']:
+    agent_params_1["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
+    agent_params_1["actions"] = agent_params_0["actions"]
+    agent_params_1["layer_sizes"] = args.layer_sizes
+    agent_params_1["gamma"] = args.gamma
+    agent_params_1["learning_rate"] = args.learning_rate
+    agent_params_1["batch_size"] = args.batch_size
+    agent_params_1["memory_cap"] = args.memory_cap
+    agent_params_1["update_step"] = args.update_step
+    agent_params_1['epsilon_upper'] = args.epsilon_upper
+    agent_params_1['epsilon_lower'] = args.epsilon_lower
+    # training parameters
+    if not args.datetime:
+        train_params["datetime"] = datetime.now().strftime("%Y-%m-%d-%H-%M")
+        train_params['source'] = ''
+        train_params["num_episodes"] = args.num_episodes
+        train_params["num_steps"] = args.num_steps
+        train_params["time_bonus"] = -1./train_params["num_steps"]
+        train_params["success_bonus"] = 0
+        train_params["wall_bonus"] = -10./train_params["num_steps"]
+        train_params["door_bonus"] = 0
+    else: # continue training, load params from specific datetime
+        train_params['source'] = train_params['datetime']
         model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params['source']
         train_params_path = os.path.join(model_dir, "train_params.pkl")
         with open(train_params_path, 'rb') as f:
             train_params = pickle.load(f) # load train_params
-        params0_path = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
-        with open(params0_path, 'rb') as f:
-            agent0_params = pickle.load(f) # load agent_0 model
-        params1_path = os.path.join(model_dir,"agent_1/agent1_parameters.pkl")
-        with open(params1_path, 'rb') as f:
-            agent1_params = pickle.load(f) # load agent_1 model
         train_params['datetime'] = datetime.now().strftime("%Y-%m-%d-%H-%M")
+        agent_params_path_0 = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
+        with open(agent_params_path_0, 'rb') as f:
+            agent_params_0 = pickle.load(f) # load agent_0 model
+        agent_params_0['epsilon_upper'] = args.epsilon_upper
+        agent_params_0['epsilon_lower'] = args.epsilon_lower
+        agent_params_path_1 = os.path.join(model_dir,"agent_1/agent1_parameters.pkl")
+        with open(agent_params_path_1, 'rb') as f:
+            agent_params_1 = pickle.load(f) # load agent_1 model
+        agent_params_1['epsilon_upper'] = args.epsilon_upper
+        agent_params_1['epsilon_lower'] = args.epsilon_lower
 
     # instantiate agents
-    agent_0 = DQNAgent(agent0_params)
+    agent_0 = DQNAgent(agent_params_0)
     model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params["datetime"]+"/agent_0/model.h5"
-    agent_1 = DQNAgent(agent1_params)
+    agent_1 = DQNAgent(agent_params_1)
     model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params["datetime"]+"/agent_1/model.h5"
     assert os.path.dirname(os.path.dirname(model_path_0)) == os.path.dirname(os.path.dirname(model_path_1))
+    if train_params['source']:
+        agent_0.load_model(os.path.join(model_dir, "agent_0/model.h5"))
+        agent_1.load_model(os.path.join(model_dir, "agent_1/model.h5"))
     # init misc params
+    pose_buffer = double_utils.create_pose_buffer(train_params['num_episodes'])
     update_counter = 0
-    ep_returns = []
+    ep_returns, ep_losses_0, ep_losses_1 = [], [], []
     start_time = time.time()
     for ep in range(train_params["num_episodes"]):
-        epsilon_0 = agent_0.epsilon_decay(ep, train_params["num_episodes"])
-        epsilon_1 = agent_1.epsilon_decay(ep, train_params["num_episodes"])
+        epsilon_0 = agent_0.epsilon_decay(ep, train_params["num_episodes"], lower=agent_params_0['epsilon_lower'], upper=agent_params_0['epsilon_upper'])
+        epsilon_1 = agent_1.epsilon_decay(ep, train_params["num_episodes"], lower=agent_params_1['epsilon_lower'], upper=agent_params_1['epsilon_upper'])
         print("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         pose_buffer = double_utils.create_pose_buffer(train_params["num_episodes"])
         theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
-        obs, _ = env.reset(pose_buffer[ep], theta_0, theta_1)
+        obs, _ = env.reset(pose_buffer[ep])
         state_0 = double_utils.obs_to_state(obs, "all")
         state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 could be same if using "all" option, when converting obs
-        done, ep_rewards = False, []
+        done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
             agent0_acti = agent_0.epsilon_greedy(state_0)
             agent0_action = agent_0.actions[agent0_acti]
@@ -134,7 +152,9 @@ if __name__ == "__main__":
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
             agent_0.train()
+            loss_vals_0.append(agent_0.loss_value)
             agent_1.train()
+            loss_vals_1.append(agent_1.loss_value)
             state_0 = next_state_0
             state_1 = next_state_1
             update_counter += 1
@@ -147,6 +167,8 @@ if __name__ == "__main__":
             if done:
                 break
         ep_returns.append(sum(ep_rewards))
+        ep_losses_0.append(sum(loss_vals_0)/len(loss_vals_0))
+        ep_losses_1.append(sum(loss_vals_1)/len(loss_vals_1))
         agent_0.save_model(model_path_0)
         agent_1.save_model(model_path_1)
     # time training
@@ -162,21 +184,23 @@ if __name__ == "__main__":
     data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True,
     fdir=os.path.dirname(os.path.dirname(model_path_0)))
     # save agent parameters
-    data_utils.save_pkl(content=agent0_params, fdir=os.path.dirname(model_path_0), fname="agent0_parameters.pkl")
-    data_utils.save_pkl(content=agent1_params, fdir=os.path.dirname(model_path_1), fname="agent1_parameters.pkl")
-    # save returns
+    data_utils.save_pkl(content=agent_params_0, fdir=os.path.dirname(model_path_0), fname="agent0_parameters.pkl")
+    data_utils.save_pkl(content=agent_params_1, fdir=os.path.dirname(model_path_1), fname="agent1_parameters.pkl")
+    # save returns and losses
     data_utils.save_pkl(content=ep_returns, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="episodic_returns.pkl")
+    data_utils.save_pkl(content=ep_losses_0, fdir=os.path.dirname(model_path_0), fname="episodic_average_losses.pkl")
+    data_utils.save_pkl(content=ep_losses_1, fdir=os.path.dirname(model_path_1), fname="episodic_average_losses.pkl")
     # save results
     train_info = train_params
     train_info["success_count"] = env.success_count
     train_info["training_time"] = training_time
-    train_info["agent0_learning_rate"] = agent0_params["learning_rate"]
-    train_info["agent0_state_dimension"] = agent0_params["dim_state"]
-    train_info["agent0_action_options"] = agent0_params["actions"]
-    train_info["agent0_layer_sizes"] = agent0_params["layer_sizes"]
-    train_info["agent1_learning_rate"] = agent1_params["learning_rate"]
-    train_info["agent1_state_dimension"] = agent1_params["dim_state"]
-    train_info["agent1_action_options"] = agent1_params["actions"]
-    train_info["agent1_layer_sizes"] = agent1_params["layer_sizes"]
+    train_info["agent0_learning_rate"] = agent_params_0["learning_rate"]
+    train_info["agent0_state_dimension"] = agent_params_0["dim_state"]
+    train_info["agent0_action_options"] = agent_params_0["actions"]
+    train_info["agent0_layer_sizes"] = agent_params_0["layer_sizes"]
+    train_info["agent1_learning_rate"] = agent_params_1["learning_rate"]
+    train_info["agent1_state_dimension"] = agent_params_1["dim_state"]
+    train_info["agent1_action_options"] = agent_params_1["actions"]
+    train_info["agent1_layer_sizes"] = agent_params_1["layer_sizes"]
     data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_params.pkl")
     data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_information.csv")

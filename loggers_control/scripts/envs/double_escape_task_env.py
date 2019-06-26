@@ -73,7 +73,7 @@ class DoubleEscapeEnv(object):
         except rospy.ServiceException as e:
             rospy.logfatal("/gazebo/unpause_physics service call failed")
 
-    def reset(self, rod_pose=[0,0,0], theta_0=0, theta_1=0):
+    def reset(self, init_pose=[0,0,0,0,0]):
         """
         Reset environment function
         obs, info = env.reset()
@@ -81,7 +81,7 @@ class DoubleEscapeEnv(object):
         rospy.logdebug("\nStart Environment Reset")
         self._take_action(np.zeros(2), np.zeros(2))
         self.reset_world()
-        self._set_init(rod_pose, theta_0, theta_1)
+        self._set_init(init_pose)
         self.pauseSim()
         self.unpauseSim()
         obs = self._get_observation()
@@ -106,25 +106,23 @@ class DoubleEscapeEnv(object):
 
         return obs, reward, done, info
 
-    def _set_init(self, rod_pose, theta_0, theta_1):
+    def _set_init(self, init_pose):
         """
         Set initial condition of two_loggers to a specific pose
         Args:
-            rod_pose: [x, y, theta], set to a random pose if empty
-            theta_0: orientation of logger_0 in (-pi, pi)
-            theta_1: orientation of logger_1 in (-pi, pi)
+            init_pose: [rod{x, y, angle}, robot_0{th_0}, robot_1{th_1}], set to a random pose if empty
         """
         rospy.logdebug("\nStart Initializing Robots")
         # set model initial pose
         model_state = ModelState()
         model_state.model_name = "two_loggers"
-        model_state.pose.position.x = rod_pose[0]
-        model_state.pose.position.y = rod_pose[1]
+        model_state.pose.position.x = init_pose[0]
+        model_state.pose.position.y = init_pose[1]
         model_state.pose.position.z = 0.25
         model_state.pose.orientation.x = 0
         model_state.pose.orientation.y = 0
-        model_state.pose.orientation.z = math.sin(0.5*rod_pose[2])
-        model_state.pose.orientation.w = math.cos(0.5*rod_pose[2])
+        model_state.pose.orientation.z = math.sin(0.5*init_pose[2])
+        model_state.pose.orientation.w = math.cos(0.5*init_pose[2])
         model_state.reference_frame = "world"
         # # set orientations for logger_0 and logger_1, by spinning them a little
         # spin_vel_0 = random.choice([-2*np.pi, 2*np.pi])
@@ -141,13 +139,13 @@ class DoubleEscapeEnv(object):
         link_state_0 = LinkState()
         link_state_0.link_name = link_name_0
         link_state_0.pose = link_states.pose[link_states.name.index(link_name_0)]
-        link_state_0.pose.orientation.z = math.sin(0.5*theta_0)
-        link_state_0.pose.orientation.w = math.cos(0.5*theta_0)
+        link_state_0.pose.orientation.z = math.sin(0.5*init_pose[3])
+        link_state_0.pose.orientation.w = math.cos(0.5*init_pose[3])
         link_state_1 = LinkState()
         link_state_1.link_name = link_name_1
         link_state_1.pose = link_states.pose[link_states.name.index(link_name_1)]
-        link_state_1.pose.orientation.z = math.sin(0.5*theta_1)
-        link_state_1.pose.orientation.w = math.cos(0.5*theta_1)
+        link_state_1.pose.orientation.z = math.sin(0.5*init_pose[4])
+        link_state_1.pose.orientation.w = math.cos(0.5*init_pose[4])
         # set orientation for both logger_0 and logger_1
         for _ in range(10):
             self.set_link_state_pub.publish(link_state_0)
@@ -157,7 +155,7 @@ class DoubleEscapeEnv(object):
         # # spin robots a little then stop 'em
         # self._take_action(np.array([0,spin_vel_0]), np.array([0,spin_vel_1]))
         # self._take_action(np.zeros(2), np.zeros(2)) # stop spinning
-        rospy.logdebug("\ntwo_loggers initialized at {} \nlogger_0 orientation: {} \nlogger_1 orientation".format(model_state, theta_0, theta_1))
+        rospy.logdebug("\ntwo_loggers initialized at {} \nlogger_0 orientation: {} \nlogger_1 orientation".format(model_state, init_pose[3], init_pose[4]))
         # episode should not be done
         self._episode_done = False
         rospy.logdebug("End Initializing Robots\n")

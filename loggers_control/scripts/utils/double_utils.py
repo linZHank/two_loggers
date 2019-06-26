@@ -7,7 +7,27 @@ import rospy
 import tf
 import math
 import random
+import argparse
 from geometry_msgs.msg import Pose, Twist
+
+# make arg parser
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--datetime', type=str, default='')
+    parser.add_argument('--num_epochs', type=int, default=512)
+    parser.add_argument('--num_episodes', type=int, default=8000)
+    parser.add_argument('--num_steps', type=int, default=400)
+    parser.add_argument('--learning_rate', type=float, default=1e-3)
+    parser.add_argument('--gamma', type=float, default=0.99)
+    parser.add_argument('--sample_size', type=int, default=512)
+    parser.add_argument('--layer_sizes', nargs='+', type=int, help='use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]', default=8)
+    parser.add_argument('--batch_size', type=int, default=2048)
+    parser.add_argument('--memory_cap', type=int, default=400000)
+    parser.add_argument('--update_step', type=int, default=10000)
+    parser.add_argument('--epsilon_upper', type=float, default=1)
+    parser.add_argument('--epsilon_lower', type=float, default=5e-2)
+
+    return parser.parse_args()
 
 def obs_to_state(observation, mode):
     """
@@ -109,7 +129,7 @@ def adjust_reward(train_params, env):
 
     return adj_reward, done
 
-def create_pose_buffer(num_poses):
+def create_pose_buffer(num_poses=1024):
     """
     generate a random rod pose in the room
     with center at (0, 0), width 10 meters and depth 10 meters.
@@ -175,6 +195,9 @@ def create_pose_buffer(num_poses):
         angle = random.uniform(min_angle, max_angle)
         x = rx + 0.5*len_rod*math.cos(angle)
         y = ry + 0.5*len_rod*math.sin(angle)
-        pose_vectors.append([x, y, angle])
+        # randomize robots orientation
+        th_0 = random.uniform(-math.pi, math.pi)
+        th_1 = random.uniform(-math.pi, math.pi)
+        pose_vectors.append([x, y, angle, th_0, th_1])
 
     return pose_vectors
