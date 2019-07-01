@@ -4,11 +4,11 @@ import sys
 import os
 import numpy as np
 import random
+import pickle
 import tensorflow as tf
 import rospy
 
 from utils import data_utils
-from utils import solo_utils
 from utils.data_utils import bcolors
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
@@ -122,9 +122,15 @@ class DQNAgent:
         model_dir = os.path.dirname(model_path)
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
+        # save model
         self.qnet_active.save(model_path)
+        # save transition buffer
+        data_utils.save_pkl(content=self.replay_memory, fdir=model_dir, fname='memory.pkl')
         print("policy_net model save at {}".format(model_path))
 
     def load_model(self, model_path):
         self.qnet_active = tf.keras.models.load_model(model_path)
+        mem_path = os.path.join(os.path.dirname(model_path),'memory.pkl')
+        with open(mem_path, 'rb') as f:
+            self.replay_memory = pickle.load(f)
         self.qnet_active.summary()

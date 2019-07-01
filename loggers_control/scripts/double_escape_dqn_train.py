@@ -50,7 +50,7 @@ if __name__ == "__main__":
         date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
         train_params = double_utils.create_train_params(date_time, args.source, args.num_episodes, args.num_steps, -1./args.num_steps, -10./args.num_steps, 0, 0)
     else: # source is not empty, load params
-        model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params['source']
+        model_dir = os.path.join(os.path.dirname(sys.path[0]), "/saved_models/double_escape/dqn/"+args.source)
         train_params_path = os.path.join(model_dir, "train_params.pkl")
         with open(train_params_path, 'rb') as f:
             train_params = pickle.load(f) # load train_params
@@ -152,7 +152,7 @@ if __name__ == "__main__":
         agent_1.save_model(model_path_1)
     # time training
     end_time = time.time()
-    training_time = end_time - start_time
+    train_dur = end_time - start_time
     env.reset()
 
     # plot episodic returns
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     # save results
     train_info = train_params
     train_info["success_count"] = env.success_count
-    train_info["training_time"] = training_time
+    train_info["train_dur"] = train_dur
     train_info["agent0_learning_rate"] = agent_params_0["learning_rate"]
     train_info["agent0_state_dimension"] = agent_params_0["dim_state"]
     train_info["agent0_action_options"] = agent_params_0["actions"]
@@ -181,5 +181,5 @@ if __name__ == "__main__":
     train_info["agent1_state_dimension"] = agent_params_1["dim_state"]
     train_info["agent1_action_options"] = agent_params_1["actions"]
     train_info["agent1_layer_sizes"] = agent_params_1["layer_sizes"]
-    data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_params.pkl")
+    data_utils.save_pkl(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_info.pkl")
     data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_information.csv")
