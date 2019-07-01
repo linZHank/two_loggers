@@ -27,7 +27,10 @@ def get_args():
     parser.add_argument('--update_step', type=int, default=10000)
     parser.add_argument('--epsilon_upper', type=float, default=1)
     parser.add_argument('--epsilon_lower', type=float, default=5e-2)
-
+    parser.add_argument('--time_bonus', type=float, default=0)
+    parser.add_argument('--wall_bonus', type=float, default=0)
+    parser.add_argument('--door_bonus', type=float, default=0)
+    parser.add_argument('--success_bonus', type=float, default=0)
     return parser.parse_args()
 
 def obs_to_state(observation, mode):
@@ -225,14 +228,15 @@ def create_train_params(date_time, source, num_episodes, num_steps, time_bonus, 
     """
     Create training parameters dict based on args
     """
+    train_params = {}
     train_params["date_time"] = date_time
     train_params['source'] = source
     train_params["num_episodes"] = num_episodes
     train_params["num_steps"] = num_steps
     train_params["time_bonus"] = time_bonus
-    train_params["success_bonus"] = success_bonus
     train_params["wall_bonus"] = wall_bonus
     train_params["door_bonus"] = door_bonus
+    train_params["success_bonus"] = success_bonus
 
     return train_params
 

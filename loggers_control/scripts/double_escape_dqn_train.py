@@ -5,9 +5,9 @@ DQN is a model free, off policy, reinforcement learning algorithm (https://deepm
 Author: LinZHanK (linzhank@gmail.com)
 
 Train new models example:
-    python double_escape_dqn_train.py --num_epochs 512 --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000
+    python double_escape_dqn_train.py --num_epochs 512 --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --time_bonus -1./400 --wall_bonus -10./400 --door_bonus 0 --success_bonus 1
 Continue training models example:
-    python double_escape_dqn_train.py --datetime '2019-06-12-09-54' --num_epochs 512 --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --epsilon_upper 0.1 --epsilon_lower 5e-2
+    python double_escape_dqn_train.py --datetime '2019-06-12-09-54' --num_epochs 512 --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --epsilon_upper 0.1 --epsilon_lower 5e-2 --time_bonus -1./400 --wall_bonus -10./400 --door_bonus 0 --success_bonus 1
 """
 from __future__ import absolute_import, division, print_function
 
@@ -36,9 +36,9 @@ if __name__ == "__main__":
     # make an instance from env class
     env = DoubleEscapeEnv()
     env.reset()
-    agent_params_0 = {}
-    agent_params_1 = {}
-    train_params = {}
+    # agent_params_0 = {}
+    # agent_params_1 = {}
+    # train_params = {}
     # agent_0 parameters
     dim_state = len(double_utils.obs_to_state(env.observation, "all"))
     actions = np.array([np.array([1, -1]), np.array([1, 1])])
@@ -48,9 +48,9 @@ if __name__ == "__main__":
     # training parameters
     if not args.source: # source is empty, create new params
         date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        train_params = double_utils.create_train_params(date_time, args.source, args.num_episodes, args.num_steps, -1./args.num_steps, -10./args.num_steps, 0, 0)
+        train_params = double_utils.create_train_params(date_time, args.source, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
     else: # source is not empty, load params
-        model_dir = os.path.join(os.path.dirname(sys.path[0]), "/saved_models/double_escape/dqn/"+args.source)
+        model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source
         train_params_path = os.path.join(model_dir, "train_params.pkl")
         with open(train_params_path, 'rb') as f:
             train_params = pickle.load(f) # load train_params
@@ -181,5 +181,6 @@ if __name__ == "__main__":
     train_info["agent1_state_dimension"] = agent_params_1["dim_state"]
     train_info["agent1_action_options"] = agent_params_1["actions"]
     train_info["agent1_layer_sizes"] = agent_params_1["layer_sizes"]
-    data_utils.save_pkl(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_info.pkl")
+    data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_params.pkl")
     data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_information.csv")
+    data_utils.save_pkl(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_info.pkl")
