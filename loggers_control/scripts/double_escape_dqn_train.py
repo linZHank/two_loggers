@@ -5,9 +5,9 @@ DQN is a model free, off policy, reinforcement learning algorithm (https://deepm
 Author: LinZHanK (linzhank@gmail.com)
 
 Train new models example:
-    python double_escape_dqn_train.py --num_epochs 512 --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000
+    python double_escape_dqn_train.py --num_epochs 512 --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --time_bonus -1./400 --wall_bonus -10./400 --door_bonus 0 --success_bonus 1
 Continue training models example:
-    python double_escape_dqn_train.py --datetime '2019-06-12-09-54' --num_epochs 512 --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --epsilon_upper 0.1 --epsilon_lower 5e-2
+    python double_escape_dqn_train.py --datetime '2019-06-12-09-54' --num_epochs 512 --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --epsilon_upper 0.1 --epsilon_lower 5e-2 --time_bonus -1./400 --wall_bonus -10./400 --door_bonus 0 --success_bonus 1
 """
 from __future__ import absolute_import, division, print_function
 
@@ -20,6 +20,7 @@ import random
 import math
 import tensorflow as tf
 import rospy
+import pickle
 
 from envs.double_escape_task_env import DoubleEscapeEnv
 from utils import data_utils, double_utils, tf_utils
@@ -35,48 +36,26 @@ if __name__ == "__main__":
     # make an instance from env class
     env = DoubleEscapeEnv()
     env.reset()
-    agent_params_0 = {}
-    agent_params_1 = {}
-    train_params = {}
+    # agent_params_0 = {}
+    # agent_params_1 = {}
+    # train_params = {}
     # agent_0 parameters
-    agent_params_0["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
-    agent_params_0["actions"] = np.array([np.array([1, -1]), np.array([1, 1])])
-    agent_params_0["layer_sizes"] = args.layer_sizes
-    agent_params_0["gamma"] = args.gamma
-    agent_params_0["learning_rate"] = args.learning_rate
-    agent_params_0["batch_size"] = args.batch_size
-    agent_params_0["memory_cap"] = args.memory_cap
-    agent_params_0["update_step"] = args.update_step
-    agent_params_0['epsilon_upper'] = args.epsilon_upper
-    agent_params_0['epsilon_lower'] = args.epsilon_lower
+    dim_state = len(double_utils.obs_to_state(env.observation, "all"))
+    actions = np.array([np.array([1, -1]), np.array([1, 1])])
+    agent_params_0 = double_utils.create_agent_params(dim_state, actions, args.layer_sizes, args.gamma, args.learning_rate, args.batch_size, args.memory_cap, args.update_step, args.epsilon_upper, args.epsilon_lower)
     # agent_1 parameters
-    agent_params_1["dim_state"] = len(double_utils.obs_to_state(env.observation, "all"))
-    agent_params_1["actions"] = agent_params_0["actions"]
-    agent_params_1["layer_sizes"] = args.layer_sizes
-    agent_params_1["gamma"] = args.gamma
-    agent_params_1["learning_rate"] = args.learning_rate
-    agent_params_1["batch_size"] = args.batch_size
-    agent_params_1["memory_cap"] = args.memory_cap
-    agent_params_1["update_step"] = args.update_step
-    agent_params_1['epsilon_upper'] = args.epsilon_upper
-    agent_params_1['epsilon_lower'] = args.epsilon_lower
+    agent_params_1 = agent_params_0
     # training parameters
-    if not args.datetime:
-        train_params["datetime"] = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        train_params['source'] = ''
-        train_params["num_episodes"] = args.num_episodes
-        train_params["num_steps"] = args.num_steps
-        train_params["time_bonus"] = -1./train_params["num_steps"]
-        train_params["success_bonus"] = 0
-        train_params["wall_bonus"] = -10./train_params["num_steps"]
-        train_params["door_bonus"] = 0
-    else: # continue training, load params from specific datetime
-        train_params['source'] = train_params['datetime']
-        model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params['source']
+    if not args.source: # source is empty, create new params
+        date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
+        train_params = double_utils.create_train_params(date_time, args.source, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
+    else: # source is not empty, load params
+        model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source
         train_params_path = os.path.join(model_dir, "train_params.pkl")
         with open(train_params_path, 'rb') as f:
             train_params = pickle.load(f) # load train_params
-        train_params['datetime'] = datetime.now().strftime("%Y-%m-%d-%H-%M")
+        train_params['date_time'] = datetime.now().strftime("%Y-%m-%d-%H-%M")
+        train_params['source'] = args.source
         agent_params_path_0 = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
         with open(agent_params_path_0, 'rb') as f:
             agent_params_0 = pickle.load(f) # load agent_0 model
@@ -90,9 +69,9 @@ if __name__ == "__main__":
 
     # instantiate agents
     agent_0 = DQNAgent(agent_params_0)
-    model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params["datetime"]+"/agent_0/model.h5"
+    model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params["date_time"]+"/agent_0/model.h5"
     agent_1 = DQNAgent(agent_params_1)
-    model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params["datetime"]+"/agent_1/model.h5"
+    model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+train_params["date_time"]+"/agent_1/model.h5"
     assert os.path.dirname(os.path.dirname(model_path_0)) == os.path.dirname(os.path.dirname(model_path_1))
     if train_params['source']:
         agent_0.load_model(os.path.join(model_dir, "agent_0/model.h5"))
@@ -173,7 +152,7 @@ if __name__ == "__main__":
         agent_1.save_model(model_path_1)
     # time training
     end_time = time.time()
-    training_time = end_time - start_time
+    train_dur = end_time - start_time
     env.reset()
 
     # plot episodic returns
@@ -193,7 +172,7 @@ if __name__ == "__main__":
     # save results
     train_info = train_params
     train_info["success_count"] = env.success_count
-    train_info["training_time"] = training_time
+    train_info["train_dur"] = train_dur
     train_info["agent0_learning_rate"] = agent_params_0["learning_rate"]
     train_info["agent0_state_dimension"] = agent_params_0["dim_state"]
     train_info["agent0_action_options"] = agent_params_0["actions"]
@@ -204,3 +183,4 @@ if __name__ == "__main__":
     train_info["agent1_layer_sizes"] = agent_params_1["layer_sizes"]
     data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_params.pkl")
     data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_information.csv")
+    data_utils.save_pkl(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_info.pkl")

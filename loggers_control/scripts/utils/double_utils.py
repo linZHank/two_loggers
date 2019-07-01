@@ -14,6 +14,7 @@ from geometry_msgs.msg import Pose, Twist
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--datetime', type=str, default='')
+    parser.add_argument('--source', type=str, default='')
     parser.add_argument('--num_epochs', type=int, default=512)
     parser.add_argument('--num_episodes', type=int, default=8000)
     parser.add_argument('--num_steps', type=int, default=400)
@@ -26,7 +27,10 @@ def get_args():
     parser.add_argument('--update_step', type=int, default=10000)
     parser.add_argument('--epsilon_upper', type=float, default=1)
     parser.add_argument('--epsilon_lower', type=float, default=5e-2)
-
+    parser.add_argument('--time_bonus', type=float, default=0)
+    parser.add_argument('--wall_bonus', type=float, default=0)
+    parser.add_argument('--door_bonus', type=float, default=0)
+    parser.add_argument('--success_bonus', type=float, default=0)
     return parser.parse_args()
 
 def obs_to_state(observation, mode):
@@ -201,3 +205,40 @@ def create_pose_buffer(num_poses=1024):
         pose_vectors.append([x, y, angle, th_0, th_1])
 
     return pose_vectors
+
+def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, epsilon_upper, epsilon_lower):
+    """
+    Create agent parameters dict based on args
+    """
+    agent_params = {}
+    agent_params["dim_state"] = dim_state
+    agent_params["actions"] = actions
+    agent_params["layer_sizes"] = layer_sizes
+    agent_params["gamma"] = gamma
+    agent_params["learning_rate"] = learning_rate
+    agent_params["batch_size"] = batch_size
+    agent_params["memory_cap"] = memory_cap
+    agent_params["update_step"] = update_step
+    agent_params['epsilon_upper'] = epsilon_upper
+    agent_params['epsilon_lower'] = epsilon_lower
+
+    return agent_params
+
+def create_train_params(date_time, source, num_episodes, num_steps, time_bonus, wall_bonus, door_bonus, success_bonus):
+    """
+    Create training parameters dict based on args
+    """
+    train_params = {}
+    train_params["date_time"] = date_time
+    train_params['source'] = source
+    train_params["num_episodes"] = num_episodes
+    train_params["num_steps"] = num_steps
+    train_params["time_bonus"] = time_bonus
+    train_params["wall_bonus"] = wall_bonus
+    train_params["door_bonus"] = door_bonus
+    train_params["success_bonus"] = success_bonus
+
+    return train_params
+
+def sum_train_info(train_params, add_ons):
+    pass
