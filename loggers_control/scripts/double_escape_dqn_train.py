@@ -155,13 +155,9 @@ if __name__ == "__main__":
     train_dur = end_time - start_time
     env.reset()
 
-    # plot episodic returns
-    data_utils.plot_returns(returns=ep_returns, mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
-    # plot accumulated returns
-    data_utils.plot_returns(returns=ep_returns, mode=1, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
-    # plot averaged return
-    data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True,
-    fdir=os.path.dirname(os.path.dirname(model_path_0)))
+    # save transition memories
+    agent_0.save_memory(model_path_0)
+    agent_1.save_memory(model_path_1)
     # save agent parameters
     data_utils.save_pkl(content=agent_params_0, fdir=os.path.dirname(model_path_0), fname="agent0_parameters.pkl")
     data_utils.save_pkl(content=agent_params_1, fdir=os.path.dirname(model_path_1), fname="agent1_parameters.pkl")
@@ -184,3 +180,11 @@ if __name__ == "__main__":
     data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_params.pkl")
     data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_information.csv")
     data_utils.save_pkl(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_info.pkl")
+
+    # plot episodic returns
+    data_utils.plot_returns(returns=ep_returns, mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
+    # plot accumulated returns
+    data_utils.plot_returns(returns=ep_returns, mode=1, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
+    # plot averaged return
+    data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True,
+    fdir=os.path.dirname(os.path.dirname(model_path_0)))
