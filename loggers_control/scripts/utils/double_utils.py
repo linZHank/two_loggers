@@ -15,7 +15,6 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--datetime', type=str, default='')
     parser.add_argument('--source', type=str, default='')
-    parser.add_argument('--num_epochs', type=int, default=512)
     parser.add_argument('--num_episodes', type=int, default=8000)
     parser.add_argument('--num_steps', type=int, default=400)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
