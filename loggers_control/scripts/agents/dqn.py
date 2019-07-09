@@ -89,7 +89,7 @@ class DQNAgent:
             Returns:
                 self.epsilon: epsilon at current episode
         """
-        self.epsilon = np.clip(1-4*num/den, lower, upper)
+        self.epsilon = np.clip(1-num/den, lower, upper)
 
         return self.epsilon
 
