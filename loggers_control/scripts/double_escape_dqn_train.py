@@ -82,8 +82,8 @@ if __name__ == "__main__":
     ep_returns, ep_losses_0, ep_losses_1 = [], [], []
     start_time = time.time()
     for ep in range(train_params["num_episodes"]):
-        epsilon_0 = agent_0.epsilon_decay(ep, train_params["num_episodes"], lower=agent_params_0['epsilon_lower'], upper=agent_params_0['epsilon_upper'])
-        epsilon_1 = agent_1.epsilon_decay(ep, train_params["num_episodes"], lower=agent_params_1['epsilon_lower'], upper=agent_params_1['epsilon_upper'])
+        epsilon_0 = agent_0.epsilon_decay(episode_index=ep, denominator=train_params["num_episodes"], lower=agent_params_0['epsilon_lower'], upper=agent_params_0['epsilon_upper'])
+        epsilon_1 = agent_1.epsilon_decay(episode_index=ep, denominator=train_params["num_episodes"], lower=agent_params_1['epsilon_lower'], upper=agent_params_1['epsilon_upper'])
         print("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         pose_buffer = double_utils.create_pose_buffer(train_params["num_episodes"])
         theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)

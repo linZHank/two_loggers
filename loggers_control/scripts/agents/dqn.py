@@ -78,7 +78,7 @@ class DQNAgent:
             print(bcolors.WARNING, "Take a random action!", bcolors.ENDC)
             return np.random.randint(len(self.actions))
 
-    def epsilon_decay(self, episode_index, denominator, lower=5e-2, upper=1):
+    def epsilon_decay(self, episode_index, denominator, lower=0.05, upper=1):
         """
         Construct an epsilon decay function
             Args:
