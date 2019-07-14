@@ -128,12 +128,13 @@ class DoubleEscapeEnv(object):
         # spin_vel_0 = random.choice([-2*np.pi, 2*np.pi])
         # spin_vel_1 = random.choice([-2*np.pi, 2*np.pi])
         # give the system a little time to set model
-        for _ in range(10):
+        for _ in range(16):
             self.set_model_state_pub.publish(model_state)
             self.rate.sleep()
         self._take_action(np.zeros(2), np.zeros(2)) # stablize model setting
         # compute link_state for logger_0 and logger_1
-        link_states = self._get_link_states()
+        # link_states = self._get_link_states()
+        link_states = self.link_states
         link_name_0 = "two_loggers::link_chassis_0"
         link_name_1 = "two_loggers::link_chassis_1"
         link_state_0 = LinkState()
@@ -147,7 +148,7 @@ class DoubleEscapeEnv(object):
         link_state_1.pose.orientation.z = math.sin(0.5*init_pose[4])
         link_state_1.pose.orientation.w = math.cos(0.5*init_pose[4])
         # set orientation for both logger_0 and logger_1
-        for _ in range(10):
+        for _ in range(16):
             self.set_link_state_pub.publish(link_state_0)
             self.set_link_state_pub.publish(link_state_1)
             self.rate.sleep()
@@ -168,7 +169,8 @@ class DoubleEscapeEnv(object):
         """
         # model states
         rospy.logdebug("\nStart Getting Observation")
-        link_states = self._get_link_states()
+        link_states = self.link_states
+        # link_states = self._get_link_states()
         # the log
         id_log = link_states.name.index("two_loggers::link_log")
         self.observation["log"]["pose"] = link_states.pose[id_log]
@@ -279,9 +281,3 @@ class DoubleEscapeEnv(object):
 
     def _link_states_callback(self, data):
         self.link_states = data
-
-    def _get_model_states(self):
-        return self.model_states
-
-    def _get_link_states(self):
-        return self.link_states

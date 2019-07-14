@@ -10,7 +10,7 @@
   <!-- properties of link_log -->
   <xacro:property name="R_LOG" value="0.01"/>
   <xacro:property name="L_LOG" value="2"/>
-  <xacro:property name="M_LOG" value="0.4"/>
+  <xacro:property name="M_LOG" value="0.04"/>
   <!-- properties of link_hat* -->
   <xacro:property name="R_HAT" value="0.02"/>
   <xacro:property name="L_HAT" value="0.1"/>
