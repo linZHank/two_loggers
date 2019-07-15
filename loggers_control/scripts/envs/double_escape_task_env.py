@@ -133,7 +133,6 @@ class DoubleEscapeEnv(object):
             self.rate.sleep()
         self._take_action(np.zeros(2), np.zeros(2)) # stablize model setting
         # compute link_state for logger_0 and logger_1
-        # link_states = self._get_link_states()
         link_states = self.link_states
         link_name_0 = "two_loggers::link_chassis_0"
         link_name_1 = "two_loggers::link_chassis_1"
@@ -170,7 +169,6 @@ class DoubleEscapeEnv(object):
         # model states
         rospy.logdebug("\nStart Getting Observation")
         link_states = self.link_states
-        # link_states = self._get_link_states()
         # the log
         id_log = link_states.name.index("two_loggers::link_log")
         self.observation["log"]["pose"] = link_states.pose[id_log]
