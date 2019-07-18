@@ -90,6 +90,9 @@ if __name__ == "__main__":
         obs, _ = env.reset(pose_buffer[ep])
         state_0 = double_utils.obs_to_state(obs, "all")
         state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 could be same if using "all" option, when converting obs
+        if if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
+            print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
+            break
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
             agent0_acti = agent_0.epsilon_greedy(state_0)
@@ -100,7 +103,7 @@ if __name__ == "__main__":
             next_state_0 = double_utils.obs_to_state(obs, "all")
             next_state_1 = double_utils.obs_to_state(obs, "all")
             if sum(np.isnan(next_state_0)) >= 1 or sum(np.isnan(next_state_1)) >= 1:
-                sys.exit() # terminate script if gazebo crashed
+                break # terminate script if gazebo crashed
             # adjust reward based on bonus options
             rew, done = double_utils.adjust_reward(train_params, env)
             ep_rewards.append(rew)
