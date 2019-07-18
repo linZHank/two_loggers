@@ -21,7 +21,7 @@ from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
     # load agent models
-    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-06-07-23-52/"
+    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-07-17-17-57/"
     params0_path = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
     with open(params0_path, "rb") as f:
         agent0_params = pickle.load(f)
