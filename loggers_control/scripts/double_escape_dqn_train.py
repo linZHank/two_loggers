@@ -7,7 +7,7 @@ Author: LinZHanK (linzhank@gmail.com)
 Train new models example:
     python double_escape_dqn_train.py --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
 Continue training models example:
-    python double_escape_dqn_train.py --datetime '2019-06-12-09-54' --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --batch_size 2048 --memory_cap 400000 --update_step 10000 --epsilon_upper 0.1 --epsilon_lower 5e-2 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
+    python double_escape_dqn_train.py --source '2019-06-12-09-54' --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --batch_size 2048 --memory_cap 400000 --update_step 10000 --epsilon_upper 0.1 --epsilon_lower 5e-2 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
 """
 from __future__ import absolute_import, division, print_function
 
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         obs, _ = env.reset(pose_buffer[ep])
         state_0 = double_utils.obs_to_state(obs, "all")
         state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 could be same if using "all" option, when converting obs
-        if if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
+        if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
             print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
             break
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []

@@ -137,4 +137,5 @@ class DQNAgent:
         mem_path = os.path.join(os.path.dirname(model_path),'memory.pkl')
         with open(mem_path, 'rb') as f:
             self.replay_memory = pickle.load(f)
+            print("Replay Buffer Loaded")
         self.qnet_active.summary()

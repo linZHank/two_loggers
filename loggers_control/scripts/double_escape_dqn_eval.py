@@ -39,9 +39,11 @@ if __name__ == "__main__":
     # evaluation params
     num_episodes = 100
     num_steps = 400
+    pose_buffer = double_utils.create_pose_buffer(num_episodes)
+    ep = 0
     # start evaluating
-    for ep in range(num_episodes):
-        obs, _ = env.reset()
+    while ep < num_episodes:
+        obs, _ = env.reset(pose_buffer[ep])
         done = False
         state_agt0 = double_utils.obs_to_state(obs, "all")
         state_agt1 = double_utils.obs_to_state(obs, "all")
@@ -51,8 +53,11 @@ if __name__ == "__main__":
             agent1_acti = np.argmax(agent_1.qnet_active.predict(state_agt1.reshape(1,-1)))
             agent1_action = agent1_params["actions"][agent1_acti]
             obs, rew, done, info = env.step(agent0_action, agent1_action)
-            if info['status'] == "north" or info['status'] == "west" or info['status'] == "south" or info['status'] == "east" or info['status'] == "sdoor" or info['status'] == "blew":
+            if info['status'] == "north" or info['status'] == "west" or info['status'] == "south" or info['status'] == "east" or info['status'] == "sdoor":
                 done = True
+            elif  info['status'] == "blew":
+                done = True
+                ep -= 1
             next_state_agt0 = double_utils.obs_to_state(obs, "all")
             next_state_agt1 = double_utils.obs_to_state(obs, "all")
             state_agt0 = next_state_agt0
@@ -76,6 +81,8 @@ if __name__ == "__main__":
                 bcolors.ENDC
             )
             if done:
+                ep += 1
                 break
 
     print("Loggers succeeded escaping {} out of {}".format(env.success_count, num_episodes))
+    env.reset()
