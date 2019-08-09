@@ -76,11 +76,15 @@ if __name__ == "__main__":
     pose_buffer = double_utils.create_pose_buffer(train_params['num_episodes'])
     update_counter = 0
     ep_returns, ep_losses_0, ep_losses_1 = [], [], []
-    mean_0 = np.zeros(agent_params_0["dim_state"])
-    std_0 = np.zeros(agent_params_0["dim_state"])
-    mean_1 = np.zeros(agent_params_1["dim_state"]) + 1e-8
-    std_1 = np.zeros(agent_params_1["dim_state"]) + 1e-8
-
+    mean_0 = np.zeros(agent_params_0["dim_state"]) # states average
+    nxmean_0 = np.zeros(agent_params_0["dim_state"]) # next states average
+    nvar_0 = np.zeros(agent_params_0["dim_state"])+1e-8 # n*Var
+    nxnvar_0 = np.zeros(agent_params_0["dim_state"])+1e-8
+    mean_1 = np.zeros(agent_params_1["dim_state"]) # states average
+    nxmean_1 = np.zeros(agent_params_1["dim_state"]) # next states average
+    nvar_1 = np.zeros(agent_params_1["dim_state"])+1e-8 # n*Var
+    nxnvar_1 = np.zeros(agent_params_1["dim_state"])+1e-8
+    # timing
     start_time = time.time()
     for ep in range(train_params["num_episodes"]):
         epsilon_0 = agent_0.epsilon_decay(num=4*ep, den=train_params["num_episodes"], lower=agent_params_0['epsilon_lower'], upper=agent_params_0['epsilon_upper'])
@@ -128,9 +132,16 @@ if __name__ == "__main__":
             if not info["status"] == "blew":
                 agent_0.replay_memory.store((state_0, agent0_acti, rew, done, next_state_0))
                 agent_1.replay_memory.store((state_1, agent1_acti, rew, done, next_state_1))
-                mean_0 += (state_0-mean_0) / ((ep+1)*(st+1))
-                mean_1 += (state_1-mean_1) / ((ep+1)*(st+1))
-
+                # compute incremental mean and std
+                inc_mean_0 = mean_0 + (state_0-mean_0)/((ep+1)*(st+1)) # u_n = u_n-1 + 1/n*(x_n-u_n-1)
+                inc_nxmean_0 = nxmean_0 + (next_state_0-nxmean_0)/((ep+1)*(st+1)) # u_n = u_n-1 + 1/n*(x_n-u_n-1)
+                inc_mean_1 += mean_1 + (state_1-mean_1)/((ep+1)*(st+1))
+                inc_nxmean_1 += nxmean_1 + (next_state_1-nxmean_1)/((ep+1)*(st+1))
+                inc_nvar_0 = np.sqrt((nvar_0 +(state_0-mean_0)*(state_0-inc_mean_0))/(ep+1)*(st+1))
+                inc_nxnvar_0 = np.sqrt((nxnvar_0 +(next_state_0-nxmean_0)*(next_state_0-inc_nxmean_0))/(ep+1)*(st+1))
+                inc_nvar_1 = np.sqrt((nvar_1 +(state_1-mean_1)*(state_1-inc_mean_1))/(ep+1)*(st+1))
+                inc_nxnvar_1 = np.sqrt((nxnvar_1 +(next_state_1-nxmean_1)*(next_state_1-inc_nxmean_1))/(ep+1)*(st+1))
+                agent_0.
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
