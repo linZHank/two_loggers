@@ -7,7 +7,7 @@ Author: LinZHanK (linzhank@gmail.com)
 Train new models example:
     python double_escape_dqn_train.py --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
 Continue training models example:
-    python double_escape_dqn_train.py --source '2019-06-12-09-54' --num_episodes 10 --epsilon_upper 0.1 --epsilon_lower 5e-2 
+    python double_escape_dqn_train.py --source '2019-07-17-17-57' --num_episodes 10 --epsilon_upper 0.1 --epsilon_lower 5e-2
 """
 from __future__ import absolute_import, division, print_function
 
@@ -81,7 +81,6 @@ if __name__ == "__main__":
         epsilon_0 = agent_0.epsilon_decay(num=4*ep, den=train_params["num_episodes"], lower=agent_params_0['epsilon_lower'], upper=agent_params_0['epsilon_upper'])
         epsilon_1 = agent_1.epsilon_decay(num=4*ep, den=train_params["num_episodes"], lower=agent_params_1['epsilon_lower'], upper=agent_params_1['epsilon_upper'])
         print("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
-        pose_buffer = double_utils.create_pose_buffer(train_params["num_episodes"])
         theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
         obs, _ = env.reset(pose_buffer[ep])
         state_0 = double_utils.obs_to_state(obs, "all")
