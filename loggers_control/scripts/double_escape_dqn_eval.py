@@ -20,6 +20,9 @@ from utils.data_utils import bcolors
 from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
+    # instantiate env
+    env = DoubleEscapeEnv()
+    env.reset()
     # load agent models
     model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-07-17-17-57/"
     params0_path = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
@@ -33,9 +36,7 @@ if __name__ == "__main__":
     agent_0.load_model(os.path.join(model_dir, "agent_0/model.h5"))
     agent_1 = DQNAgent(agent1_params)
     agent_1.load_model(os.path.join(model_dir, "agent_1/model.h5"))
-    # instantiate env
-    env = DoubleEscapeEnv()
-    env.reset()
+
     # evaluation params
     num_episodes = 100
     num_steps = 400
