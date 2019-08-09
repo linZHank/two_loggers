@@ -76,6 +76,11 @@ if __name__ == "__main__":
     pose_buffer = double_utils.create_pose_buffer(train_params['num_episodes'])
     update_counter = 0
     ep_returns, ep_losses_0, ep_losses_1 = [], [], []
+    mean_0 = np.zeros(agent_params_0["dim_state"])
+    std_0 = np.zeros(agent_params_0["dim_state"])
+    mean_1 = np.zeros(agent_params_1["dim_state"]) + 1e-8
+    std_1 = np.zeros(agent_params_1["dim_state"]) + 1e-8
+
     start_time = time.time()
     for ep in range(train_params["num_episodes"]):
         epsilon_0 = agent_0.epsilon_decay(num=4*ep, den=train_params["num_episodes"], lower=agent_params_0['epsilon_lower'], upper=agent_params_0['epsilon_upper'])
@@ -84,10 +89,7 @@ if __name__ == "__main__":
         theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
         obs, _ = env.reset(pose_buffer[ep])
         state_0 = double_utils.obs_to_state(obs, "all")
-        state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 could be same if using "all" option, when converting obs
-        if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
-            print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
-            break
+        state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 should be same if using "all" option
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
             agent0_acti = agent_0.epsilon_greedy(state_0)
@@ -98,6 +100,7 @@ if __name__ == "__main__":
             next_state_0 = double_utils.obs_to_state(obs, "all")
             next_state_1 = double_utils.obs_to_state(obs, "all")
             if sum(np.isnan(next_state_0)) >= 1 or sum(np.isnan(next_state_1)) >= 1:
+                print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
                 break # terminate script if gazebo crashed
             # adjust reward based on bonus options
             rew, done = double_utils.adjust_reward(train_params, env)
@@ -125,6 +128,9 @@ if __name__ == "__main__":
             if not info["status"] == "blew":
                 agent_0.replay_memory.store((state_0, agent0_acti, rew, done, next_state_0))
                 agent_1.replay_memory.store((state_1, agent1_acti, rew, done, next_state_1))
+                mean_0 += (state_0-mean_0) / ((ep+1)*(st+1))
+                mean_1 += (state_1-mean_1) / ((ep+1)*(st+1))
+
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
