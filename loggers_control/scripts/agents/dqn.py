@@ -126,12 +126,6 @@ class DQNAgent:
         self.qnet_active.save(model_path)
         print("policy_net model saved at {}".format(model_path))
 
-    def save_memory(self, model_path):
-        model_dir = os.path.dirname(model_path)
-        # save transition buffer memory
-        data_utils.save_pkl(content=self.replay_memory, fdir=model_dir, fname='memory.pkl')
-        print("transitions memory saved at {}".format(model_dir))
-
     def load_model(self, model_path):
         self.qnet_active = tf.keras.models.load_model(model_path)
         mem_path = os.path.join(os.path.dirname(model_path),'memory.pkl')
@@ -139,3 +133,9 @@ class DQNAgent:
             self.replay_memory = pickle.load(f)
             print("Replay Buffer Loaded")
         self.qnet_active.summary()
+
+    def save_memory(self, model_path):
+        model_dir = os.path.dirname(model_path)
+        # save transition buffer memory
+        data_utils.save_pkl(content=self.replay_memory, fdir=model_dir, fname='memory.pkl')
+        print("transitions memory saved at {}".format(model_dir))

@@ -72,18 +72,21 @@ if __name__ == "__main__":
         model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1/model.h5"
         agent_1.load_model(os.path.join(model_load_dir, "agent_1/model.h5"))
 
-    # init misc params
+    # init random starting poses
     pose_buffer = double_utils.create_pose_buffer(train_params['num_episodes'])
-    update_counter = 0
+    # init returns and losses storage
     ep_returns, ep_losses_0, ep_losses_1 = [], [], []
-    mean_0 = np.zeros(agent_params_0["dim_state"]) # states average
-    nxmean_0 = np.zeros(agent_params_0["dim_state"]) # next states average
-    nvar_0 = np.zeros(agent_params_0["dim_state"])+1e-8 # n*Var
-    nxnvar_0 = np.zeros(agent_params_0["dim_state"])+1e-8
-    mean_1 = np.zeros(agent_params_1["dim_state"]) # states average
-    nxmean_1 = np.zeros(agent_params_1["dim_state"]) # next states average
-    nvar_1 = np.zeros(agent_params_1["dim_state"])+1e-8 # n*Var
-    nxnvar_1 = np.zeros(agent_params_1["dim_state"])+1e-8
+    # init very first episode and step
+    obs, _ = env.reset(pose_buffer[0])
+    state_0 = double_utils.obs_to_state(obs, "all")
+    state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 should be same if using "all" option
+    # init means and stds
+    mean_0 = state_0 # states average
+    std_0 = np.zeros(agent_params_0["dim_state"])+1e-6 # n*Var
+    mean_1 = state_1 # states average
+    std_1 = np.zeros(agent_params_1["dim_state"])+1e-6 # n*Var
+    # init update counter for DQN
+    update_counter = 0
     # timing
     start_time = time.time()
     for ep in range(train_params["num_episodes"]):
@@ -91,14 +94,14 @@ if __name__ == "__main__":
         epsilon_1 = agent_1.epsilon_decay(num=4*ep, den=train_params["num_episodes"], lower=agent_params_1['epsilon_lower'], upper=agent_params_1['epsilon_upper'])
         print("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
-        obs, _ = env.reset(pose_buffer[ep])
-        state_0 = double_utils.obs_to_state(obs, "all")
-        state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 should be same if using "all" option
+        # obs, _ = env.reset(pose_buffer[ep])
+        # state_0 = double_utils.obs_to_state(obs, "all")
+        # state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 should be same if using "all" option
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
-            agent0_acti = agent_0.epsilon_greedy(state_0)
+            agent0_acti = agent_0.epsilon_greedy(tf_utils.normalize(state_0, mean_0, std_0))
             agent0_action = agent_0.actions[agent0_acti]
-            agent1_acti = agent_1.epsilon_greedy(state_1)
+            agent1_acti = agent_1.epsilon_greedy(tf_utils.normalize(state_1, mean_1, std_1))
             agent1_action = agent_1.actions[agent1_acti]
             obs, rew, done, info = env.step(agent0_action, agent1_action)
             next_state_0 = double_utils.obs_to_state(obs, "all")
@@ -130,19 +133,17 @@ if __name__ == "__main__":
             )
             # store transition
             if not info["status"] == "blew":
-                agent_0.replay_memory.store((state_0, agent0_acti, rew, done, next_state_0))
-                agent_1.replay_memory.store((state_1, agent1_acti, rew, done, next_state_1))
-                # compute incremental mean and std
-                inc_mean_0 = mean_0 + (state_0-mean_0)/((ep+1)*(st+1)) # u_n = u_n-1 + 1/n*(x_n-u_n-1)
-                inc_nxmean_0 = nxmean_0 + (next_state_0-nxmean_0)/((ep+1)*(st+1)) # u_n = u_n-1 + 1/n*(x_n-u_n-1)
-                inc_mean_1 += mean_1 + (state_1-mean_1)/((ep+1)*(st+1))
-                inc_nxmean_1 += nxmean_1 + (next_state_1-nxmean_1)/((ep+1)*(st+1))
-                inc_nvar_0 = np.sqrt((nvar_0 +(state_0-mean_0)*(state_0-inc_mean_0))/(ep+1)*(st+1))
-                inc_nxnvar_0 = np.sqrt((nxnvar_0 +(next_state_0-nxmean_0)*(next_state_0-inc_nxmean_0))/(ep+1)*(st+1))
-                inc_nvar_1 = np.sqrt((nvar_1 +(state_1-mean_1)*(state_1-inc_mean_1))/(ep+1)*(st+1))
-                inc_nxnvar_1 = np.sqrt((nxnvar_1 +(next_state_1-nxmean_1)*(next_state_1-inc_nxmean_1))/(ep+1)*(st+1))
-                agent_0.
+                agent_0.replay_memory.store((tf_utils.normalize(state_0, mean_0, std_0), agent0_acti, rew, done, tf_utils.normalize(next_state_0, mean_0, std_0)))
+                agent_1.replay_memory.store((tf_utils.normalize(state_1, mean_1, std_1), agent1_acti, rew, done, tf_utils.normalize(next_state_1, mean_1, std_1)))
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
+                # compute incremental mean and std
+                inc_mean_0 = tf_utils.update_mean(mean_0, state_0, (ep+1)*(st+1)+1)
+                inc_std_0 = tf_utils.update_std(std_0, mean_0, inc_mean_0, state_0, (ep+1)*(st+1)+1)
+                inc_mean_1 = tf_utils.update_mean(mean_1, state_1, (ep+1)*(st+1)+1)
+                inc_std_1 = tf_utils.update_std(std_1, mean_1, inc_mean_1, state_1, (ep+1)*(st+1)+1)
+                print("old means: {}".format((mean_0, std_0, mean_1, std_1)))
+                mean_0, std_0, mean_1, std_1 = inc_mean_0, inc_std_0, inc_mean_1, inc_std_1
+                print("incremented means: {}".format((inc_mean_0, inc_std_0, inc_mean_1, inc_std_1)))
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
             agent_0.train()
@@ -165,6 +166,9 @@ if __name__ == "__main__":
         ep_losses_1.append(sum(loss_vals_1)/len(loss_vals_1))
         agent_0.save_model(model_path_0)
         agent_1.save_model(model_path_1)
+        obs, _ = env.reset(pose_buffer[ep+1])
+        state_0 = double_utils.obs_to_state(obs, "all")
+        state_1 = double_utils.obs_to_state(obs, "all")
     # time training
     end_time = time.time()
     train_dur = end_time - start_time
