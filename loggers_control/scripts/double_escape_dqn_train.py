@@ -73,18 +73,19 @@ if __name__ == "__main__":
         agent_1.load_model(os.path.join(model_load_dir, "agent_1/model.h5"))
 
     # init random starting poses
-    pose_buffer = double_utils.create_pose_buffer(train_params['num_episodes'])
+    pose_buffer = double_utils.create_pose_buffer(train_params['num_episodes']+1)
     # init returns and losses storage
     ep_returns, ep_losses_0, ep_losses_1 = [], [], []
     # init very first episode and step
     obs, _ = env.reset(pose_buffer[0])
     state_0 = double_utils.obs_to_state(obs, "all")
     state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 should be same if using "all" option
-    # init means and stds
-    mean_0 = state_0 # states average
-    std_0 = np.zeros(agent_params_0["dim_state"])+1e-6 # n*Var
-    mean_1 = state_1 # states average
-    std_1 = np.zeros(agent_params_1["dim_state"])+1e-6 # n*Var
+    # init means and stds if not load from previous
+    if not args.source:
+        mean_0 = state_0 # states average
+        std_0 = np.zeros(agent_params_0["dim_state"])+1e-6 # n*Var
+        mean_1 = state_1 # states average
+        std_1 = np.zeros(agent_params_1["dim_state"])+1e-6 # n*Var
     # init update counter for DQN
     update_counter = 0
     # timing
@@ -137,14 +138,20 @@ if __name__ == "__main__":
                 agent_1.replay_memory.store((tf_utils.normalize(state_1, mean_1, std_1), agent1_acti, rew, done, tf_utils.normalize(next_state_1, mean_1, std_1)))
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
                 # compute incremental mean and std
-                inc_mean_0 = tf_utils.update_mean(mean_0, next_state_0, (ep+1)*(st+1)+1)
-                inc_std_0 = tf_utils.update_std(std_0, mean_0, inc_mean_0, next_state_0, (ep+1)*(st+1)+1)
-                inc_mean_1 = tf_utils.update_mean(mean_1, next_state_1, (ep+1)*(st+1)+1)
-                inc_std_1 = tf_utils.update_std(std_1, mean_1, inc_mean_1, next_state_1, (ep+1)*(st+1)+1)
-                print("old means: {}".format((mean_0, std_0, mean_1, std_1)))
-                # pdb.set_trace()
+                inc_mean_0 = tf_utils.increment_mean(mean_0, next_state_0, (ep+1)*(st+1)+1)
+                inc_std_0 = tf_utils.increment_std(old_std=std_0,
+                                                old_mean=mean_0,
+                                                inc_mean=inc_mean_0,
+                                                new_data=next_state_0,
+                                                sample_size=(ep+1)*(st+1)+1)
+                inc_mean_1 = tf_utils.increment_mean(mean_1, next_state_1, (ep+1)*(st+1)+1)
+                inc_std_1 = tf_utils.increment_std(std_1, mean_1, inc_mean_1, next_state_1, (ep+1)*(st+1)+1)
+                # update mean and std
                 mean_0, std_0, mean_1, std_1 = inc_mean_0, inc_std_0, inc_mean_1, inc_std_1
-                print("incremented means: {}".format((inc_mean_0, inc_std_0, inc_mean_1, inc_std_1)))
+                agent_params_0['mean'] = mean_0
+                agent_params_0['std'] = std_0
+                agent_params_0['mean'] = mean_1
+                agent_params_1['std'] = std_1
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
             agent_0.train()

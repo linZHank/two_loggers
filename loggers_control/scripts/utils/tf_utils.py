@@ -11,7 +11,7 @@ def mlp(x, sizes, activation=tf.tanh, output_activation=None):
         x = tf.layers.dense(x, units=size, activation=activation)
         return tf.layers.dense(x, units=sizes[-1], activation=output_activation)
 
-def update_mean(old_mean, new_data, sample_size):
+def increment_mean(old_mean, new_data, sample_size):
     """
     Compute incremental mean
     """
@@ -19,12 +19,14 @@ def update_mean(old_mean, new_data, sample_size):
 
     return inc_mean
 
-def update_std(old_std, old_mean, inc_mean, new_data, sample_size):
+def increment_std(old_std, old_mean, inc_mean, new_data, sample_size):
     """
     Compute incremental standard deviation
     """
     old_nVar = np.power(old_std,2)*(sample_size-1)
     inc_std = np.sqrt((old_nVar+(new_data-old_mean)*(new_data-inc_mean)) / sample_size)
+
+    return inc_std
 
 def normalize(data, mean, std):
     """
