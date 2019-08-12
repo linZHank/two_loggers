@@ -137,11 +137,12 @@ if __name__ == "__main__":
                 agent_1.replay_memory.store((tf_utils.normalize(state_1, mean_1, std_1), agent1_acti, rew, done, tf_utils.normalize(next_state_1, mean_1, std_1)))
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
                 # compute incremental mean and std
-                inc_mean_0 = tf_utils.update_mean(mean_0, state_0, (ep+1)*(st+1)+1)
-                inc_std_0 = tf_utils.update_std(std_0, mean_0, inc_mean_0, state_0, (ep+1)*(st+1)+1)
-                inc_mean_1 = tf_utils.update_mean(mean_1, state_1, (ep+1)*(st+1)+1)
-                inc_std_1 = tf_utils.update_std(std_1, mean_1, inc_mean_1, state_1, (ep+1)*(st+1)+1)
+                inc_mean_0 = tf_utils.update_mean(mean_0, next_state_0, (ep+1)*(st+1)+1)
+                inc_std_0 = tf_utils.update_std(std_0, mean_0, inc_mean_0, next_state_0, (ep+1)*(st+1)+1)
+                inc_mean_1 = tf_utils.update_mean(mean_1, next_state_1, (ep+1)*(st+1)+1)
+                inc_std_1 = tf_utils.update_std(std_1, mean_1, inc_mean_1, next_state_1, (ep+1)*(st+1)+1)
                 print("old means: {}".format((mean_0, std_0, mean_1, std_1)))
+                # pdb.set_trace()
                 mean_0, std_0, mean_1, std_1 = inc_mean_0, inc_std_0, inc_mean_1, inc_std_1
                 print("incremented means: {}".format((inc_mean_0, inc_std_0, inc_mean_1, inc_std_1)))
             else:
