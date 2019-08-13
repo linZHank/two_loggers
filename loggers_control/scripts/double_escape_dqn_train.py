@@ -134,16 +134,9 @@ if __name__ == "__main__":
             )
             # store transition
             if not info["status"] == "blew":
-                agent_0.replay_memory.store((tf_utils.normalize(state_0, mean_0, std_0), agent0_acti, rew, done, tf_utils.normalize(next_state_0, mean_0, std_0)))
-                agent_1.replay_memory.store((tf_utils.normalize(state_1, mean_1, std_1), agent1_acti, rew, done, tf_utils.normalize(next_state_1, mean_1, std_1)))
-                print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
                 # compute incremental mean and std
                 inc_mean_0 = tf_utils.increment_mean(mean_0, next_state_0, (ep+1)*(st+1)+1)
-                inc_std_0 = tf_utils.increment_std(old_std=std_0,
-                                                old_mean=mean_0,
-                                                inc_mean=inc_mean_0,
-                                                new_data=next_state_0,
-                                                sample_size=(ep+1)*(st+1)+1)
+                inc_std_0 = tf_utils.increment_std(std_0, mean_0, inc_mean_0, next_state_0, (ep+1)*(st+1)+1)
                 inc_mean_1 = tf_utils.increment_mean(mean_1, next_state_1, (ep+1)*(st+1)+1)
                 inc_std_1 = tf_utils.increment_std(std_1, mean_1, inc_mean_1, next_state_1, (ep+1)*(st+1)+1)
                 # update mean and std
@@ -152,6 +145,9 @@ if __name__ == "__main__":
                 agent_params_0['std'] = std_0
                 agent_params_0['mean'] = mean_1
                 agent_params_1['std'] = std_1
+                agent_0.replay_memory.store((tf_utils.normalize(state_0, mean_0, std_0), agent0_acti, rew, done, tf_utils.normalize(next_state_0, mean_0, std_0)))
+                agent_1.replay_memory.store((tf_utils.normalize(state_1, mean_1, std_1), agent1_acti, rew, done, tf_utils.normalize(next_state_1, mean_1, std_1)))
+                print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
             agent_0.train()
