@@ -115,7 +115,7 @@ if __name__ == "__main__":
         if train_params['normalize']:
             state_0 = tf_utils.normalize(state_0, mean_0, std_0)
             state_1 = tf_utils.normalize(state_1, mean_1, std_1)
-            print(bcolors.WARNING, "Normalize states: {}".format((state_0, state_1)), bcolors.ENDC)
+            print(bcolors.WARNING, "States normalize: {}".format((state_0, state_1)), bcolors.ENDC)
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
             agent0_acti = agent_0.epsilon_greedy(state_0)
@@ -132,7 +132,7 @@ if __name__ == "__main__":
             if train_params['normalize']:
                 next_state_0 = tf_utils.normalize(next_state_0, mean_0, std_0)
                 next_state_1 = tf_utils.normalize(next_state_1, mean_1, std_1)
-                print(bcolors.WARNING, "Normalize states: {}".format((next_state_0, next_state_1)), bcolors.ENDC)
+                print(bcolors.WARNING, "Next states normalized: {}".format((next_state_0, next_state_1)), bcolors.ENDC)
             # adjust reward based on bonus options
             rew, done = double_utils.adjust_reward(train_params, env)
             ep_rewards.append(rew)
