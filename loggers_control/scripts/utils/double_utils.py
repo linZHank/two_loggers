@@ -17,6 +17,7 @@ def get_args():
     parser.add_argument('--source', type=str, default='')
     parser.add_argument('--num_episodes', type=int, default=8000)
     parser.add_argument('--num_steps', type=int, default=400)
+    parser.add_argument('--normalize', action='store_true', default=True)
     parser.add_argument('--learning_rate', type=float, default=0.001)
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--sample_size', type=int, default=512)
@@ -223,13 +224,14 @@ def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, b
 
     return agent_params
 
-def create_train_params(date_time, source, num_episodes, num_steps, time_bonus, wall_bonus, door_bonus, success_bonus):
+def create_train_params(date_time, source, normalize, num_episodes, num_steps, time_bonus, wall_bonus, door_bonus, success_bonus):
     """
     Create training parameters dict based on args
     """
     train_params = {}
     train_params["date_time"] = date_time
     train_params['source'] = source
+    train_params['normalize'] = normalize
     train_params["num_episodes"] = num_episodes
     train_params["num_steps"] = num_steps
     train_params["time_bonus"] = time_bonus

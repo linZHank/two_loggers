@@ -5,9 +5,9 @@ DQN is a model free, off policy, reinforcement learning algorithm (https://deepm
 Author: LinZHanK (linzhank@gmail.com)
 
 Train new models example:
-    python double_escape_dqn_train.py --num_episodes 8000 --num_steps 400 --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
+    python double_escape_dqn_train.py --num_episodes 8000 --num_steps 400 --normalize --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
 Continue training models example:
-    python double_escape_dqn_train.py --source '2019-07-17-17-57' --num_episodes 10 --epsilon_upper 0.1 --epsilon_lower 5e-2
+    python double_escape_dqn_train.py --source '2019-07-17-17-57' --num_episodes 100 --epsilon_upper 0.1 --epsilon_lower 5e-2
 """
 from __future__ import absolute_import, division, print_function
 
@@ -38,9 +38,8 @@ if __name__ == "__main__":
     env.reset()
     # create training parameters
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    train_params = double_utils.create_train_params(date_time, args.source, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
-
     if not args.source: # source is empty, create new params
+        train_params = double_utils.create_train_params(date_time, args.source, args.normalize, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
         # agent parameters
         dim_state = len(double_utils.obs_to_state(env.observation, "all"))
         actions = np.array([np.array([1, -1]), np.array([1, 1])])
@@ -54,6 +53,15 @@ if __name__ == "__main__":
         assert os.path.dirname(os.path.dirname(model_path_0)) == os.path.dirname(os.path.dirname(model_path_1))
     else: # source is not empty, load params
         model_load_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source
+        # load train parameters
+        train_params_path = os.path.join(train_params_path, "train_params.pkl")
+        with open(train_params_path, 'rb') as f:
+            train_params = pickle.load(f)
+        train_params['source'] = args.source
+        train_params["date_time"] = date_time
+        train_params["num_episodes"] = args.num_episodes
+        train_params["num_steps"] = args.num_steps
+        # load agents parameters
         agent_params_path_0 = os.path.join(model_load_dir,"agent_0/agent0_parameters.pkl")
         with open(agent_params_path_0, 'rb') as f:
             agent_params_0 = pickle.load(f) # load agent_0 model
@@ -79,13 +87,18 @@ if __name__ == "__main__":
     # init very first episode and step
     obs, _ = env.reset(pose_buffer[0])
     state_0 = double_utils.obs_to_state(obs, "all")
-    state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 should be same if using "all" option
+    state_1 = double_utils.obs_to_state(obs, "all")
     # init means and stds if not load from previous
     if not args.source:
         mean_0 = state_0 # states average
         std_0 = np.zeros(agent_params_0["dim_state"])+1e-6 # n*Var
         mean_1 = state_1 # states average
         std_1 = np.zeros(agent_params_1["dim_state"])+1e-6 # n*Var
+    else:
+        mean_0 = agent_params_0['mean_0']
+        std_0 = agent_params_0['std_0']
+        mean_1 = agent_params_1['mean_1']
+        std_1 = agent_params_1['std_0']
     # init update counter for DQN
     update_counter = 0
     # timing
@@ -95,14 +108,19 @@ if __name__ == "__main__":
         epsilon_1 = agent_1.epsilon_decay(num=4*ep, den=train_params["num_episodes"], lower=agent_params_1['epsilon_lower'], upper=agent_params_1['epsilon_upper'])
         print("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
-        # obs, _ = env.reset(pose_buffer[ep])
-        # state_0 = double_utils.obs_to_state(obs, "all")
-        # state_1 = double_utils.obs_to_state(obs, "all") # state of agent0 and agent1 should be same if using "all" option
+        if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
+            print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
+            break # terminate script if gazebo crashed
+        # normalize states
+        if train_params['normalize']:
+            state_0 = tf_utils.normalize(state_0, mean_0, std_0)
+            state_1 = tf_utils.normalize(state_1, mean_1, std_1)
+            print(bcolors.WARNING, "Normalize states: {}".format((state_0, state_1)), bcolors.ENDC)
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
-            agent0_acti = agent_0.epsilon_greedy(tf_utils.normalize(state_0, mean_0, std_0))
+            agent0_acti = agent_0.epsilon_greedy(state_0)
             agent0_action = agent_0.actions[agent0_acti]
-            agent1_acti = agent_1.epsilon_greedy(tf_utils.normalize(state_1, mean_1, std_1))
+            agent1_acti = agent_1.epsilon_greedy(state_1)
             agent1_action = agent_1.actions[agent1_acti]
             obs, rew, done, info = env.step(agent0_action, agent1_action)
             next_state_0 = double_utils.obs_to_state(obs, "all")
@@ -110,6 +128,11 @@ if __name__ == "__main__":
             if sum(np.isnan(next_state_0)) >= 1 or sum(np.isnan(next_state_1)) >= 1:
                 print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
                 break # terminate script if gazebo crashed
+            # normalize next states
+            if train_params['normalize']:
+                next_state_0 = tf_utils.normalize(next_state_0, mean_0, std_0)
+                next_state_1 = tf_utils.normalize(next_state_1, mean_1, std_1)
+                print(bcolors.WARNING, "Normalize states: {}".format((next_state_0, next_state_1)), bcolors.ENDC)
             # adjust reward based on bonus options
             rew, done = double_utils.adjust_reward(train_params, env)
             ep_rewards.append(rew)
@@ -145,8 +168,8 @@ if __name__ == "__main__":
                 agent_params_0['std'] = std_0
                 agent_params_0['mean'] = mean_1
                 agent_params_1['std'] = std_1
-                agent_0.replay_memory.store((tf_utils.normalize(state_0, mean_0, std_0), agent0_acti, rew, done, tf_utils.normalize(next_state_0, mean_0, std_0)))
-                agent_1.replay_memory.store((tf_utils.normalize(state_1, mean_1, std_1), agent1_acti, rew, done, tf_utils.normalize(next_state_1, mean_1, std_1)))
+                agent_0.replay_memory.store((state_0, agent0_acti, rew, done, next_state_0))
+                agent_1.replay_memory.store((state_1, agent1_acti, rew, done, next_state_1))
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
