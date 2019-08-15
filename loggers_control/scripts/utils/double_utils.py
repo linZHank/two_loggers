@@ -17,7 +17,7 @@ def get_args():
     parser.add_argument('--source', type=str, default='')
     parser.add_argument('--num_episodes', type=int, default=8000)
     parser.add_argument('--num_steps', type=int, default=400)
-    parser.add_argument('--normalize', action='store_true', default=True)
+    parser.add_argument('--normalize', action='store_true', default=False)
     parser.add_argument('--learning_rate', type=float, default=0.001)
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--sample_size', type=int, default=512)
