@@ -1,12 +1,15 @@
 <launch>
 
   <!-- ros_control rrbot launch file -->
-  <include file="$(find loggers_gazebo)/launch/two_loggers_world.launch" />
-  
+  <include file="$(find loggers_gazebo)/launch/two_loggers_world.launch">
+    <arg name="gui" value="false"/>
+  </include>
+
+
   <!-- convert joint states to TF transforms for rviz, etc -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
     respawn="false" output="screen">
     <remap from="/joint_states" to="/two_loggers/joint_states" />
   </node>
-  
+
 </launch>
