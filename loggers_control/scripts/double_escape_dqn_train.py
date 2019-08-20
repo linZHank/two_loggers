@@ -111,16 +111,19 @@ if __name__ == "__main__":
         if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
             print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
             break # terminate script if gazebo crashed
-        # normalize states
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
+            # normalize states
             if train_params['normalize']:
-                state_0 = tf_utils.normalize(state_0, mean_0, std_0)
-                state_1 = tf_utils.normalize(state_1, mean_1, std_1)
-                print(bcolors.WARNING, "States normalize: {}".format((state_0, state_1)), bcolors.ENDC)
-            agent0_acti = agent_0.epsilon_greedy(state_0)
+                norm_state_0 = tf_utils.normalize(state_0, mean_0, std_0)
+                norm_state_1 = tf_utils.normalize(state_1, mean_1, std_1)
+                print(bcolors.WARNING, "States normalize: {}".format((norm_state_0, norm_state_1)), bcolors.ENDC)
+            else:
+                norm_state_0 = state_0
+                norm_state_1 = state_1
+            agent0_acti = agent_0.epsilon_greedy(norm_state_0)
             agent0_action = agent_0.actions[agent0_acti]
-            agent1_acti = agent_1.epsilon_greedy(state_1)
+            agent1_acti = agent_1.epsilon_greedy(norm_state_1)
             agent1_action = agent_1.actions[agent1_acti]
             obs, rew, done, info = env.step(agent0_action, agent1_action)
             next_state_0 = double_utils.obs_to_state(obs, "all")
@@ -130,9 +133,12 @@ if __name__ == "__main__":
                 break # terminate script if gazebo crashed
             # normalize next states
             if train_params['normalize']:
-                next_state_0 = tf_utils.normalize(next_state_0, mean_0, std_0)
-                next_state_1 = tf_utils.normalize(next_state_1, mean_1, std_1)
-                print(bcolors.WARNING, "Next states normalized: {}".format((next_state_0, next_state_1)), bcolors.ENDC)
+                norm_next_state_0 = tf_utils.normalize(next_state_0, mean_0, std_0)
+                norm_next_state_1 = tf_utils.normalize(next_state_1, mean_1, std_1)
+                print(bcolors.WARNING, "Next states normalized: {}".format((norm_next_state_0, norm_next_state_1)), bcolors.ENDC)
+            else:
+                norm_next_state_0 = next_state_0
+                norm_next_state_1 = next_state_1
             # adjust reward based on bonus options
             rew, done = double_utils.adjust_reward(train_params, env)
             ep_rewards.append(rew)
@@ -146,8 +152,8 @@ if __name__ == "__main__":
                     agent0_action,
                     agent1_acti,
                     agent1_action,
-                    next_state_0,
-                    next_state_1,
+                    norm_next_state_0,
+                    norm_next_state_1,
                     rew,
                     sum(ep_rewards),
                     info["status"],
@@ -168,8 +174,8 @@ if __name__ == "__main__":
                 agent_params_0['std'] = std_0
                 agent_params_0['mean'] = mean_1
                 agent_params_1['std'] = std_1
-                agent_0.replay_memory.store((state_0, agent0_acti, rew, done, next_state_0))
-                agent_1.replay_memory.store((state_1, agent1_acti, rew, done, next_state_1))
+                agent_0.replay_memory.store((norm_state_0, agent0_acti, rew, done, norm_next_state_0))
+                agent_1.replay_memory.store((norm_state_1, agent1_acti, rew, done, norm_next_state_1))
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
