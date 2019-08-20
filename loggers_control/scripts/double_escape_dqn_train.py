@@ -112,12 +112,12 @@ if __name__ == "__main__":
             print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
             break # terminate script if gazebo crashed
         # normalize states
-        if train_params['normalize']:
-            state_0 = tf_utils.normalize(state_0, mean_0, std_0)
-            state_1 = tf_utils.normalize(state_1, mean_1, std_1)
-            print(bcolors.WARNING, "States normalize: {}".format((state_0, state_1)), bcolors.ENDC)
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
+            if train_params['normalize']:
+                state_0 = tf_utils.normalize(state_0, mean_0, std_0)
+                state_1 = tf_utils.normalize(state_1, mean_1, std_1)
+                print(bcolors.WARNING, "States normalize: {}".format((state_0, state_1)), bcolors.ENDC)
             agent0_acti = agent_0.epsilon_greedy(state_0)
             agent0_action = agent_0.actions[agent0_acti]
             agent1_acti = agent_1.epsilon_greedy(state_1)
