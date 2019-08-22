@@ -54,7 +54,7 @@ if __name__ == "__main__":
     else: # source is not empty, load params
         model_load_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source
         # load train parameters
-        train_params_path = os.path.join(train_params_path, "train_params.pkl")
+        train_params_path = os.path.join(model_load_dir, "train_params.pkl")
         with open(train_params_path, 'rb') as f:
             train_params = pickle.load(f)
         train_params['source'] = args.source
@@ -95,10 +95,10 @@ if __name__ == "__main__":
         mean_1 = state_1 # states average
         std_1 = np.zeros(agent_params_1["dim_state"])+1e-6 # n*Var
     else:
-        mean_0 = agent_params_0['mean_0']
-        std_0 = agent_params_0['std_0']
-        mean_1 = agent_params_1['mean_1']
-        std_1 = agent_params_1['std_0']
+        mean_0 = agent_params_0['mean']
+        std_0 = agent_params_0['std']
+        mean_1 = agent_params_1['mean']
+        std_1 = agent_params_1['std']
     # init update counter for DQN
     update_counter = 0
     # timing
