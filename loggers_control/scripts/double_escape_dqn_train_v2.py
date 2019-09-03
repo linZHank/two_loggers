@@ -5,9 +5,9 @@ DQN is a model free, off policy, reinforcement learning algorithm (https://deepm
 Author: LinZHanK (linzhank@gmail.com)
 
 Train new models example:
-    python double_escape_dqn_train.py --num_episodes 8000 --num_steps 400 --normalize --learning_rate 1e-3 --gamma 0.99 --sample_size 512 --layer_sizes 4 16 --batch_size 2048 --memory_cap 400000 --update_step 10000 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
+    python double_escape_dqn_train.py --num_episodes 20000 --num_steps 400 --normalize --update_step 10000 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
 Continue training models example:
-    python double_escape_dqn_train.py --source '2019-07-17-17-57' --num_episodes 100 --epsilon_upper 0.1 --epsilon_lower 5e-2
+    python double_escape_dqn_train.py --source '2019-07-17-17-57' --num_episodes 100
 """
 from __future__ import absolute_import, division, print_function
 
@@ -100,9 +100,9 @@ if __name__ == "__main__":
     # init means and stds if not load from previous
     if not args.source:
         mean_0 = state_0 # states average
-        std_0 = np.zeros(agent_params_0["dim_state"])+1e-6 # n*Var
+        std_0 = np.zeros(agent_params_0["dim_state"])+1e-8 # n*Var
         mean_1 = state_1 # states average
-        std_1 = np.zeros(agent_params_1["dim_state"])+1e-6 # n*Var
+        std_1 = np.zeros(agent_params_1["dim_state"])+1e-8 # n*Var
     else:
         mean_0 = agent_params_0['mean']
         std_0 = agent_params_0['std']
@@ -113,15 +113,21 @@ if __name__ == "__main__":
     # timing
     start_time = time.time()
     for ep in range(train_params['num_episodes']-train_params['complete_episodes']):
+        # check simulation crash
+        if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
+            print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
+            train_params['complete_episodes'] = ep
+            break # terminate main loop if simulation crashed
         epsilon_0 = agent_0.linearly_decaying_epsilon(decay_period=agent_params_0['decay_period'], episode=ep+train_params['complete_episodes'])
         epsilon_1 = agent_1.linearly_decaying_epsilon(decay_period=train_params['decay_period'], episode=ep+train_params['complete_episodes']))
         print("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
-        theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
-        if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
-            print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
-            break # terminate script if gazebo crashed
+        # theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
+            # check simulation crash
+            if sum(np.isnan(next_state_0)) >= 1 or sum(np.isnan(next_state_1)) >= 1:
+                print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
+                break # tbreakout loop if gazebo crashed
             # normalize states
             if train_params['normalize']:
                 norm_state_0 = tf_utils.normalize(state_0, mean_0, std_0)
@@ -137,9 +143,17 @@ if __name__ == "__main__":
             obs, rew, done, info = env.step(agent0_action, agent1_action)
             next_state_0 = double_utils.obs_to_state(obs, "all")
             next_state_1 = double_utils.obs_to_state(obs, "all")
-            if sum(np.isnan(next_state_0)) >= 1 or sum(np.isnan(next_state_1)) >= 1:
-                print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
-                break # terminate script if gazebo crashed
+            # compute incremental mean and std
+            inc_mean_0 = tf_utils.increment_mean(mean_0, next_state_0, (ep+1)*(st+1)+1)
+            inc_std_0 = tf_utils.increment_std(std_0, mean_0, inc_mean_0, next_state_0, (ep+1)*(st+1)+1)
+            inc_mean_1 = tf_utils.increment_mean(mean_1, next_state_1, (ep+1)*(st+1)+1)
+            inc_std_1 = tf_utils.increment_std(std_1, mean_1, inc_mean_1, next_state_1, (ep+1)*(st+1)+1)
+            # update mean and std
+            mean_0, std_0, mean_1, std_1 = inc_mean_0, inc_std_0, inc_mean_1, inc_std_1
+            agent_params_0['mean'] = mean_0
+            agent_params_0['std'] = std_0
+            agent_params_0['mean'] = mean_1
+            agent_params_1['std'] = std_1
             # normalize next states
             if train_params['normalize']:
                 norm_next_state_0 = tf_utils.normalize(next_state_0, mean_0, std_0)
@@ -170,19 +184,8 @@ if __name__ == "__main__":
                 ),
                 bcolors.ENDC
             )
-            # store transition
+            # store transitions
             if not info["status"] == "blew":
-                # compute incremental mean and std
-                inc_mean_0 = tf_utils.increment_mean(mean_0, next_state_0, (ep+1)*(st+1)+1)
-                inc_std_0 = tf_utils.increment_std(std_0, mean_0, inc_mean_0, next_state_0, (ep+1)*(st+1)+1)
-                inc_mean_1 = tf_utils.increment_mean(mean_1, next_state_1, (ep+1)*(st+1)+1)
-                inc_std_1 = tf_utils.increment_std(std_1, mean_1, inc_mean_1, next_state_1, (ep+1)*(st+1)+1)
-                # update mean and std
-                mean_0, std_0, mean_1, std_1 = inc_mean_0, inc_std_0, inc_mean_1, inc_std_1
-                agent_params_0['mean'] = mean_0
-                agent_params_0['std'] = std_0
-                agent_params_0['mean'] = mean_1
-                agent_params_1['std'] = std_1
                 agent_0.replay_memory.store((norm_state_0, agent0_acti, rew, done, norm_next_state_0))
                 agent_1.replay_memory.store((norm_state_1, agent1_acti, rew, done, norm_next_state_1))
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
