@@ -25,8 +25,6 @@ def get_args():
     parser.add_argument('--batch_size', type=int, default=2048)
     parser.add_argument('--memory_cap', type=int, default=400000)
     parser.add_argument('--update_step', type=int, default=10000)
-    parser.add_argument('--epsilon_lower', type=float, default=0.005)
-    parser.add_argument('--epsilon_upper', type=float, default=1)
     parser.add_argument('--time_bonus', type=float, default=0)
     parser.add_argument('--wall_bonus', type=float, default=0)
     parser.add_argument('--door_bonus', type=float, default=0)
