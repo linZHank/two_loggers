@@ -43,7 +43,7 @@ if __name__ == "__main__":
         # agent parameters
         dim_state = len(double_utils.obs_to_state(env.observation, "all"))
         actions = np.array([np.array([1, -1]), np.array([1, 1])])
-        agent_params_0 = double_utils.create_agent_params(dim_state, actions, args.layer_sizes, args.gamma, args.learning_rate, args.batch_size, args.memory_cap)
+        agent_params_0 = double_utils.create_agent_params(dim_state, actions, args.layer_sizes, args.gamma, args.learning_rate, args.batch_size, args.memory_cap, args.update_step, args.epsilon_upper, args.epsilon_lower)
         agent_params_1 = agent_params_0
         # instantiate new agents
         agent_0 = DQNAgent(agent_params_0)
@@ -104,15 +104,12 @@ if __name__ == "__main__":
     # timing
     start_time = time.time()
     for ep in range(train_params["num_episodes"]):
-        # epsilon_0 = agent_0.epsilon_decay(num=4*ep, den=train_params["num_episodes"], lower=agent_params_0['epsilon_lower'], upper=agent_params_0['epsilon_upper'])
-        # epsilon_1 = agent_1.epsilon_decay(num=4*ep, den=train_params["num_episodes"], lower=agent_params_1['epsilon_lower'], upper=agent_params_1['epsilon_upper'])
-        epsilon_0 = agent_0.epsilon_decay()
-        epsilon_1 = agent_1.epsilon_decay()
+        epsilon_0 = agent_0.epsilon_decay(num=4*ep, den=train_params["num_episodes"], lower=agent_params_0['epsilon_lower'], upper=agent_params_0['epsilon_upper'])
+        epsilon_1 = agent_1.epsilon_decay(num=4*ep, den=train_params["num_episodes"], lower=agent_params_1['epsilon_lower'], upper=agent_params_1['epsilon_upper'])
         print("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         theta_0, theta_1 = random.uniform(-math.pi, math.pi), random.uniform(-math.pi, math.pi)
         if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
             print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
-            train_params['num_episodes'] = ep+1
             break # terminate script if gazebo crashed
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
@@ -133,7 +130,6 @@ if __name__ == "__main__":
             next_state_1 = double_utils.obs_to_state(obs, "all")
             if sum(np.isnan(next_state_0)) >= 1 or sum(np.isnan(next_state_1)) >= 1:
                 print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
-                train_params['num_episodes'] = ep
                 break # terminate script if gazebo crashed
             # normalize next states
             if train_params['normalize']:

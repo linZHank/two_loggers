@@ -51,8 +51,8 @@ class DoubleEscapeEnv(object):
         self.pause_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         # init topic publisher
-        self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=10)
-        self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=10)
+        self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
+        self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=1)
         self.set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
         self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=100)
         # init topic subscriber
