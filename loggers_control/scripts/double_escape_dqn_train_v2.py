@@ -82,13 +82,9 @@ if __name__ == "__main__":
         agent_params_path_0 = os.path.join(model_load_dir,"agent_0/agent0_parameters.pkl")
         with open(agent_params_path_0, 'rb') as f:
             agent_params_0 = pickle.load(f) # load agent_0 model
-        agent_params_0['epsilon_upper'] = args.epsilon_upper
-        agent_params_0['epsilon_lower'] = args.epsilon_lower
         agent_params_path_1 = os.path.join(model_load_dir,"agent_1/agent1_parameters.pkl")
         with open(agent_params_path_1, 'rb') as f:
             agent_params_1 = pickle.load(f) # load agent_1 model
-        agent_params_1['epsilon_upper'] = args.epsilon_upper
-        agent_params_1['epsilon_lower'] = args.epsilon_lower
         # load dqn models & memory buffers
         agent_0 = DQNAgent(agent_params_0)
         model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0/model.h5"
