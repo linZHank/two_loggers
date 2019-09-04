@@ -49,7 +49,7 @@ class DQNAgent:
         self.batch_size = params["batch_size"]
         self.memory_cap = params["memory_cap"]
         self.update_step = params["update_step"]
-        self.delta_dist = 0
+        self.update_counter = 0
         self.epsilon = 1
         self.loss_value = np.inf
         # Q(s,a;theta)
@@ -105,7 +105,7 @@ class DQNAgent:
 
         return self.epsilon
 
-    def linearly_decaying_epsilon(decay_period, episode, warmup_episodes=100, final_eps=0.005):
+    def linearly_decaying_epsilon(self, decay_period, episode, warmup_episodes=100, final_eps=0.005):
         """
         Returns the current epsilon for the agent's epsilon-greedy policy. This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et al., 2015). The schedule is as follows:
             Begin at 1. until warmup_steps steps have been taken; then Linearly decay epsilon from 1. to final_eps in decay_period steps; and then Use epsilon from there on.
@@ -117,11 +117,12 @@ class DQNAgent:
         Returns:
             A float, the current epsilon value computed according to the schedule.
         """
-        steps_left = decay_period + warmup_steps - step
-        bonus = (1.0 - final_eps) * steps_left / decay_period
+        episodes_left = decay_period + warmup_episodes - episode
+        bonus = (1.0 - final_eps) * episodes_left / decay_period
         bonus = np.clip(bonus, 0., 1.-final_eps)
+        self.epsilon = final_eps + bonus
 
-        return self.epsilon = final_eps + bonus
+        return self.epsilon
 
     def loss(self, minibatch):
         (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]

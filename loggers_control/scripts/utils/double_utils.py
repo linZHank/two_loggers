@@ -18,13 +18,13 @@ def get_args():
     parser.add_argument('--num_episodes', type=int, default=10000)
     parser.add_argument('--num_steps', type=int, default=400)
     parser.add_argument('--normalize', action='store_true', default=False)
-    parser.add_argument('--learning_rate', type=float, default=0.0004)
-    parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--sample_size', type=int, default=512)
-    parser.add_argument('--layer_sizes', nargs='+', type=int, help='use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]', default=256 256)
-    parser.add_argument('--batch_size', type=int, default=2048)
-    parser.add_argument('--memory_cap', type=int, default=400000)
-    parser.add_argument('--update_step', type=int, default=10000)
+    # parser.add_argument('--learning_rate', type=float, default=0.0004)
+    # parser.add_argument('--gamma', type=float, default=0.99)
+    # parser.add_argument('--sample_size', type=int, default=512)
+    # parser.add_argument('--layer_sizes', nargs='+', type=int, help='use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]', default=256 256)
+    # parser.add_argument('--batch_size', type=int, default=2048)
+    # parser.add_argument('--memory_cap', type=int, default=400000)
+    # parser.add_argument('--update_step', type=int, default=10000)
     parser.add_argument('--time_bonus', type=float, default=0)
     parser.add_argument('--wall_bonus', type=float, default=0)
     parser.add_argument('--door_bonus', type=float, default=0)
@@ -204,7 +204,7 @@ def create_pose_buffer(num_poses=1024):
 
     return pose_vectors
 
-def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, epsilon_upper, epsilon_lower):
+def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, final_eps):
     """
     Create agent parameters dict based on args
     """
@@ -217,17 +217,18 @@ def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, b
     agent_params["batch_size"] = batch_size
     agent_params["memory_cap"] = memory_cap
     agent_params["update_step"] = update_step
-    agent_params['epsilon_upper'] = epsilon_upper
-    agent_params['epsilon_lower'] = epsilon_lower
+    agent_params["decay_period"] = decay_period
+    agent_params['final_eps'] = final_eps
 
     return agent_params
 
-def create_train_params(date_time, source, normalize, num_episodes, num_steps, time_bonus, wall_bonus, door_bonus, success_bonus):
+def create_train_params(date_time, complete_episodes, source, normalize, num_episodes, num_steps, time_bonus, wall_bonus, door_bonus, success_bonus):
     """
     Create training parameters dict based on args
     """
     train_params = {}
     train_params["date_time"] = date_time
+    train_params['complete_episodes'] = complete_episodes
     train_params['source'] = source
     train_params['normalize'] = normalize
     train_params["num_episodes"] = num_episodes
