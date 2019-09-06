@@ -29,6 +29,7 @@ from agents.dqn import DQNAgent
 
 import pdb
 
+tf.logging.set_verbosity(tf.logging.DEBUG)
 
 if __name__ == "__main__":
     # create argument parser
@@ -48,7 +49,7 @@ if __name__ == "__main__":
         gamma = 0.99
         learning_rate = 1e-3
         batch_size = 2048
-        memory_cap = 1000000
+        memory_cap = 100000
         update_step = 8000
         decay_period = args.num_episodes/4
         final_eps = 5e-3
