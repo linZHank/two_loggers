@@ -7,6 +7,7 @@ import random
 import pickle
 import tensorflow as tf
 import rospy
+import logging
 
 from utils import data_utils
 from utils.data_utils import bcolors
@@ -25,7 +26,7 @@ class Memory:
         if len(self.memory) >= self.memory_cap:
             self.memory.pop(random.randint(0, len(self.memory)-1))
         self.memory.append(experience)
-        tf.logging.debug("experience: {} stored to memory".format(experience))
+        logging.debug("experience: {} stored to memory".format(experience))
 
     def sample_batch(self, batch_size):
         # Select batch
@@ -33,7 +34,7 @@ class Memory:
             batch = random.sample(self.memory, len(self.memory))
         else:
             batch = random.sample(self.memory, batch_size)
-        tf.logging.debug("A batch of memories are sampled with size: {}".format(batch_size))
+        logging.debug("A batch of memories are sampled with size: {}".format(batch_size))
 
         return zip(*batch)
 
@@ -156,18 +157,18 @@ class DQNAgent:
             os.makedirs(model_dir)
         # save model
         self.qnet_active.save(model_path)
-        tf.logging.info("policy_net model saved at {}".format(model_path))
+        logging.info("policy_net model saved at {}".format(model_path))
 
     def load_model(self, model_path):
         self.qnet_active = tf.keras.models.load_model(model_path)
         mem_path = os.path.join(os.path.dirname(model_path),'memory.pkl')
         with open(mem_path, 'rb') as f:
             self.replay_memory = pickle.load(f)
-            tf.logging.debug("Replay Buffer Loaded")
+            logging.debug("Replay Buffer Loaded")
         self.qnet_active.summary()
 
     def save_memory(self, model_path):
         model_dir = os.path.dirname(model_path)
         # save transition buffer memory
         data_utils.save_pkl(content=self.replay_memory, fdir=model_dir, fname='memory.pkl')
-        tf.logging.info("transitions memory saved at {}".format(model_dir))
+        logging.info("transitions memory saved at {}".format(model_dir))

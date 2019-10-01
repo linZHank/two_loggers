@@ -21,6 +21,7 @@ import math
 import tensorflow as tf
 import rospy
 import pickle
+import logging
 
 from envs.double_escape_task_env import DoubleEscapeEnv
 from utils import data_utils, double_utils, tf_utils
@@ -29,7 +30,7 @@ from agents.dqn import DQNAgent
 
 import pdb
 
-tf.logging.set_verbosity(tf.logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == "__main__":
     # create argument parser
@@ -122,18 +123,18 @@ if __name__ == "__main__":
             break # terminate main loop if simulation crashed
         epsilon_0 = agent_0.linearly_decaying_epsilon(decay_period=agent_params_0['decay_period'], episode=ep)
         epsilon_1 = agent_1.linearly_decaying_epsilon(decay_period=agent_params_1['decay_period'], episode=ep)
-        tf.logging.info("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
+        logging.info("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
             # check simulation crash
             if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
-                tf.logging.fatal("Simulation Crashed")
+                logging.critical("Simulation Crashed")
                 break # tbreakout loop if gazebo crashed
             # normalize states
             if train_params['normalize']:
                 norm_state_0 = tf_utils.normalize(state_0, mean_0, std_0)
                 norm_state_1 = tf_utils.normalize(state_1, mean_1, std_1)
-                tf.logging.debug("States normalize: {}".format((norm_state_0, norm_state_1)))
+                logging.debug("States normalize: {}".format((norm_state_0, norm_state_1)))
             else:
                 norm_state_0 = state_0
                 norm_state_1 = state_1
@@ -159,7 +160,7 @@ if __name__ == "__main__":
             if train_params['normalize']:
                 norm_next_state_0 = tf_utils.normalize(next_state_0, mean_0, std_0)
                 norm_next_state_1 = tf_utils.normalize(next_state_1, mean_1, std_1)
-                tf.logging.debug("Next states normalized: {}".format((norm_next_state_0, norm_next_state_1)))
+                logging.debug("Next states normalized: {}".format((norm_next_state_0, norm_next_state_1)))
             else:
                 norm_next_state_0 = next_state_0
                 norm_next_state_1 = next_state_1
@@ -168,7 +169,7 @@ if __name__ == "__main__":
             ep_rewards.append(rew)
             train_params['success_count'] = env.success_count
             # rew, done = double_utils.adjust_reward(hyp_params, env, agent)
-            tf.logging.warn(
+            logging.warning(
                 "Episode: {}, Step: {}: \nstate_0: {}, action0: {}->{}, next state_0 : {} \nstate_1: {}, action1: {}->{}, next state_1: {}, reward/episodic_return: {}/{}, status: {}, succeeded: {}".format(
                     ep+1,
                     st+1,
@@ -245,7 +246,7 @@ if __name__ == "__main__":
     try:
         del train_info['pose_buffer']
     except KeyError:
-        tf.logging.error("Key 'pose_buffer' not found")
+        logging.error("Key 'pose_buffer' not found")
 
     data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_params.pkl")
     data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_information.csv")
