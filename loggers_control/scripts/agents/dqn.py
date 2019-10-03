@@ -11,6 +11,7 @@ import logging
 
 from utils import data_utils
 from utils.data_utils import bcolors
+from tensorflow.keras import layers
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 
@@ -56,12 +57,18 @@ class DQNAgent:
         self.loss_value = np.inf
         # Q(s,a;theta)
         assert len(self.layer_sizes) >= 1
-        self.qnet_active = tf.keras.models.Sequential([
-            Dense(self.layer_sizes[0], activation='relu', input_shape=(self.dim_state,))
-        ])
+        inputs = tf.keras.Input(shape=(self.dim_state,), name='state')
+        x = layers.Dense(self.layer_sizes[0], activation='relu')(inputs)
         for i in range(1,len(self.layer_sizes)):
-            self.qnet_active.add(Dense(self.layer_sizes[i], activation="relu"))
-        self.qnet_active.add(Dense(len(self.actions)))
+            x = layers.Dense(self.layer_sizes[i], activation='relu')(x)
+        outputs = layers.Dense(len(self.actions))(x)
+        self.qnet_active = Model(inputs=inputs, outputs=outputs, name='qnet_model')
+        # self.qnet_active = tf.keras.models.Sequential([
+        #     Dense(self.layer_sizes[0], activation='relu', input_shape=(self.dim_state,))
+        # ])
+        # for i in range(1,len(self.layer_sizes)):
+        #     self.qnet_active.add(Dense(self.layer_sizes[i], activation="relu"))
+        # self.qnet_active.add(Dense(len(self.actions)))
         # Q^(s,a;theta_)
         self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
         # optimizer

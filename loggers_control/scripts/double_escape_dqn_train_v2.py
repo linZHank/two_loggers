@@ -185,8 +185,7 @@ if __name__ == "__main__":
                     sum(ep_rewards),
                     info["status"],
                     train_params['success_count']
-                ),
-                bcolors.ENDC
+                )
             )
             # store transitions
             if not info["status"] == "blew":
