@@ -87,19 +87,19 @@ class DQNAgent:
             print(bcolors.WARNING, "Take a random action!", bcolors.ENDC)
             return np.random.randint(len(self.actions))
 
-    def exponentially_decaying_epsilon(self, decay=0.999, lower=0.005, upper=1):
-        """
-        Construct an epsilon decay function
-            Args:
-                decay: decay multiplier
-                upper: upper bound of epsilon
-                lower: lower bound of epsilon
-            Returns:
-                self.epsilon: epsilon at current episode
-        """
-        self.epsilon = np.clip(self.epsilon*decay, lower, upper)
-
-        return self.epsilon
+    # def exponentially_decaying_epsilon(self, decay=0.999, lower=0.005, upper=1):
+    #     """
+    #     Construct an epsilon decay function
+    #         Args:
+    #             decay: decay multiplier
+    #             upper: upper bound of epsilon
+    #             lower: lower bound of epsilon
+    #         Returns:
+    #             self.epsilon: epsilon at current episode
+    #     """
+    #     self.epsilon = np.clip(self.epsilon*decay, lower, upper)
+    #
+    #     return self.epsilon
 
     def linearly_decaying_epsilon(self, decay_period, episode, warmup_episodes=100, final_eps=0.005):
         """

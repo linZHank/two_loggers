@@ -48,12 +48,12 @@ if __name__ == "__main__":
         actions = np.array([np.array([1, -1]), np.array([1, 1])])
         layer_sizes = [256, 256]
         gamma = 0.99
-        learning_rate = 1e-3
+        learning_rate = 3e-4
         batch_size = 2048
         memory_cap = 100000
-        update_step = 8000
+        update_step = 10000
         decay_period = args.num_episodes/4
-        final_eps = 5e-3
+        final_eps = 1e-2
         agent_params_0 = double_utils.create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, final_eps)
         agent_params_0['update_counter'] = 0
         agent_params_1 = agent_params_0
