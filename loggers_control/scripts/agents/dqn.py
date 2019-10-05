@@ -39,6 +39,17 @@ class Memory:
 
         return zip(*batch)
 
+class QMSE(keras.losses.Loss):
+    """
+    Mean Squared Error loss for Q-net
+    """
+    def __init__(self, action):
+        super(QMSE, self).__init__()
+        self.action = action # one hot
+    def call(self, y_true, y_pred):
+        y_pred = tf.math.reduce_sum(tf.math.multiply(y_pred, self.action),axis=-1)
+        return tf.math.reduce_mean(tf.square(y_pred - y_true))
+
 class DQNAgent:
     def __init__(self, params):
         # hyper-parameters
@@ -63,16 +74,8 @@ class DQNAgent:
             x = layers.Dense(self.layer_sizes[i], activation='relu')(x)
         outputs = layers.Dense(len(self.actions))(x)
         self.qnet_active = Model(inputs=inputs, outputs=outputs, name='qnet_model')
-        # self.qnet_active = tf.keras.models.Sequential([
-        #     Dense(self.layer_sizes[0], activation='relu', input_shape=(self.dim_state,))
-        # ])
-        # for i in range(1,len(self.layer_sizes)):
-        #     self.qnet_active.add(Dense(self.layer_sizes[i], activation="relu"))
-        # self.qnet_active.add(Dense(len(self.actions)))
-        # Q^(s,a;theta_)
+        # clone active Q-net to create stable Q-net
         self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
-        # optimizer
-        self.optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
         # init replay memory
         self.replay_memory = Memory(memory_cap=self.memory_cap)
 
@@ -86,20 +89,6 @@ class DQNAgent:
         else:
             print(bcolors.WARNING, "Take a random action!", bcolors.ENDC)
             return np.random.randint(len(self.actions))
-
-    # def exponentially_decaying_epsilon(self, decay=0.999, lower=0.005, upper=1):
-    #     """
-    #     Construct an epsilon decay function
-    #         Args:
-    #             decay: decay multiplier
-    #             upper: upper bound of epsilon
-    #             lower: lower bound of epsilon
-    #         Returns:
-    #             self.epsilon: epsilon at current episode
-    #     """
-    #     self.epsilon = np.clip(self.epsilon*decay, lower, upper)
-    #
-    #     return self.epsilon
 
     def linearly_decaying_epsilon(self, decay_period, episode, warmup_episodes=100, final_eps=0.005):
         """
@@ -120,28 +109,30 @@ class DQNAgent:
 
         return self.epsilon
 
-    def loss(self, minibatch):
-        (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
-        loss_object = tf.keras.losses.MeanSquaredError()
-        q_values = tf.math.reduce_sum(tf.cast(self.qnet_active(batch_states), tf.float32) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
-        target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
-
-        return loss_object(y_true=target_q, y_pred=q_values)
-
-    def grad(self, minibatch):
-        with tf.GradientTape() as tape:
-            loss_value = self.loss(minibatch)
-
-        return loss_value, tape.gradient(loss_value, self.qnet_active.trainable_variables)
+    # def loss(self, minibatch):
+    #     (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
+    #     loss_object = tf.keras.losses.MeanSquaredError()
+    #     q_values = tf.math.reduce_sum(tf.cast(self.qnet_active(batch_states), tf.float32) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
+    #     target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
+    #
+    #     return loss_object(y_true=target_q, y_pred=q_values)
+    #
+    # def grad(self, minibatch):
+    #     with tf.GradientTape() as tape:
+    #         loss_value = self.loss(minibatch)
+    #
+    #     return loss_value, tape.gradient(loss_value, self.qnet_active.trainable_variables)
 
     def train(self):
         # sample a minibatch
         minibatch = self.replay_memory.sample_batch(self.batch_size)
-        # compute gradient for one epoch
-        self.loss_value, grads = self.grad(minibatch)
-        self.optimizer.apply_gradients(zip(grads, self.qnet_active.trainable_variables))
-        # loss_value = self.loss(minibatch)
-        print("loss: {}".format(self.loss_value))
+        (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
+
+        self.qnet_active.compile(
+            optimizer=keras.optimizers.Adam(),
+            loss=QMSE(batch_actions),
+            metrics=['accuracy','mae'])
+
 
     def save_model(self, model_path):
         self.qnet_active.summary()

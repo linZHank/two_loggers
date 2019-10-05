@@ -53,8 +53,8 @@ class DoubleEscapeEnv(object):
         # init topic publisher
         self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
         self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=1)
-        self.set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
-        self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=100)
+        self.set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
+        self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=1)
         # init topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)

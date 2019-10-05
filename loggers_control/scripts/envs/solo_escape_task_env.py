@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Task environment for single logger escaping form the walled cell
+Task environment for single logger escaping from the walled cell
 """
 
 from __future__ import absolute_import, division, print_function
@@ -21,6 +21,7 @@ class SoloEscapeEnv(object):
     SoloEscape Class
     """
     def __init__(self):
+        rospy.init_node("solo_escape_task_env", anonymous=True, log_level=rospy.INFO)
         # simulation parameters
         self.rate = rospy.Rate(100)
         # environment parameters
@@ -43,7 +44,7 @@ class SoloEscapeEnv(object):
         self.pause_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         # topic publisher
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
-        self.set_robot_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=10)
+        self.set_robot_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
         # topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
 
