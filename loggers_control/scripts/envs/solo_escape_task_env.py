@@ -51,13 +51,13 @@ class SoloEscapeEnv(object):
     def pauseSim(self):
       rospy.wait_for_service("/gazebo/pause_physics")
       try:
-        self.pause()
+        self.pause_proxy()
       except rospy.ServiceException as e:
         rospy.logfatal("/gazebo/pause_physics service call failed")
     def unpauseSim(self):
       rospy.wait_for_service("/gazebo/unpause_physics")
       try:
-        self.unpause()
+        self.unpause_proxy()
       except rospy.ServiceException as e:
         rospy.logfatal("/gazebo/unpause_physics service call failed")
 
@@ -129,7 +129,7 @@ class SoloEscapeEnv(object):
             self.set_robot_state_pub.publish(robot_pose)
             self.rate.sleep()
         self._take_action(np.zeros(2))
-        rospy.logwarn("Logger was initialized at {}".format(robot_state))
+        rospy.logwarn("Logger was initialized at {}".format(robot_pose))
         # episode should not be done
         self._episode_done = False
         rospy.logdebug("End Initializing Robot\n")
