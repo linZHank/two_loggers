@@ -10,7 +10,7 @@ import random
 import rospy
 from std_srvs.srv import Empty
 
-from envs.solo_escape_task_env import SoloEscapeEnv
+from solo_escape_task_env import SoloEscapeEnv
 
 
 if __name__ == "__main__":

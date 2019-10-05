@@ -16,7 +16,7 @@ from utils import double_utils
 
 
 if __name__ == "__main__":
-    num_episodes = 10
+    num_episodes = 100
     num_steps = 100
 
     escaper = DoubleEscapeEnv()
