@@ -166,7 +166,6 @@ class DoubleEscapeEnv(object):
         Return:
             observation: {"log{"pose", "twist"}", logger0{"pose", "twist"}", logger1{"pose", "twist"}"}
         """
-        # model states
         rospy.logdebug("\nStart Getting Observation")
         link_states = self.link_states
         # the log
@@ -221,7 +220,7 @@ class DoubleEscapeEnv(object):
         """
         Set linear and angular speed for logger_0 and logger_1 to execute.
         Args:
-            action: 2 x np.array([v_lin,v_ang]).
+            action: 2x np.array([v_lin,v_ang]).
         """
         rospy.logdebug("\nStart Taking Actions")
         cmd_vel_0 = Twist()
@@ -253,12 +252,12 @@ class DoubleEscapeEnv(object):
         else:
             self.reward = -0.
             self._episode_done = False
-            rospy.logdebug("The log is trapped in the cell...")
+            rospy.loginfo("The log is trapped in the cell...")
         rospy.logdebug("Stepwise Reward: {}, Success Count: {}".format(self.reward, self.success_count))
         # check if steps out of range
         if self.steps > self.max_step:
             self._episode_done = True
-            rospy.logdebug("Step: {}, \nMax step reached, env will reset...".format(self.steps))
+            rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.steps))
         rospy.logdebug("End Computing Reward\n")
 
         return self.reward, self._episode_done

@@ -48,18 +48,18 @@ class SoloEscapeEnv(object):
         # topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
 
-    # def pauseSim(self):
-    #   rospy.wait_for_service("/gazebo/pause_physics")
-    #   try:
-    #     self.pause()
-    #   except rospy.ServiceException as e:
-    #     rospy.logfatal("/gazebo/pause_physics service call failed")
-    # def unpauseSim(self):
-    #   rospy.wait_for_service("/gazebo/unpause_physics")
-    #   try:
-    #     self.unpause()
-    #   except rospy.ServiceException as e:
-    #     rospy.logfatal("/gazebo/unpause_physics service call failed")
+    def pauseSim(self):
+      rospy.wait_for_service("/gazebo/pause_physics")
+      try:
+        self.pause()
+      except rospy.ServiceException as e:
+        rospy.logfatal("/gazebo/pause_physics service call failed")
+    def unpauseSim(self):
+      rospy.wait_for_service("/gazebo/unpause_physics")
+      try:
+        self.unpause()
+      except rospy.ServiceException as e:
+        rospy.logfatal("/gazebo/unpause_physics service call failed")
 
     def reset(self):
         """
@@ -70,10 +70,11 @@ class SoloEscapeEnv(object):
         self._take_action(np.zeros(2))
         self.reset_world()
         self._set_init()
+        self.pauseSim()
+        self.unpauseSim()
         obs = self._get_observation()
         info = self._post_information()
         self.steps = 0
-        rospy.logdebug("End Environment Reset\n")
         rospy.logwarn("\nEnvironment Reset!!!\n")
 
         return obs, info
@@ -95,35 +96,40 @@ class SoloEscapeEnv(object):
 
     def _set_init(self):
         """
-        Set initial condition for simulation
-        Set Logger at a random pose inside cell
+        Set initial condition for single logger, Set the logger at a random pose inside cell.
         Returns:
-        init_position: array([x, y])
+            init_position: array([x, y])
         """
         rospy.logdebug("\nStart Initializing Robot")
         # set logger initial pose, using pole coordinate
-        mag = random.uniform(0, 4.5) # robot vector magnitude
-        ang = random.uniform(-math.pi, math.pi) # robot vector orientation
-        x = mag * math.cos(ang)
-        y = mag * math.sin(ang)
-        theta = random.uniform(-np.pi, np.pi)
-        w = random.uniform(-1.0, 1.0)
-        robot_state = ModelState()
-        robot_state.model_name = "logger"
-        robot_state.pose.position.x = x
-        robot_state.pose.position.y = y
-        robot_state.pose.position.z = 0.2
-        robot_state.pose.orientation.x = 0
-        robot_state.pose.orientation.y = 0
-        robot_state.pose.orientation.z = np.sin(theta / 2.0)
-        robot_state.pose.orientation.w = np.cos(theta /2.0)
-        robot_state.reference_frame = "world"
+        def random_pose():
+            """
+            function of generating random pose inside cell
+            """
+            mag = random.uniform(0, 4.5) # robot vector magnitude
+            ang = random.uniform(-math.pi, math.pi) # robot vector orientation
+            x = mag * math.cos(ang)
+            y = mag * math.sin(ang)
+            theta = random.uniform(-np.pi, np.pi)
+            robot_pose = ModelState()
+            robot_pose.model_name = "logger"
+            robot_pose.pose.position.x = x
+            robot_pose.pose.position.y = y
+            robot_pose.pose.position.z = 0.2
+            robot_pose.pose.orientation.x = 0
+            robot_pose.pose.orientation.y = 0
+            robot_pose.pose.orientation.z = np.sin(theta / 2.0)
+            robot_pose.pose.orientation.w = np.cos(theta /2.0)
+            robot_pose.reference_frame = "world"
+
+            return robot_pose
+        robot_pose = random_pose()
         # Give the system a little time to finish initialization
         for _ in range(10):
-            self.set_robot_state_pub.publish(robot_state)
+            self.set_robot_state_pub.publish(robot_pose)
             self.rate.sleep()
         self._take_action(np.zeros(2))
-        rospy.logwarn("Robot was initialized at {}".format(robot_state))
+        rospy.logwarn("Logger was initialized at {}".format(robot_state))
         # episode should not be done
         self._episode_done = False
         rospy.logdebug("End Initializing Robot\n")
@@ -146,7 +152,7 @@ class SoloEscapeEnv(object):
             self.status = "west"
         elif self.observation["pose"].position.y > 4.79:
             self.status = "north"
-        elif -6<=self.observation["pose"].position.y < -4.79:
+        elif -6 <= self.observation["pose"].position.y < -4.79:
             if np.absolute(self.observation["pose"].position.x) > 1:
                 self.status = "south"
             else:
@@ -167,26 +173,25 @@ class SoloEscapeEnv(object):
         """
         Set linear and angular speed for logger to execute.
         Args:
-        action: np.array([v_lin, v_ang]).
+            action: np.array([v_lin, v_ang]).
         """
         rospy.logdebug("\nStart Taking Action")
         cmd_vel = Twist()
         cmd_vel.linear.x = action[0]
         cmd_vel.angular.z = action[1]
         for _ in range(10):
-          self.cmd_vel_pub.publish(cmd_vel)
-          self.rate.sleep()
+            self.cmd_vel_pub.publish(cmd_vel)
+            self.rate.sleep()
         self.action = action
-        rospy.logdebug("Action Taken ===> {}".format(cmd_vel))
+        rospy.logdebug("Logger take action ==> {}".format(cmd_vel))
         rospy.logdebug("End Taking Action\n")
 
     def _compute_reward(self):
         """
         Return:
-          reward: reward in current step
+            reward: reward in current step
         """
         rospy.logdebug("\nStart Computing Reward")
-        # status
         if self.status == "escaped":
             self.reward = 1
             self.success_count += 1
@@ -208,7 +213,7 @@ class SoloEscapeEnv(object):
     def _post_information(self):
         """
         Return:
-            info: {"status": "where the robot at"}
+            info: {"status"}
         """
         rospy.logdebug("\nStart Posting Information")
         self.info["status"] = self.status
