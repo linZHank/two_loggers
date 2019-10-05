@@ -11,7 +11,7 @@ import rospy
 from std_srvs.srv import Empty
 from geometry_msgs.msg import Pose, Twist
 
-from envs.double_escape_task_env import DoubleEscapeEnv
+from double_escape_task_env import DoubleEscapeEnv
 from utils import double_utils
 
 

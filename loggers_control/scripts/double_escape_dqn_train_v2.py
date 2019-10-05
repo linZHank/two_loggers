@@ -66,7 +66,7 @@ if __name__ == "__main__":
         # init returns and losses storage
         train_params['ep_returns'] = []
         agent_params_0['ep_losses'] = []
-        agent_params_0['ep_losses'] = []
+        agent_params_1['ep_losses'] = []
         # init random starting poses
         train_params['pose_buffer'] = double_utils.create_pose_buffer(train_params['num_episodes']+1)
         # init first episode and step
