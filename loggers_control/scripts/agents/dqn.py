@@ -43,12 +43,11 @@ class QMSE(keras.losses.Loss):
     """
     Mean Squared Error loss for Q-net
     """
-    def __init__(self, action):
-        super(QMSE, self).__init__()
-        self.action = action # one hot
+    def __init__(self, onehot_action, reduction=keras.losses.Reduction.AUTO, name='mean_squared_error_qvalues'):
+        super(QMSE, self).__init__(reduction=reduction, name=name)
+        self.onehot_action = onehot_action # one hot
     def call(self, y_true, y_pred):
-        y_pred = tf.math.reduce_sum(tf.math.multiply(y_pred, self.action),axis=-1)
-        return tf.math.reduce_mean(tf.square(y_pred - y_true))
+        return tf.math.reduce_mean(tf.square(tf.math.reduce_sum(tf.math.multiply(y_pred, self.onehot_action),axis=-1) - y_true))
 
 class DQNAgent:
     def __init__(self, params):
@@ -127,11 +126,15 @@ class DQNAgent:
         # sample a minibatch
         minibatch = self.replay_memory.sample_batch(self.batch_size)
         (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
-
+        # compute target Q
+        target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
+        # compile model
         self.qnet_active.compile(
             optimizer=keras.optimizers.Adam(),
             loss=QMSE(batch_actions),
             metrics=['accuracy','mae'])
+        # train an epoch
+        qnet_active.fit(state, target_q, epoch=1)
 
 
     def save_model(self, model_path):
