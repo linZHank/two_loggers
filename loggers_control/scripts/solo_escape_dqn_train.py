@@ -30,7 +30,7 @@ if __name__ == "__main__":
         complete_episodes = 0
         train_params = solo_utils.create_train_params(date_time, complete_episodes, args.source, args.normalize, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
         # init agent parameters
-        dim_state = len(double_utils.obs_to_state(env.observation, "all"))
+        dim_state = len(solo_utils.obs_to_state(env.observation))
         action = np.zeros(2)
         layer_sizes = [128]
         gamma = 0.99
@@ -53,15 +53,13 @@ if __name__ == "__main__":
         # init first episode and step
         obs, _ = env.reset()
         # train_params['pose_buffer'].append()
-        state= double_utils.obs_to_state(obs, "all")
+        state = solo_utils.obs_to_state(obs, "all")
         train_params['success_count'] = 0
         # new means and stds
-        mean_0 = state_0 # states average
-        std_0 = np.zeros(agent_params_0["dim_state"])+1e-8 # n*Var
-        mean_1 = state_1 # states average
-        std_1 = np.zeros(agent_params_1["dim_state"])+1e-8 # n*Var
+        mean = state # states average
+        std = np.zeros(agent_params_0["dim_state"])+1e-15 # n*Var
     else: # source is not empty, load params
-        model_load_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source
+        model_load_dir = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+args.source
         # load train parameters
         train_params_path = os.path.join(model_load_dir, "train_params.pkl")
         with open(train_params_path, 'rb') as f:
@@ -70,29 +68,105 @@ if __name__ == "__main__":
         train_params["date_time"] = date_time
         ep_returns = train_params['ep_returns']
         # load agents parameters
-        agent_params_path_0 = os.path.join(model_load_dir,"agent_0/agent0_parameters.pkl")
-        with open(agent_params_path_0, 'rb') as f:
-            agent_params_0 = pickle.load(f) # load agent_0 model
-        agent_params_path_1 = os.path.join(model_load_dir,"agent_1/agent1_parameters.pkl")
-        with open(agent_params_path_1, 'rb') as f:
-            agent_params_1 = pickle.load(f) # load agent_1 model
+        agent_params_path = os.path.join(model_load_dir,"agent/agent_parameters.pkl")
+        with open(agent_params_path, 'rb') as f:
+            agent_params = pickle.load(f) # load agent_0 model
         # load dqn models & memory buffers
-        agent_0 = DQNAgent(agent_params_0)
-        model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0/model.h5"
-        agent_0.load_model(os.path.join(model_load_dir, "agent_0/model.h5"))
-        agent_1 = DQNAgent(agent_params_1)
-        model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1/model.h5"
-        agent_1.load_model(os.path.join(model_load_dir, "agent_1/model.h5"))
-        # init robots from loaded pose buffer
+        agent = DQNAgent(agent_params)
+        model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
+        agent.load_model(os.path.join(model_load_dir, "agent/model.h5"))
+        # initialize robot from loaded pose buffer
         obs, _ = env.reset(train_params['pose_buffer'][train_params['complete_episodes']])
-        state_0 = double_utils.obs_to_state(obs, "all")
-        state_1 = double_utils.obs_to_state(obs, "all")
+        state = solo_utils.obs_to_state(obs)
         env.success_count = train_params['success_count']
         # load means and stds
-        mean_0 = agent_params_0['mean']
-        std_0 = agent_params_0['std']
-        mean_1 = agent_params_1['mean']
-        std_1 = agent_params_1['std']
+        mean = agent_params['mean']
+        std = agent_params['std']
+
+    # learning
+    start_time = time.time()
+    for ep in range(train_params['complete_episodes'], train_params['num_episodes']):
+        # check simulation crash
+        if sum(np.isnan(state)):
+            rospy.logfatal("Simulation Crashed")
+            train_params['complete_episodes'] = ep
+            break # terminate main loop if simulation crashed
+        epsilon = agent.linearly_decaying_epsilon(decay_period=agent_params['decay_period'], episode=ep)
+        rospy.logdebug("epsilon: {}".format(epsilon))
+        done, ep_rewards, loss_vals = False, [], []
+        for st in range(train_params['num_steps']):
+            # check simulation crash
+            if sum(np.isnan(state)):
+                rospy.logfatal("Simulation Crashed")
+                break # terminate main loop if simulation crashed
+            # normalize states
+            if train_params['normalize']:
+                norm_state = tf.utils.normalize(state, mean, std)
+                rospy.logdebug("State normalized from {} \nto {}".format(state, norm_state))
+            else:
+                norm_state = state
+            action_index = agent.epsilon_greedy(norm_state)
+            action = agent.actions[action_index]
+            # take an action
+            obs, rew, done, info = env.step(action)
+            next_state = solo_util.obs_to_state(obs)
+            # compute incremental mean and std
+            inc_mean = tf_utils.increment_mean(mean_, next_state, (ep+1)*(st+1)+1)
+            inc_std = tf_utils.increment_std(std, mean, inc_mean, next_state, (ep+1)*(st+1)+1)
+            # update mean and std
+            agent_params['mean'] = mean
+            agent['std'] = std
+            # normalize next state
+            if train_params['normalize']:
+                norm_next_state = tf_utils.normalize(next_state, mean, std)
+                rospy.logdebug("Next states normalized from {} \nto {}".format((next_state, norm_next_state)))
+            else:
+                norm_next_state = next_state
+            # adjust reward based on bonus args
+            rew, done = solo_utils.adjust_reward(train_params, env)
+            ep_rewards.append(rew)
+            train_params['success_count'] = env.success_count
+            rospy.logwarn(
+                "Episode: {}, Step: {}: \nstate: {}, action: {}, next state: {} \nreward/episodic_return: {}/{}, status: {}, succeeded: {}".format(
+                    ep+1,
+                    st+1,
+                    state,
+                    action,
+                    next_state,
+                    rew,
+                    sum(ep_rewards),
+                    info["status"],
+                    train_params['success_count']
+                )
+            )
+            # store transitions
+            if not info["status"] == "blew":
+                agent.replay_memory.store((norm_state, action_index, rew, done, norm_next_state))
+                print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
+            else:
+                print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
+            agent.train()
+            loss_vals.append(agent.loss_value)
+            state = next_state
+            agent_params['update_counter'] += 1
+            if not agent_params['update_counter'] % agent_params['update_step']:
+                agent.qnet_stable.set_weights(agent.qnet_active.get_weights())
+                rospy.logwarn("agent Q-net weights updated!")
+            if done:
+                train_params['complete_episodes'] += 1
+                break
+        train_params['ep_returns'].append(sum(ep_rewards))
+        agent_params['ep_losses'].append(sum(loss_vals)/len(loss_vals))
+        agent_0.save_model(model_path)
+        obs, _ = env.reset()
+        state = solo_utils.obs_to_state(obs)
+    # time
+    end_time = time.time()
+    train_dur = end_time - start_time
+
+
+
+
 
     agent_params = {}
     train_params = {}

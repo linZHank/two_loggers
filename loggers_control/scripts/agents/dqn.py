@@ -43,11 +43,11 @@ class QMSE(keras.losses.Loss):
     """
     Mean Squared Error loss for Q-net
     """
-    def __init__(self, onehot_action, reduction=keras.losses.Reduction.AUTO, name='mean_squared_error_qvalues'):
+    def __init__(self, action, depth, reduction=keras.losses.Reduction.AUTO, name='mean_squared_error_qvalues'):
         super(QMSE, self).__init__(reduction=reduction, name=name)
-        self.onehot_action = onehot_action # one hot
+        self.action = action # action indices
     def call(self, y_true, y_pred):
-        return tf.math.reduce_mean(tf.square(tf.math.reduce_sum(tf.math.multiply(y_pred, self.onehot_action),axis=-1) - y_true))
+        return tf.math.reduce_mean(tf.square(tf.math.reduce_sum(tf.math.multiply(y_pred, tf.one_hot(self.action, depth=depth),axis=-1) - y_true))
 
 class DQNAgent:
     def __init__(self, params):
@@ -131,7 +131,7 @@ class DQNAgent:
         # compile model
         self.qnet_active.compile(
             optimizer=keras.optimizers.Adam(),
-            loss=QMSE(batch_actions),
+            loss=QMSE(batch_actions, depth=len(self.actions)),
             metrics=['accuracy','mae'])
         # train an epoch
         qnet_active.fit(state, target_q, epoch=1)
