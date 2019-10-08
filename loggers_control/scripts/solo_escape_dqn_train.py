@@ -13,14 +13,16 @@ from datetime import datetime
 import numpy as np
 import tensorflow as tf
 import rospy
+import pickle
 
 from envs.solo_escape_task_env import SoloEscapeEnv
 from utils import data_utils, solo_utils, tf_utils
 from utils.data_utils import bcolors
 from agents.dqn import DQNAgent
+from agents import dqn
 
 if __name__ == "__main__":
-    # args = solo_utils.get_args()
+    args = solo_utils.get_args()
     # make an instance from env class
     env = SoloEscapeEnv()
     env.reset()
@@ -29,9 +31,9 @@ if __name__ == "__main__":
     if not args.source: # source is empty, create new params
         complete_episodes = 0
         train_params = solo_utils.create_train_params(date_time, complete_episodes, args.source, args.normalize, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
-        # init agent parameters
+        # agent parameters
         dim_state = len(solo_utils.obs_to_state(env.observation))
-        action = np.zeros(2)
+        actions = np.array([np.array([1, -1]), np.array([1, 1])])
         layer_sizes = [128]
         gamma = 0.99
         learning_rate = 3e-4
@@ -40,7 +42,7 @@ if __name__ == "__main__":
         update_step = 8192
         decay_period = args.num_episodes/4
         final_eps = 1e-2
-        agent_params = solo_utils.create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, final_eps)
+        agent_params = dqn.create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, final_eps)
         agent_params['update_counter'] = 0
         # instantiate new agents
         agent = DQNAgent(agent_params)
@@ -48,16 +50,13 @@ if __name__ == "__main__":
         # init returns and losses storage
         train_params['ep_returns'] = []
         agent_params['ep_losses'] = []
-        # init random starting poses
-        train_params['pose_buffer'] = []
         # init first episode and step
         obs, _ = env.reset()
-        # train_params['pose_buffer'].append()
-        state = solo_utils.obs_to_state(obs, "all")
+        state = solo_utils.obs_to_state(obs)
         train_params['success_count'] = 0
         # new means and stds
         mean = state # states average
-        std = np.zeros(agent_params_0["dim_state"])+1e-15 # n*Var
+        std = np.zeros(agent_params["dim_state"])+1e-15 # n*Var
     else: # source is not empty, load params
         model_load_dir = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+args.source
         # load train parameters
@@ -76,7 +75,7 @@ if __name__ == "__main__":
         model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
         agent.load_model(os.path.join(model_load_dir, "agent/model.h5"))
         # initialize robot from loaded pose buffer
-        obs, _ = env.reset(train_params['pose_buffer'][train_params['complete_episodes']])
+        obs, _ = env.reset()
         state = solo_utils.obs_to_state(obs)
         env.success_count = train_params['success_count']
         # load means and stds
@@ -109,13 +108,13 @@ if __name__ == "__main__":
             action = agent.actions[action_index]
             # take an action
             obs, rew, done, info = env.step(action)
-            next_state = solo_util.obs_to_state(obs)
+            next_state = solo_utils.obs_to_state(obs)
             # compute incremental mean and std
-            inc_mean = tf_utils.increment_mean(mean_, next_state, (ep+1)*(st+1)+1)
+            inc_mean = tf_utils.increment_mean(mean, next_state, (ep+1)*(st+1)+1)
             inc_std = tf_utils.increment_std(std, mean, inc_mean, next_state, (ep+1)*(st+1)+1)
             # update mean and std
             agent_params['mean'] = mean
-            agent['std'] = std
+            agent_params['std'] = std
             # normalize next state
             if train_params['normalize']:
                 norm_next_state = tf_utils.normalize(next_state, mean, std)
@@ -145,7 +144,9 @@ if __name__ == "__main__":
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
+            env.pauseSim()
             agent.train()
+            env.unpauseSim()
             loss_vals.append(agent.loss_value)
             state = next_state
             agent_params['update_counter'] += 1
@@ -157,7 +158,7 @@ if __name__ == "__main__":
                 break
         train_params['ep_returns'].append(sum(ep_rewards))
         agent_params['ep_losses'].append(sum(loss_vals)/len(loss_vals))
-        agent_0.save_model(model_path)
+        agent.save_model(model_path)
         obs, _ = env.reset()
         state = solo_utils.obs_to_state(obs)
     # time
@@ -168,79 +169,12 @@ if __name__ == "__main__":
 
 
 
-    agent_params = {}
-    train_params = {}
-    # agent parameters
-    agent_params["dim_state"] = len(solo_utils.obs_to_state(env.observation))
-    agent_params["actions"] = np.array([np.array([.5, -1]), np.array([.5, 1])])
-    agent_params["layer_size"] = [64,64]
-    agent_params["gamma"] = 0.99
-    agent_params["learning_rate"] = 3e-4
-    agent_params["batch_size"] = 2000
-    agent_params["memory_cap"] = 500000
-    agent_params["update_step"] = 10000
-    agent_params["model_path"] = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn_model/"+datetime.now().strftime("%Y-%m-%d-%H-%M")+"/model.ckpt"
-    # training params
-    train_params["num_episodes"] = 6000
-    train_params["num_steps"] = 256
-    train_params["time_bonus"] = True
-    train_params["dist_bonus"] = False
-    train_params["success_bonus"] = 10
-    train_params["wall_bonus"] = -1./100
-    train_params["door_bonus"] = 1./100
-    # instantiate agent
-    agent = DQNAgent(agent_params)
-    update_counter = 0
-    ep_returns = []
-    for ep in range(train_params["num_episodes"]):
-        epsilon = agent.epsilon_decay(ep, train_params["num_episodes"])
-        print("epsilon: {}".format(epsilon))
-        obs, _ = env.reset()
-        state_0 = solo_utils.obs_to_state(obs)
-        dist_0 = np.linalg.norm(state_0[:2]-np.array([0,-6.0001]))
-        done, ep_rewards = False, []
-        for st in range(train_params["num_steps"]):
-            act_id = agent.epsilon_greedy(state_0)
-            action = agent.actions[act_id]
-            obs, rew, done, info = env.step(action)
-            state_1 = solo_utils.obs_to_state(obs)
-            dist_1 = np.linalg.norm(state_1[:2]-np.array([0,-6.0001]))
-            agent.delta_dist = dist_0 - dist_1
-            # adjust reward based on bonus options
-            rew, done = solo_utils.adjust_reward(train_params, env, agent)
-            print(
-                bcolors.OKGREEN,
-                "Episode: {}, Step: {} \naction: {}->{}, state: {}, reward: {}, status: {}".format(
-                    ep,
-                    st,
-                    act_id,
-                    action,
-                    state_1,
-                    rew,
-                    info
-                ),
-                bcolors.ENDC
-            )
-            # store transition
-            agent.replay_memory.store((state_0, act_id, rew, done, state_1))
-            agent.train()
-            state_0 = state_1
-            ep_rewards.append(rew)
-            update_counter += 1
-            if not update_counter % agent.update_step:
-                agent.qnet_stable.set_weights(agent.qnet_active.get_weights())
-                print(bcolors.BOLD, "Q-net weights updated!", bcolors.ENDC)
-            if done:
-                break
-        ep_returns.append(sum(ep_rewards))
-        print(bcolors.OKBLUE, "Episode: {}, Success Count: {}".format(ep, env.success_count),bcolors.ENDC)
-        agent.save_model()
-        print("model saved at {}".format(agent.model_path))
-    # plot deposit returns
-    data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=agent_params["model_path"])
 
-    data_utils.save_pkl(content=agent_params, path=agent_params["model_path"], fname="agent_parameters.pkl")
-    # save results
-    train_info = train_params.update(agent_params)
-    train_info["success_count"] = env.success_count
-    data_utils.save_csv(content=train_info, path=agent_params["model_path"], fname="train_information.csv")
+    # plot deposit returns
+    # data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=agent_params["model_path"])
+    #
+    # data_utils.save_pkl(content=agent_params, path=agent_params["model_path"], fname="agent_parameters.pkl")
+    # # save results
+    # train_info = train_params.update(agent_params)
+    # train_info["success_count"] = env.success_count
+    # data_utils.save_csv(content=train_info, path=agent_params["model_path"], fname="train_information.csv")

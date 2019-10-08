@@ -2,20 +2,33 @@
 """
 Tools for solo escape tasks
 """
-import numpy as np
-import csv
-import pickle
-import tensorflow as tf
 import os
+import sys
+import numpy as np
+import tensorflow as tf
+import argparse
 from datetime import datetime
-import pickle
 import csv
+import pickle
 import matplotlib.pyplot as plt
 
 import rospy
 import tf
 from geometry_msgs.msg import Pose, Twist
 
+# make arg parser
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--datetime', type=str, default='')
+    parser.add_argument('--source', type=str, default='')
+    parser.add_argument('--num_episodes', type=int, default=20000)
+    parser.add_argument('--num_steps', type=int, default=400)
+    parser.add_argument('--normalize', action='store_true', default=False)
+    parser.add_argument('--time_bonus', type=float, default=0)
+    parser.add_argument('--wall_bonus', type=float, default=0)
+    parser.add_argument('--door_bonus', type=float, default=0)
+    parser.add_argument('--success_bonus', type=float, default=0)
+    return parser.parse_args()
 
 def obs_to_state(observation):
     """
@@ -85,3 +98,21 @@ def reward_to_go(ep_rewards):
     for i in reversed(range(n)):
         rtgs[i] = ep_rewards[i] + (rtgs[i+1] if i+1 < n else 0)
     return rtgs
+
+def create_train_params(date_time, complete_episodes, source, normalize, num_episodes, num_steps, time_bonus, wall_bonus, door_bonus, success_bonus):
+    """
+    Create training parameters dict based on args
+    """
+    train_params = {}
+    train_params["date_time"] = date_time
+    train_params['source'] = source
+    train_params['normalize'] = normalize
+    train_params['complete_episodes'] = complete_episodes
+    train_params["num_episodes"] = num_episodes
+    train_params["num_steps"] = num_steps
+    train_params["time_bonus"] = time_bonus
+    train_params["wall_bonus"] = wall_bonus
+    train_params["door_bonus"] = door_bonus
+    train_params["success_bonus"] = success_bonus
+
+    return train_params

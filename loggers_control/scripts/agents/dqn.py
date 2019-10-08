@@ -11,9 +11,29 @@ import logging
 
 from utils import data_utils
 from utils.data_utils import bcolors
+from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
+
+
+def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, final_eps):
+    """
+    Create agent parameters dict based on args
+    """
+    agent_params = {}
+    agent_params["dim_state"] = dim_state
+    agent_params["actions"] = actions
+    agent_params["layer_sizes"] = layer_sizes
+    agent_params["gamma"] = gamma
+    agent_params["learning_rate"] = learning_rate
+    agent_params["batch_size"] = batch_size
+    agent_params["memory_cap"] = memory_cap
+    agent_params["update_step"] = update_step
+    agent_params["decay_period"] = decay_period
+    agent_params['final_eps'] = final_eps
+
+    return agent_params
 
 class Memory:
     """
@@ -46,8 +66,11 @@ class QMSE(keras.losses.Loss):
     def __init__(self, action, depth, reduction=keras.losses.Reduction.AUTO, name='mean_squared_error_qvalues'):
         super(QMSE, self).__init__(reduction=reduction, name=name)
         self.action = action # action indices
+        self.depth = depth
     def call(self, y_true, y_pred):
-        return tf.math.reduce_mean(tf.square(tf.math.reduce_sum(tf.math.multiply(y_pred, tf.one_hot(self.action, depth=depth),axis=-1) - y_true))
+
+        return tf.math.reduce_mean(tf.square(tf.math.reduce_sum(tf.math.multiply(y_pred, tf.one_hot(self.action, depth=self.depth)),axis=-1)-y_true))
+
 
 class DQNAgent:
     def __init__(self, params):
@@ -134,8 +157,8 @@ class DQNAgent:
             loss=QMSE(batch_actions, depth=len(self.actions)),
             metrics=['accuracy','mae'])
         # train an epoch
-        qnet_active.fit(state, target_q, epoch=1)
-
+        self.qnet_active.fit(batch_states, target_q, batch_size=64, epochs=1)
+        self.loss_value = self.qnet_active.total_loss
 
     def save_model(self, model_path):
         self.qnet_active.summary()

@@ -162,6 +162,8 @@ class SoloEscapeEnv(object):
                     self.status = "tdoor" # through door
         elif self.observation["pose"].position.y < -6:
             self.status = "escaped"
+        elif self.observation['pose'].position.z > 0.25 or self.observation['pose'].position.z < 0.15:
+            self.status = "blew"
         else:
             self.status = "trapped"
         rospy.logdebug("Observation Get ==> {}".format(self.observation))
