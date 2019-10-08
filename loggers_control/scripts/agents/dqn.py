@@ -153,11 +153,11 @@ class DQNAgent:
         target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
         # compile model
         self.qnet_active.compile(
-            optimizer=keras.optimizers.Adam(),
+            optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate),
             loss=QMSE(batch_actions, depth=len(self.actions)),
             metrics=['accuracy','mae'])
         # train an epoch
-        self.qnet_active.fit(batch_states, target_q, batch_size=64, epochs=1)
+        self.qnet_active.fit(batch_states, target_q, batch_size=self.batch_size, epochs=1)
         self.loss_value = self.qnet_active.total_loss
 
     def save_model(self, model_path):

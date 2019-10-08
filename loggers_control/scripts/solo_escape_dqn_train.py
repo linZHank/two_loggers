@@ -25,6 +25,7 @@ if __name__ == "__main__":
     args = solo_utils.get_args()
     # make an instance from env class
     env = SoloEscapeEnv()
+    env.unpauseSim()
     env.reset()
     # create training parameters
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
@@ -36,7 +37,7 @@ if __name__ == "__main__":
         actions = np.array([np.array([1, -1]), np.array([1, 1])])
         layer_sizes = [128]
         gamma = 0.99
-        learning_rate = 3e-4
+        learning_rate = 1e-3
         batch_size = 2048
         memory_cap = 100000
         update_step = 8192
@@ -166,15 +167,26 @@ if __name__ == "__main__":
     train_dur = end_time - start_time
 
 
+    # save replay buffer memories
+    agent.save_memory(model_path)
+    # save agent parameters
+    data_utils.save_pkl(content=agent_params, fdir=os.path.dirname(model_path), fname="agent_parameters.pkl")
 
+    # save results
+    train_info = train_params
+    train_info["train_dur"] = train_dur
+    train_info["agent_learning_rate"] = agent_params["learning_rate"]
+    train_info["agent_state_dimension"] = agent_params["dim_state"]
+    train_info["agent_action_options"] = agent_params["actions"]
+    train_info["agent_layer_sizes"] = agent_params["layer_sizes"]
 
+    data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path)), fname="train_params.pkl")
+    data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path)), fname="train_information.csv")
 
-
-    # plot deposit returns
-    # data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True, path=agent_params["model_path"])
-    #
-    # data_utils.save_pkl(content=agent_params, path=agent_params["model_path"], fname="agent_parameters.pkl")
-    # # save results
-    # train_info = train_params.update(agent_params)
-    # train_info["success_count"] = env.success_count
-    # data_utils.save_csv(content=train_info, path=agent_params["model_path"], fname="train_information.csv")
+    # plot episodic returns
+    data_utils.plot_returns(returns=train_params['ep_returns'], mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path)))
+    # plot accumulated returns
+    data_utils.plot_returns(returns=train_params['ep_returns'], mode=1, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path)))
+    # plot averaged return
+    data_utils.plot_returns(returns=train_params['ep_returns'], mode=2, save_flag=True,
+    fdir=os.path.dirname(os.path.dirname(model_path)))
