@@ -59,18 +59,6 @@ class Memory:
 
         return zip(*batch)
 
-class QMSE(keras.losses.Loss):
-    """
-    Mean Squared Error loss for Q-net
-    """
-    def __init__(self, action, depth, reduction=keras.losses.Reduction.AUTO, name='mean_squared_error_qvalues'):
-        super(QMSE, self).__init__(reduction=reduction, name=name)
-        self.action = action # action indices
-        self.depth = depth
-    def call(self, y_true, y_pred):
-
-        return tf.math.reduce_mean(tf.square(tf.math.reduce_sum(tf.math.multiply(y_pred, tf.one_hot(self.action, depth=self.depth)),axis=-1)-y_true))
-
 
 class DQNAgent:
     def __init__(self, params):
