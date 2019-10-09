@@ -98,13 +98,6 @@ class DQNAgent:
         self.qnet_active = Model(inputs=inputs, outputs=outputs, name='qnet_model')
         # clone active Q-net to create stable Q-net
         self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
-        # optimizer
-        self.optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
-        # loss function
-        self.loss_fn = tf.keras.losses.MeanSquaredError()
-        # metrics
-        self.acc_metric = keras.metrics.Accuracy()
-        self.mse_metric = keras.metrics.MeanSquaredError()
         # init replay memory
         self.replay_memory = Memory(memory_cap=self.memory_cap)
 
@@ -138,31 +131,34 @@ class DQNAgent:
 
         return self.epsilon
 
+    # def loss(self, minibatch):
+    #     (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
+    #     loss_object = tf.keras.losses.MeanSquaredError()
+    #     q_values = tf.math.reduce_sum(tf.cast(self.qnet_active(batch_states), tf.float32) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
+    #     target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
+    #
+    #     return loss_object(y_true=target_q, y_pred=q_values)
+    #
+    # def grad(self, minibatch):
+    #     with tf.GradientTape() as tape:
+    #         loss_value = self.loss(minibatch)
+    #
+    #     return loss_value, tape.gradient(loss_value, self.qnet_active.trainable_variables)
+
     def train(self):
-        # sample a minibatch from
+        # sample a minibatch
         minibatch = self.replay_memory.sample_batch(self.batch_size)
         (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
-        # open a GradientTape to record the operations run during the forward pass
-        with tf.GradientTape() as tape:
-            # run forward pass
-            pred_q = tf.math.reduce_sum(tf.cast(self.qnet_active(batch_states), tf.float32) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
-            target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
-            # compute loss value
-            self.loss_value = self.loss_fn(y_true=target_q, y_pred=pred_q)
-        # use the gradient tape to automatically retrieve the gradients of the trainable variables with respect to the loss.
-        grads = tape.gradient(self.loss_value, self.qnet_active.trainable_weights)
-        # run one step of gradient descent
-        self.optimizer.apply_gradients(zip(grads, self.qnet_active.trainable_weights))
-        # update metrics
-        self.acc_metric(target_q, pred_q)
-        self.mse_metric(target_q, pred_q)
-        # display metrics
-        train_acc = self.acc_metric.result()
-        train_mse = self.mse_metric.result()
-        print("Training  accuracy: {}, \tTraining mse: {}".format(train_acc, train_mse))
-        # reset training metrics
-        self.acc_metric.reset_states()
-        self.mse_metric.reset_states()
+        # compute target Q
+        target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
+        # compile model
+        self.qnet_active.compile(
+            optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate),
+            loss=QMSE(batch_actions, depth=len(self.actions)),
+            metrics=['accuracy','mae'])
+        # train an epoch
+        self.qnet_active.fit(batch_states, target_q, batch_size=self.batch_size, epochs=1)
+        self.loss_value = self.qnet_active.total_loss
 
     def save_model(self, model_path):
         self.qnet_active.summary()
