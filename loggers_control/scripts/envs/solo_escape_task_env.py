@@ -106,20 +106,15 @@ class SoloEscapeEnv(object):
             """
             function of generating random pose inside cell
             """
-            mag = random.uniform(0, 4.5) # robot vector magnitude
-            ang = random.uniform(-math.pi, math.pi) # robot vector orientation
-            x = mag * math.cos(ang)
-            y = mag * math.sin(ang)
-            theta = random.uniform(-np.pi, np.pi)
             robot_pose = ModelState()
             robot_pose.model_name = "logger"
-            robot_pose.pose.position.x = x
-            robot_pose.pose.position.y = y
+            robot_pose.pose.position.x = random.uniform(-4.5, 4.5)
+            robot_pose.pose.position.y = random.uniform(-4.5, 4.5)
             robot_pose.pose.position.z = 0.2
             robot_pose.pose.orientation.x = 0
             robot_pose.pose.orientation.y = 0
-            robot_pose.pose.orientation.z = np.sin(theta / 2.0)
-            robot_pose.pose.orientation.w = np.cos(theta /2.0)
+            robot_pose.pose.orientation.z = np.sin(random.uniform(-np.pi, np.pi) / 2.0)
+            robot_pose.pose.orientation.w = np.cos(random.uniform(-np.pi, np.pi) / 2.0)
             robot_pose.reference_frame = "world"
 
             return robot_pose
