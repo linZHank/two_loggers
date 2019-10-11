@@ -11,53 +11,65 @@ from datetime import datetime
 import numpy as np
 import tensorflow as tf
 import rospy
+import pickle
 
 from envs.solo_escape_task_env import SoloEscapeEnv
 from utils import data_utils, solo_utils, tf_utils
 from utils.data_utils import bcolors
-from tensorflow.keras.layers import Dense
+from agents.dqn import DQNAgent
+from agents import dqn
 
 if __name__ == "__main__":
-    # Main really starts here
-    # start_time = time.time()
-    rospy.init_node("solo_escape_dqn_test", anonymous=True, log_level=rospy.INFO)
-    model_path = os.path.dirname(sys.path[0])+"/dqn_model/2019-04-30-22-17/model.ckpt"    # make an instance from env class
+    # instantiate an env
     env = SoloEscapeEnv()
     env.reset()
-    # hyper-parameters
-    hyp_param_path = os.path.join(os.path.dirname(model_path),"hyper_parameters.pkl")
-    with open(hyp_param_path, "rb") as f:
-        hyp_params = pickle.load(f)
-    dim_state = hyp_params["dim_state"]
-    actions = hyp_params["actions"]
-    num_episodes = 10
-    num_steps = 200
-    # qnet model
-    qnet = tf.keras.models.Sequential([
-        Dense(64, input_shape=(dim_state, ), activation='relu'),
-        Dense(64, activation='relu'),
-        Dense(len(actions))
-    ])
-    qnet.load_weights(model_path)
-    for ep in range(num_episodes):
+    # load agent parameters
+    model_dir = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/2019-10-09-11-05/"
+    params_path = os.path.join(model_dir,'agent/agent_parameters.pkl')
+    with open(params_path, 'rb') as f:
+        agent_params = pickle.load(f)
+    # load agent model
+    agent = DQNAgent(agent_params)
+    agent.load_model(os.path.join(model_dir, 'agent/model.h5'))
+    # evaluation params
+    num_episodes = 100
+    num_steps = 400
+    ep = 0
+    # start evaluating
+    while ep < num_episodes:
         obs, _ = env.reset()
         done = False
+        ep_rewards = []
         state = solo_utils.obs_to_state(obs)
         for st in range(num_steps):
-            # pick an action
-            act_id = np.argmax(qnet.predict(state.reshape(1,-1)))
-            action = actions[act_id]
-            obs, _, done,
-            # take the action
+            action_index = np.argmax(agent.qnet_active.predict(state.reshape(1,-1)))
+            action = agent_params["actions"][action_index]
             obs, rew, done, info = env.step(action)
-            state = solo_utils.obs_to_state(obs)
+            if info['status'] == "north" or info['status'] == "west" or info['status'] == "south" or info['status'] == "east" or info['status'] == "sdoor":
+                done = True
+            elif  info['status'] == "blew":
+                done = True
+                ep -= 1
+            next_state = solo_utils.obs_to_state(obs)
+            state = next_state
+            ep_rewards.append(rew)
             # logging
-            rospy.loginfo("Episode: {}, Step: {} \naction: {}, state: {}, done: {}".format(
-                ep+1,
-                st+1,
-                action,
-                state,
-                done
-            ))
+            rospy.logwarn(
+                "Episode: {}, Step: {}: \nstate: {}, action: {}, next state: {} \nreward/episodic_return: {}/{}, status: {}, succeeded: {}".format(
+                    ep+1,
+                    st+1,
+                    state,
+                    action,
+                    next_state,
+                    rew,
+                    sum(ep_rewards),
+                    info["status"],
+                    env.success_count
+                )
+            )
             if done:
+                ep += 1
                 break
+
+    print("Loggers succeeded escaping {} out of {}".format(env.success_count, num_episodes))
+    env.reset()
