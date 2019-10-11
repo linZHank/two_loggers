@@ -3,9 +3,9 @@
 
 ## Pre-requisites
 - Developing Environment
-[Ubuntu 16.04](http://releases.ubuntu.com/16.04/) or [Ubuntu 18.04](http://releases.ubuntu.com/18.04/)
-[ROS-Kinetic](http://wiki.ros.org/kinetic) or [ROS-Melodic](http://wiki.ros.org/melodic)
-[Python 2.7](https://www.python.org/download/releases/2.7/)
+[Ubuntu 16.04](http://releases.ubuntu.com/16.04/) or [Ubuntu 18.04](http://releases.ubuntu.com/18.04/),
+[ROS-Kinetic](http://wiki.ros.org/kinetic) or [ROS-Melodic](http://wiki.ros.org/melodic),
+[Python 2.7](https://www.python.org/download/releases/2.7/),
 [TensorFlow 2.0](https://www.tensorflow.org/)
 
 - Install gazebo_ros_pkgs
@@ -18,8 +18,8 @@ sudo apt-get install ros-kinetic-gazebo-ros-pkgs ros-kinetic-gazebo-ros-control
 cd ~/ros_ws/src
 git clone https://github.com/linZHank/two_loggers.git
 ```
-- Build these ROS packages (`loggers_description`, `loggers_gazebo`, `loggers_control`)
-> [Catkin Command Line Tools](https://catkin-tools.readthedocs.io/en/latest/) is recommanded to build this package
+- Build ROS packages (`loggers_description`, `loggers_gazebo`, `loggers_control`)
+> [Catkin Command Line Tools](https://catkin-tools.readthedocs.io/en/latest/) is recommanded to build the packages
 
 ``` console
 cd ~/ros_ws/
