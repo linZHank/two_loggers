@@ -35,6 +35,7 @@ if __name__ == "__main__":
     num_episodes = 100
     num_steps = 400
     ep = 0
+    init_pose_buffer = []
     # start evaluating
     while ep < num_episodes:
         obs, _ = env.reset()
