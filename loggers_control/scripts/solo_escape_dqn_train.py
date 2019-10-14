@@ -49,8 +49,8 @@ if __name__ == "__main__":
         agent = DQNAgent(agent_params)
         model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
         # init returns and losses storage
-        train_params['ep_returns'] = []
-        agent_params['ep_losses'] = []
+        ep_returns = []
+        ep_losses = []
         # init first episode and step
         obs, _ = env.reset()
         state = solo_utils.obs_to_state(obs)
@@ -66,7 +66,6 @@ if __name__ == "__main__":
             train_params = pickle.load(f)
         train_params['source'] = args.source
         train_params["date_time"] = date_time
-        ep_returns = train_params['ep_returns']
         # load agents parameters
         agent_params_path = os.path.join(model_load_dir,"agent/agent_parameters.pkl")
         with open(agent_params_path, 'rb') as f:
@@ -75,6 +74,8 @@ if __name__ == "__main__":
         agent = DQNAgent(agent_params)
         model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
         agent.load_model(os.path.join(model_load_dir, "agent/model.h5"))
+        ep_returns = np.load(os.path.join(model_load_dir, 'agent/ep_returns.npy')).tolist()
+        ep_losses = np.load(os.path.join(model_load_dir, 'agent/ep_losses.npy')).tolist()
         # initialize robot from loaded pose buffer
         obs, _ = env.reset()
         state = solo_utils.obs_to_state(obs)
@@ -145,9 +146,9 @@ if __name__ == "__main__":
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
-            env.pauseSim()
+            # env.pauseSim()
             agent.train()
-            env.unpauseSim()
+            # env.unpauseSim()
             loss_vals.append(agent.loss_value)
             state = next_state
             agent_params['update_counter'] += 1
@@ -157,31 +158,33 @@ if __name__ == "__main__":
             if done:
                 train_params['complete_episodes'] += 1
                 break
-        train_params['ep_returns'].append(sum(ep_rewards))
-        agent_params['ep_losses'].append(sum(loss_vals)/len(loss_vals))
+        ep_returns.append(sum(ep_rewards))
+        ep_losses.append(sum(loss_vals)/len(loss_vals))
         agent.save_model(model_path)
         obs, _ = env.reset()
         state = solo_utils.obs_to_state(obs)
     # time
     end_time = time.time()
-    train_dur = end_time - start_time
-
+    train_info['train_dur'] = end_time - start_time
+    env.pauseSim()
 
     # save replay buffer memories
     agent.save_memory(model_path)
     # save agent parameters
     data_utils.save_pkl(content=agent_params, fdir=os.path.dirname(model_path), fname="agent_parameters.pkl")
 
-    # save results
+    # save train info
     train_info = train_params
     train_info["train_dur"] = train_dur
     train_info["agent_learning_rate"] = agent_params["learning_rate"]
     train_info["agent_state_dimension"] = agent_params["dim_state"]
     train_info["agent_action_options"] = agent_params["actions"]
     train_info["agent_layer_sizes"] = agent_params["layer_sizes"]
-
-    data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path)), fname="train_params.pkl")
     data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path)), fname="train_information.csv")
+
+    # save results
+    np.save(os.path.join(os.path.dirname(model_path), 'ep_returns.npy'), ep_returns)
+    np.save(os.path.join(os.path.dirname(model_path), 'ep_losses.npy'), ep_losses)
 
     # plot episodic returns
     data_utils.plot_returns(returns=train_params['ep_returns'], mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path)))
