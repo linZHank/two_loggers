@@ -20,7 +20,7 @@ class SoloEscapeEnv(object):
     """
     SoloEscape Class
     """
-    def __init__(self):
+    def __init__(self, init_mode='corners'):
         rospy.init_node("solo_escape_task_env", anonymous=True, log_level=rospy.INFO)
         # simulation parameters
         self.rate = rospy.Rate(100)
@@ -29,6 +29,7 @@ class SoloEscapeEnv(object):
             pose=Pose(),
             twist=Twist()
         )
+        self.mode = init_mode
         self.action = np.zeros(2)
         self.info = dict(status="")
         self.reward = 0
@@ -101,24 +102,19 @@ class SoloEscapeEnv(object):
             init_position: array([x, y])
         """
         rospy.logdebug("\nStart Initializing Robot")
-        # set logger initial pose, using pole coordinate
-        def random_pose():
-            """
-            function of generating random pose inside cell
-            """
-            robot_pose = ModelState()
-            robot_pose.model_name = "logger"
+        robot_pose = ModelState()
+        robot_pose.model_name = "logger"
+        robot_pose.reference_frame = "world"
+        robot_pose.pose.position.z = 0.2
+        robot_pose.pose.orientation.z = np.sin(random.uniform(-np.pi, np.pi) / 2.0)
+        robot_pose.pose.orientation.w = np.cos(random.uniform(-np.pi, np.pi) / 2.0)
+        if self.mode == 'random':
             robot_pose.pose.position.x = random.uniform(-4.5, 4.5)
             robot_pose.pose.position.y = random.uniform(-4.5, 4.5)
-            robot_pose.pose.position.z = 0.2
-            robot_pose.pose.orientation.x = 0
-            robot_pose.pose.orientation.y = 0
-            robot_pose.pose.orientation.z = np.sin(random.uniform(-np.pi, np.pi) / 2.0)
-            robot_pose.pose.orientation.w = np.cos(random.uniform(-np.pi, np.pi) / 2.0)
-            robot_pose.reference_frame = "world"
+        elif self.mode == 'corners':
+            robot_pose.pose.position.x = np.random.choice([-4,4]) + random.uniform(-0.5,0.5)
+            robot_pose.pose.position.y = np.random.choice([-4,4]) + random.uniform(-0.5,0.5)
 
-            return robot_pose
-        robot_pose = random_pose()
         # Give the system a little time to finish initialization
         for _ in range(10):
             self.set_robot_state_pub.publish(robot_pose)
