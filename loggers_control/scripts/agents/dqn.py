@@ -17,7 +17,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 
 
-def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, final_eps):
+def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, init_eps, final_eps):
     """
     Create agent parameters dict based on args
     """
@@ -31,6 +31,7 @@ def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, b
     agent_params["memory_cap"] = memory_cap
     agent_params["update_step"] = update_step
     agent_params["decay_period"] = decay_period
+    agent_params['init_eps'] = init_eps
     agent_params['final_eps'] = final_eps
 
     return agent_params
@@ -91,7 +92,6 @@ class DQNAgent:
         # loss function
         self.loss_fn = tf.keras.losses.MeanSquaredError()
         # metrics
-        self.acc_metric = keras.metrics.Accuracy()
         self.mse_metric = keras.metrics.MeanSquaredError()
         # init replay memory
         self.replay_memory = Memory(memory_cap=self.memory_cap)
@@ -107,7 +107,7 @@ class DQNAgent:
             print(bcolors.WARNING, "Take a random action!", bcolors.ENDC)
             return np.random.randint(len(self.actions))
 
-    def linearly_decaying_epsilon(self, decay_period, episode, warmup_episodes=100, final_eps=0.005):
+    def linearly_decaying_epsilon(self, decay_period, episode, warmup_episodes=0, init_eps=1., final_eps=0.01):
         """
         Returns the current epsilon for the agent's epsilon-greedy policy. This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et al., 2015). The schedule is as follows:
             Begin at 1. until warmup_steps steps have been taken; then Linearly decay epsilon from 1. to final_eps in decay_period steps; and then Use epsilon from there on.
@@ -120,8 +120,8 @@ class DQNAgent:
             A float, the current epsilon value computed according to the schedule.
         """
         episodes_left = decay_period + warmup_episodes - episode
-        bonus = (1.0 - final_eps) * episodes_left / decay_period
-        bonus = np.clip(bonus, 0., 1.-final_eps)
+        bonus = (init_eps - final_eps) * episodes_left / decay_period
+        bonus = np.clip(bonus, 0., init_eps-final_eps)
         self.epsilon = final_eps + bonus
 
         return self.epsilon
@@ -142,14 +142,11 @@ class DQNAgent:
         # run one step of gradient descent
         self.optimizer.apply_gradients(zip(grads, self.qnet_active.trainable_weights))
         # update metrics
-        self.acc_metric(target_q, pred_q)
         self.mse_metric(target_q, pred_q)
         # display metrics
-        train_acc = self.acc_metric.result()
         train_mse = self.mse_metric.result()
-        print("Training  accuracy: {}, \tTraining mse: {}".format(train_acc, train_mse))
+        print(bcolors.OKGREEN, "Training mse: {}".format(train_mse), bcolors.ENDC)
         # reset training metrics
-        self.acc_metric.reset_states()
         self.mse_metric.reset_states()
 
     def save_model(self, model_path):

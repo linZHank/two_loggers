@@ -20,7 +20,7 @@ class SoloEscapeEnv(object):
     """
     SoloEscape Class
     """
-    def __init__(self, init_mode='corners'):
+    def __init__(self, init_mode='random'):
         rospy.init_node("solo_escape_task_env", anonymous=True, log_level=rospy.INFO)
         # simulation parameters
         self.rate = rospy.Rate(100)

@@ -27,7 +27,8 @@ if __name__ == "__main__":
     env = SoloEscapeEnv()
     env.unpauseSim()
     env.reset()
-    # create training parameters
+
+    # new training or continue training
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     if not args.source: # source is empty, create new params
         complete_episodes = 0
@@ -35,15 +36,16 @@ if __name__ == "__main__":
         # agent parameters
         dim_state = len(solo_utils.obs_to_state(env.observation))
         actions = np.array([np.array([1, -1]), np.array([1, 1])])
-        layer_sizes = [128]
+        layer_sizes = [128, 64]
         gamma = 0.99
         learning_rate = 1e-3
         batch_size = 2048
         memory_cap = 100000
         update_step = 8192
-        decay_period = args.num_episodes/4
+        decay_period = train_params['num_episodes']/3
+        init_eps = 1.
         final_eps = 1e-2
-        agent_params = dqn.create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, final_eps)
+        agent_params = dqn.create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, init_eps, final_eps)
         agent_params['update_counter'] = 0
         # instantiate new agents
         agent = DQNAgent(agent_params)
@@ -66,10 +68,14 @@ if __name__ == "__main__":
             train_params = pickle.load(f)
         train_params['source'] = args.source
         train_params["date_time"] = date_time
+        assert args.num_episodes <= train_params['num_episodes']
+        train_params['num_episodes'] = args.num_episodes
         # load agents parameters
         agent_params_path = os.path.join(model_load_dir,"agent/agent_parameters.pkl")
         with open(agent_params_path, 'rb') as f:
             agent_params = pickle.load(f) # load agent_0 model
+        agent_params['decay_period'] = train_params['num_episodes']-train_params['complete_episodes']
+        agent_params['init_eps'] = 0.5
         # load dqn models & memory buffers
         agent = DQNAgent(agent_params)
         model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
@@ -92,7 +98,7 @@ if __name__ == "__main__":
             rospy.logfatal("Simulation Crashed")
             train_params['complete_episodes'] = ep
             break # terminate main loop if simulation crashed
-        epsilon = agent.linearly_decaying_epsilon(decay_period=agent_params['decay_period'], episode=ep)
+        epsilon = agent.linearly_decaying_epsilon(decay_period=agent_params['decay_period'], episode=ep, init_eps=agent_params['init_eps'], final_eps=agent_params['final_eps'])
         rospy.logdebug("epsilon: {}".format(epsilon))
         done, ep_rewards, loss_vals = False, [], []
         for st in range(train_params['num_steps']):
@@ -126,20 +132,6 @@ if __name__ == "__main__":
             # adjust reward based on bonus args
             rew, done = solo_utils.adjust_reward(train_params, env)
             ep_rewards.append(rew)
-            train_params['success_count'] = env.success_count
-            rospy.logwarn(
-                "Episode: {}, Step: {}: \nstate: {}, action: {}, next state: {} \nreward/episodic_return: {}/{}, status: {}, succeeded: {}".format(
-                    ep+1,
-                    st+1,
-                    state,
-                    action,
-                    next_state,
-                    rew,
-                    sum(ep_rewards),
-                    info["status"],
-                    train_params['success_count']
-                )
-            )
             # store transitions
             if not info["status"] == "blew":
                 agent.replay_memory.store((norm_state, action_index, rew, done, norm_next_state))
@@ -152,11 +144,29 @@ if __name__ == "__main__":
             loss_vals.append(agent.loss_value)
             state = next_state
             agent_params['update_counter'] += 1
+            # log step
+            rospy.loginfo(
+                "Episode: {}, Step: {}, epsilon: {} \nstate: {}, action: {}, next state: {} \nreward/episodic_return: {}/{}, status: {}, number of success: {}".format(
+                    ep+1,
+                    st+1,
+                    agent.epsilon,
+                    state,
+                    action,
+                    next_state,
+                    rew,
+                    sum(ep_rewards),
+                    info["status"],
+                    env.success_count
+                )
+            )
             if not agent_params['update_counter'] % agent_params['update_step']:
                 agent.qnet_stable.set_weights(agent.qnet_active.get_weights())
-                rospy.logwarn("agent Q-net weights updated!")
+                rospy.loginfo("agent Q-net weights updated!")
             if done:
                 train_params['complete_episodes'] += 1
+                rospy.logwarn(
+                    "Episode {} summary \n---\ntotal steps: {}, consumed: {}".format(ep+1, st+1, time.time()-start_time)
+                )
                 break
         ep_returns.append(sum(ep_rewards))
         ep_losses.append(sum(loss_vals)/len(loss_vals))
@@ -164,24 +174,21 @@ if __name__ == "__main__":
         obs, _ = env.reset()
         state = solo_utils.obs_to_state(obs)
     # time
-    end_time = time.time()
-    train_info['train_dur'] = end_time - start_time
-    env.pauseSim()
+    env.pauseSim() # check sim time in gazebo window
 
     # save replay buffer memories
     agent.save_memory(model_path)
     # save agent parameters
     data_utils.save_pkl(content=agent_params, fdir=os.path.dirname(model_path), fname="agent_parameters.pkl")
-
     # save train info
     train_info = train_params
-    train_info["train_dur"] = train_dur
+    train_info['success_count'] = env.success_count
+    train_info['train_dur'] = time.time() - start_time
     train_info["agent_learning_rate"] = agent_params["learning_rate"]
     train_info["agent_state_dimension"] = agent_params["dim_state"]
     train_info["agent_action_options"] = agent_params["actions"]
     train_info["agent_layer_sizes"] = agent_params["layer_sizes"]
     data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path)), fname="train_information.csv")
-
     # save results
     np.save(os.path.join(os.path.dirname(model_path), 'ep_returns.npy'), ep_returns)
     np.save(os.path.join(os.path.dirname(model_path), 'ep_losses.npy'), ep_losses)
