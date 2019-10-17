@@ -165,7 +165,7 @@ if __name__ == "__main__":
             if done:
                 train_params['complete_episodes'] += 1
                 rospy.logwarn(
-                    "Episode {} summary \n---\ntotal steps: {}, consumed: {}".format(ep+1, st+1, time.time()-start_time)
+                    "Episode {} summary \n---\ntotal steps: {}, training consumed: {} seconds".format(ep+1, st+1, time.time()-start_time)
                 )
                 break
         ep_returns.append(sum(ep_rewards))
