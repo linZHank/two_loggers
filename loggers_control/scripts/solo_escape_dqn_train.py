@@ -49,7 +49,7 @@ if __name__ == "__main__":
         agent_params['update_counter'] = 0
         # instantiate new agents
         agent = DQNAgent(agent_params)
-        model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
+        model_path = sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
         # init returns and losses storage
         ep_returns = []
         ep_losses = []
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         agent_params['decay_period'] = train_params['num_episodes']-train_params['complete_episodes']
         # load dqn models & memory buffers
         agent = DQNAgent(agent_params)
-        model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
+        model_path = sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
         agent.load_model(os.path.join(model_load_dir, "agent/model.h5"))
         ep_returns = np.load(os.path.join(model_load_dir, 'agent/ep_returns.npy')).tolist()
         ep_losses = np.load(os.path.join(model_load_dir, 'agent/ep_losses.npy')).tolist()
