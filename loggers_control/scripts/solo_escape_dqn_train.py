@@ -63,19 +63,19 @@ if __name__ == "__main__":
     else: # source is not empty, load params
         model_load_dir = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+args.source
         # load train parameters
-        train_params_path = os.path.join(model_load_dir, "train_params.pkl")
+        train_params_path = os.path.join(model_load_dir, "train_parameters.pkl")
         with open(train_params_path, 'rb') as f:
             train_params = pickle.load(f)
         train_params['source'] = args.source
         train_params["date_time"] = date_time
-        assert args.num_episodes <= train_params['num_episodes']
-        train_params['num_episodes'] = args.num_episodes
         # load agents parameters
         agent_params_path = os.path.join(model_load_dir,"agent/agent_parameters.pkl")
         with open(agent_params_path, 'rb') as f:
             agent_params = pickle.load(f) # load agent_0 model
+        if args.num_episodes > train_params['num_episodes']: # continue from an ended training, else, continue from a crashed training
+            train_params['num_episodes'] = args.num_episodes
+            agent_params['init_eps'] = 0.5
         agent_params['decay_period'] = train_params['num_episodes']-train_params['complete_episodes']
-        agent_params['init_eps'] = 0.5
         # load dqn models & memory buffers
         agent = DQNAgent(agent_params)
         model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
@@ -108,7 +108,7 @@ if __name__ == "__main__":
                 break # terminate main loop if simulation crashed
             # normalize states
             if train_params['normalize']:
-                norm_state = tf.utils.normalize(state, mean, std)
+                norm_state = tf_utils.normalize(state, mean, std)
                 rospy.logdebug("State normalized from {} \nto {}".format(state, norm_state))
             else:
                 norm_state = state
@@ -180,6 +180,7 @@ if __name__ == "__main__":
     agent.save_memory(model_path)
     # save agent parameters
     data_utils.save_pkl(content=agent_params, fdir=os.path.dirname(model_path), fname="agent_parameters.pkl")
+    data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path)), fname="train_parameters.pkl")
     # save train info
     train_info = train_params
     train_info['success_count'] = env.success_count
@@ -194,9 +195,9 @@ if __name__ == "__main__":
     np.save(os.path.join(os.path.dirname(model_path), 'ep_losses.npy'), ep_losses)
 
     # plot episodic returns
-    data_utils.plot_returns(returns=train_params['ep_returns'], mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path)))
+    data_utils.plot_returns(returns=ep_returns, mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path)))
     # plot accumulated returns
-    data_utils.plot_returns(returns=train_params['ep_returns'], mode=1, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path)))
+    data_utils.plot_returns(returns=ep_returns, mode=1, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path)))
     # plot averaged return
-    data_utils.plot_returns(returns=train_params['ep_returns'], mode=2, save_flag=True,
+    data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True,
     fdir=os.path.dirname(os.path.dirname(model_path)))
