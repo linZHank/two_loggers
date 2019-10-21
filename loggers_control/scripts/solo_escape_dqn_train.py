@@ -21,6 +21,8 @@ from utils.data_utils import bcolors
 from agents.dqn import DQNAgent
 from agents import dqn
 
+import pdb
+
 if __name__ == "__main__":
     args = solo_utils.get_args()
     # make an instance from env class
@@ -30,6 +32,7 @@ if __name__ == "__main__":
 
     # new training or continue training
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
+    model_path = sys.path[0]+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
     if not args.source: # source is empty, create new params
         complete_episodes = 0
         train_params = solo_utils.create_train_params(date_time, complete_episodes, args.source, args.normalize, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
@@ -49,7 +52,6 @@ if __name__ == "__main__":
         agent_params['update_counter'] = 0
         # instantiate new agents
         agent = DQNAgent(agent_params)
-        model_path = sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
         # init returns and losses storage
         ep_returns = []
         ep_losses = []
@@ -75,10 +77,9 @@ if __name__ == "__main__":
         if args.num_episodes > train_params['num_episodes']: # continue from an ended training, else, continue from a crashed training
             train_params['num_episodes'] = args.num_episodes
             agent_params['init_eps'] = 0.5
-        agent_params['decay_period'] = train_params['num_episodes']-train_params['complete_episodes']
+        agent_params['decay_period'] = train_params['num_episodes']/3
         # load dqn models & memory buffers
         agent = DQNAgent(agent_params)
-        model_path = sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
         agent.load_model(os.path.join(model_load_dir, "agent/model.h5"))
         ep_returns = np.load(os.path.join(model_load_dir, 'agent/ep_returns.npy')).tolist()
         ep_losses = np.load(os.path.join(model_load_dir, 'agent/ep_losses.npy')).tolist()

@@ -1,0 +1,17 @@
+normalize,False
+date_time,2019-10-17-15-13
+complete_episodes,2256
+num_episodes,12800
+agent_state_dimension,7
+wall_bonus,0
+agent_learning_rate,0.001
+num_steps,400
+door_bonus,0
+source,
+agent_action_options,[[ 1 -1]
+ [ 1  1]]
+success_bonus,0
+success_count,120
+agent_layer_sizes,[128, 64]
+time_bonus,0
+train_dur,13897.5412591
