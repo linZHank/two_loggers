@@ -16,6 +16,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 
+logging.basicConfig(level=logging.INFO)
 
 def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, init_eps, final_eps):
     """
@@ -161,10 +162,12 @@ class DQNAgent:
 
     def load_model(self, model_path):
         self.qnet_active = tf.keras.models.load_model(model_path)
+        self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
+        logging.info("Q-Net model loaded")
         mem_path = os.path.join(os.path.dirname(model_path),'memory.pkl')
         with open(mem_path, 'rb') as f:
             self.replay_memory = pickle.load(f)
-            logging.debug("Replay Buffer Loaded")
+            logging.info("Replay Buffer Loaded")
         self.qnet_active.summary()
 
     def save_memory(self, model_path):
