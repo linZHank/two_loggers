@@ -45,7 +45,7 @@ if __name__ == "__main__":
         batch_size = 2048
         memory_cap = 100000
         update_step = 8192
-        decay_period = train_params['num_episodes']/3
+        decay_period = train_params['num_episodes']/2
         init_eps = 1.
         final_eps = 1e-2
         agent_params = dqn.create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, init_eps, final_eps)
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         if args.num_episodes > train_params['num_episodes']: # continue from an ended training, else, continue from a crashed training
             train_params['num_episodes'] = args.num_episodes
             agent_params['init_eps'] = 0.5
-        agent_params['decay_period'] = train_params['num_episodes']/3
+        agent_params['decay_period'] = train_params['num_episodes']/2
         # load dqn models & memory buffers
         agent = DQNAgent(agent_params)
         agent.load_model(os.path.join(model_load_dir, "agent/model.h5"))
