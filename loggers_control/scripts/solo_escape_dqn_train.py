@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     # new training or continue training
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    model_path = sys.path[0]+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
+    model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent/model.h5"
     if not args.source: # source is empty, create new params
         complete_episodes = 0
         train_params = solo_utils.create_train_params(date_time, complete_episodes, args.source, args.normalize, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
