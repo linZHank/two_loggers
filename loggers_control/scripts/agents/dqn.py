@@ -103,7 +103,7 @@ class DQNAgent:
         Else, return a random index
         """
         if np.random.rand() > self.epsilon:
-            return np.argmax(self.qnet_active.predict(state.reshape(1,-1)))
+            return np.argmax(self.qnet_active(state.reshape(1,-1)))
         else:
             print(bcolors.WARNING, "Take a random action!", bcolors.ENDC)
             return np.random.randint(len(self.actions))
@@ -128,7 +128,7 @@ class DQNAgent:
         return self.epsilon
 
     def train(self):
-        # sample a minibatch from
+        # sample a minibatch from replay buffer
         minibatch = self.replay_memory.sample_batch(self.batch_size)
         (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
         # open a GradientTape to record the operations run during the forward pass
