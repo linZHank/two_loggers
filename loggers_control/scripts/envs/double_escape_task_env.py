@@ -113,48 +113,44 @@ class DoubleEscapeEnv(object):
             init_pose: [rod{x, y, angle}, robot_0{th_0}, robot_1{th_1}], set to a random pose if empty
         """
         rospy.logdebug("\nStart Initializing Robots")
-        # set model initial pose
         model_state = ModelState()
         model_state.model_name = "two_loggers"
-        model_state.pose.position.x = init_pose[0]
-        model_state.pose.position.y = init_pose[1]
-        model_state.pose.position.z = 0.25
-        model_state.pose.orientation.x = 0
-        model_state.pose.orientation.y = 0
-        model_state.pose.orientation.z = math.sin(0.5*init_pose[2])
-        model_state.pose.orientation.w = math.cos(0.5*init_pose[2])
         model_state.reference_frame = "world"
-        # # set orientations for logger_0 and logger_1, by spinning them a little
-        # spin_vel_0 = random.choice([-2*np.pi, 2*np.pi])
-        # spin_vel_1 = random.choice([-2*np.pi, 2*np.pi])
-        # give the system a little time to set model
-        for _ in range(16):
-            self.set_model_state_pub.publish(model_state)
-            self.rate.sleep()
-        self._take_action(np.zeros(2), np.zeros(2)) # stablize model setting
-        # compute link_state for logger_0 and logger_1
-        link_states = self.link_states
-        link_name_0 = "two_loggers::link_chassis_0"
-        link_name_1 = "two_loggers::link_chassis_1"
-        link_state_0 = LinkState()
-        link_state_0.link_name = link_name_0
-        link_state_0.pose = link_states.pose[link_states.name.index(link_name_0)]
-        link_state_0.pose.orientation.z = math.sin(0.5*init_pose[3])
-        link_state_0.pose.orientation.w = math.cos(0.5*init_pose[3])
-        link_state_1 = LinkState()
-        link_state_1.link_name = link_name_1
-        link_state_1.pose = link_states.pose[link_states.name.index(link_name_1)]
-        link_state_1.pose.orientation.z = math.sin(0.5*init_pose[4])
-        link_state_1.pose.orientation.w = math.cos(0.5*init_pose[4])
-        # set orientation for both logger_0 and logger_1
-        for _ in range(16):
-            self.set_link_state_pub.publish(link_state_0)
-            self.set_link_state_pub.publish(link_state_1)
-            self.rate.sleep()
-        self._take_action(np.zeros(2), np.zeros(2)) # stablize link setting
-        # # spin robots a little then stop 'em
-        # self._take_action(np.array([0,spin_vel_0]), np.array([0,spin_vel_1]))
-        # self._take_action(np.zeros(2), np.zeros(2)) # stop spinning
+        model_state.pose.position.z = 0.25
+        if not init_pose:
+            # random initialize
+            pass
+        else:
+            model_state.pose.position.x = init_pose[0]
+            model_state.pose.position.y = init_pose[1]
+            model_state.pose.orientation.z = math.sin(0.5*init_pose[2])
+            model_state.pose.orientation.w = math.cos(0.5*init_pose[2])
+            # give the system a little time to set model
+            for _ in range(10):
+                self.set_model_state_pub.publish(model_state)
+                self.rate.sleep()
+            self._take_action(np.zeros(2), np.zeros(2)) # stablize model setting
+            # compute link_state for logger_0 and logger_1
+            link_states = self.link_states
+            link_name_0 = "two_loggers::link_chassis_0"
+            link_name_1 = "two_loggers::link_chassis_1"
+            link_state_0 = LinkState()
+            link_state_0.link_name = link_name_0
+            link_state_0.pose = link_states.pose[link_states.name.index(link_name_0)]
+            link_state_0.pose.orientation.z = math.sin(0.5*init_pose[3])
+            link_state_0.pose.orientation.w = math.cos(0.5*init_pose[3])
+            link_state_1 = LinkState()
+            link_state_1.link_name = link_name_1
+            link_state_1.pose = link_states.pose[link_states.name.index(link_name_1)]
+            link_state_1.pose.orientation.z = math.sin(0.5*init_pose[4])
+            link_state_1.pose.orientation.w = math.cos(0.5*init_pose[4])
+            # set orientation for both logger_0 and logger_1
+            for _ in range(10):
+                self.set_link_state_pub.publish(link_state_0)
+                self.set_link_state_pub.publish(link_state_1)
+                self.rate.sleep()
+        # stablize link setting
+        self._take_action(np.zeros(2), np.zeros(2))
         rospy.logdebug("\ntwo_loggers initialized at {} \nlogger_0 orientation: {} \nlogger_1 orientation".format(model_state, init_pose[3], init_pose[4]))
         # episode should not be done
         self._episode_done = False

@@ -20,7 +20,7 @@ class SoloEscapeEnv(object):
     """
     SoloEscape Class
     """
-    def __init__(self, init_mode='corners'):
+    def __init__(self):
         rospy.init_node("solo_escape_task_env", anonymous=True, log_level=rospy.INFO)
         # simulation parameters
         self.rate = rospy.Rate(100)
@@ -29,7 +29,6 @@ class SoloEscapeEnv(object):
             pose=Pose(),
             twist=Twist()
         )
-        self.mode = init_mode
         self.action = np.zeros(2)
         self.info = dict(status="")
         self.reward = 0
@@ -95,7 +94,7 @@ class SoloEscapeEnv(object):
 
         return obs, reward, done, info
 
-    def _set_init(self):
+    def _set_init(self, init_pose):
         """
         Set initial condition for single logger, Set the logger at a random pose inside cell.
         Returns:
@@ -106,14 +105,14 @@ class SoloEscapeEnv(object):
         robot_pose.model_name = "logger"
         robot_pose.reference_frame = "world"
         robot_pose.pose.position.z = 0.2
-        robot_pose.pose.orientation.z = np.sin(random.uniform(-np.pi, np.pi) / 2.0)
-        robot_pose.pose.orientation.w = np.cos(random.uniform(-np.pi, np.pi) / 2.0)
-        if self.mode == 'random':
+        if not init_pose:
+            # inialize randomly
+            robot_pose.pose.orientation.z = np.sin(random.uniform(-np.pi, np.pi) / 2.0)
+            robot_pose.pose.orientation.w = np.cos(random.uniform(-np.pi, np.pi) / 2.0)
             robot_pose.pose.position.x = random.uniform(-4.5, 4.5)
             robot_pose.pose.position.y = random.uniform(-4.5, 4.5)
-        elif self.mode == 'corners':
-            robot_pose.pose.position.x = np.random.choice([-4,4]) + random.uniform(-0.5,0.5)
-            robot_pose.pose.position.y = np.random.choice([-4,4]) + random.uniform(-0.5,0.5)
+        else:
+            pass
 
         # Give the system a little time to finish initialization
         for _ in range(10):
