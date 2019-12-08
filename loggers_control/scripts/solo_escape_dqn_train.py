@@ -27,7 +27,6 @@ if __name__ == "__main__":
     args = solo_utils.get_args()
     # make an instance from env class
     env = SoloEscapeEnv()
-    env.unpauseSim()
     env.reset()
 
     # new training or continue training
@@ -139,9 +138,7 @@ if __name__ == "__main__":
                 print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
             else:
                 print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
-            # env.pauseSim()
             agent.train()
-            # env.unpauseSim()
             loss_vals.append(agent.loss_value)
             state = next_state
             agent_params['update_counter'] += 1
@@ -175,7 +172,6 @@ if __name__ == "__main__":
         obs, _ = env.reset()
         state = solo_utils.obs_to_state(obs)
     # time
-    env.pauseSim() # check sim time in gazebo window
 
     # save replay buffer memories
     agent.save_memory(model_path)
