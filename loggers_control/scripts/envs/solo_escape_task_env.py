@@ -6,9 +6,10 @@ Task environment for single logger escaping from the walled cell
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-import math
-import random
+from numpy import pi
+from numpy import random
 import time
+
 import rospy
 import tf
 from std_srvs.srv import Empty
@@ -51,14 +52,14 @@ class SoloEscapeEnv(object):
         # topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
 
-    def pauseSim(self):
+    def pausePhysics(self):
         rospy.wait_for_service("/gazebo/pause_physics")
         try:
             self.pause_proxy()
         except rospy.ServiceException as e:
             rospy.logfatal("/gazebo/pause_physics service call failed")
 
-    def unpauseSim(self):
+    def unpausePhysics(self):
         rospy.wait_for_service("/gazebo/unpause_physics")
         try:
             self.unpause_proxy()
@@ -86,24 +87,24 @@ class SoloEscapeEnv(object):
         except rospy.ServiceException as e:
             rospy.logfatal("Service call failed: {}".format(e))
 
-    def reset(self):
+    def reset(self, init_pose=[]):
         """
         Reset environment
         obs, info = env.reset()
         """
         rospy.logdebug("\nStart Environment Reset")
         self._take_action(np.zeros(2))
-        self.pauseSim()
-        self.unpauseSim()
+        self.pausePhysics()
+        self.unpausePhysics()
         self.resetWorld()
-        self._set_init()
+        self._set_init(init_pose)
         self._take_action(np.zeros(2))
-        self.pauseSim()
-        self.unpauseSim()
+        self.pausePhysics()
+        self.unpausePhysics()
         obs = self._get_observation()
         info = self._post_information()
         self.steps = 0
-        rospy.logwarn("\nEnvironment Reset!!!\n")
+        rospy.logerr("\nEnvironment Reset!!!\n")
 
         return obs, info
 
@@ -122,11 +123,11 @@ class SoloEscapeEnv(object):
 
         return obs, reward, done, info
 
-    def _set_init(self):
+    def _set_init(self, init_pose):
         """
         Set initial condition for single logger, Set the logger at a random pose inside cell.
-        Returns:
-            init_position: array([x, y])
+        Args:
+            init_pose: [x, y, theta]
         """
         rospy.logdebug("\nStart Initializing Robot")
         robot_pose = ModelState()
@@ -134,18 +135,21 @@ class SoloEscapeEnv(object):
         robot_pose.reference_frame = "world"
         robot_pose.pose.position.z = 0.2
         # inialize randomly
-        robot_pose.pose.orientation.z = np.sin(random.uniform(-np.pi, np.pi) / 2.0)
-        robot_pose.pose.orientation.w = np.cos(random.uniform(-np.pi, np.pi) / 2.0)
-        robot_pose.pose.position.x = random.uniform(-4.5, 4.5)
-        robot_pose.pose.position.y = random.uniform(-4.5, 4.5)
+        if not init_pose:
+            robot_pose.pose.position.x = random.uniform(-4.5, 4.5)
+            robot_pose.pose.position.y = random.uniform(-4.5, 4.5)
+            quat = tf.transformations.quaternion_from_euler(0, 0, random.uniform(-pi, pi))
+            robot_pose.pose.orientation.z = quat[2]
+            robot_pose.pose.orientation.w = quat[3]
+        else:
+            assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
+            robot_pose.pose.position.x = init_pose[0]
+            robot_pose.pose.position.y = init_pose[1]
+            quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
+            robot_pose.pose.orientation.z = quat[2]
+            robot_pose.pose.orientation.w = quat[3]
         # call '/gazebo/set_model_state' service
         self.setModelState(model_state=robot_pose)
-
-        # # Give the system a little time to finish initialization
-        # for _ in range(10):
-        #     self.set_robot_state_pub.publish(robot_pose)
-        #     self.rate.sleep()
-        # self._take_action(np.zeros(2))
         rospy.logwarn("Logger was initialized at {}".format(robot_pose))
         # episode should not be done
         self._episode_done = False
