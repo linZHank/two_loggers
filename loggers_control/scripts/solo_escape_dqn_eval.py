@@ -24,7 +24,7 @@ if __name__ == "__main__":
     env = SoloEscapeEnv()
     env.reset()
     # load agent parameters
-    model_dir = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/2019-10-24-17-18/"
+    model_dir = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/2019-10-21-14-52/"
     params_path = os.path.join(model_dir,'agent/agent_parameters.pkl')
     with open(params_path, 'rb') as f:
         agent_params = pickle.load(f)

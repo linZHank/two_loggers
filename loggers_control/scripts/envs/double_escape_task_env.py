@@ -5,12 +5,14 @@ Task environment for two loggers escaping from the walled cell, cooperatively.
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-import math
-import random
+from numpy import pi
+from numpy import random
 import time
+
 import rospy
 import tf
 from std_srvs.srv import Empty
+from gazebo_msgs.srv import SetModelState, SetLinkState
 from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
 
@@ -47,31 +49,54 @@ class DoubleEscapeEnv(object):
         self.model_states = ModelStates()
         self.link_states = LinkStates()
         # services
-        self.reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
-        self.pause_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
-        self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
+        self.reset_world_proxy = rospy.ServiceProxy('/gazebo/reset_world', Empty)
+        self.reset_simulation_proxy = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
+        self.unpause_physics_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
+        self.pause_physics_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
+        self.set_model_state_proxy = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
         # topic publisher
         self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
         self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=1)
-        self.set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
-        self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=1)
+        # self.set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
+        # self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=1)
         # topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)
 
-    def pauseSim(self):
+    def pausePhysics(self):
         rospy.wait_for_service("/gazebo/pause_physics")
         try:
-            self.pause_proxy()
+            self.pause_physics_proxy()
         except rospy.ServiceException as e:
             rospy.logfatal("/gazebo/pause_physics service call failed")
 
-    def unpauseSim(self):
+    def unpausePhysics(self):
         rospy.wait_for_service("/gazebo/unpause_physics")
         try:
-            self.unpause_proxy()
+            self.unpause_physics_proxy()
         except rospy.ServiceException as e:
             rospy.logfatal("/gazebo/unpause_physics service call failed")
+
+    def resetSimulation(self):
+        rospy.wait_for_service("/gazebo/reset_simulation")
+        try:
+            self.reset_simulation_proxy()
+        except rospy.ServiceException as e:
+            rospy.logfatal("/gazebo/reset_simulation service call failed")
+
+    def resetWorld(self):
+        rospy.wait_for_service("/gazebo/reset_world")
+        try:
+            self.reset_world_proxy()
+        except rospy.ServiceException as e:
+            rospy.logfatal("/gazebo/reset_world service call failed")
+
+    def setModelState(self, model_state):
+        rospy.wait_for_service('/gazebo/set_model_state')
+        try:
+            self.set_model_state_proxy(model_state)
+        except rospy.ServiceException as e:
+            rospy.logfatal("Service call failed: {}".format(e))
 
     def reset(self, init_pose=[0,0,0,0,0]):
         """

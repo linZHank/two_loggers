@@ -43,26 +43,25 @@ class SoloEscapeEnv(object):
         # services
         self.reset_world_proxy = rospy.ServiceProxy('/gazebo/reset_world', Empty)
         self.reset_simulation_proxy = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
-        self.unpause_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
-        self.pause_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
+        self.unpause_physics_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
+        self.pause_physics_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.set_model_state_proxy = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
         # topic publisher
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
-        self.set_robot_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
         # topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
 
     def pausePhysics(self):
         rospy.wait_for_service("/gazebo/pause_physics")
         try:
-            self.pause_proxy()
+            self.pause_physics_proxy()
         except rospy.ServiceException as e:
             rospy.logfatal("/gazebo/pause_physics service call failed")
 
     def unpausePhysics(self):
         rospy.wait_for_service("/gazebo/unpause_physics")
         try:
-            self.unpause_proxy()
+            self.unpause_physics_proxy()
         except rospy.ServiceException as e:
             rospy.logfatal("/gazebo/unpause_physics service call failed")
 
@@ -93,14 +92,7 @@ class SoloEscapeEnv(object):
         obs, info = env.reset()
         """
         rospy.logdebug("\nStart Environment Reset")
-        self._take_action(np.zeros(2))
-        self.pausePhysics()
-        self.unpausePhysics()
-        self.resetWorld()
         self._set_init(init_pose)
-        self._take_action(np.zeros(2))
-        self.pausePhysics()
-        self.unpausePhysics()
         obs = self._get_observation()
         info = self._post_information()
         self.steps = 0
@@ -130,18 +122,21 @@ class SoloEscapeEnv(object):
             init_pose: [x, y, theta]
         """
         rospy.logdebug("\nStart Initializing Robot")
+        # prepare
+        self._take_action(np.zeros(2))
+        self.pausePhysics()
+        self.resetWorld()
         robot_pose = ModelState()
         robot_pose.model_name = "logger"
         robot_pose.reference_frame = "world"
         robot_pose.pose.position.z = 0.2
-        # inialize randomly
-        if not init_pose:
+        if not init_pose: # inialize randomly
             robot_pose.pose.position.x = random.uniform(-4.5, 4.5)
             robot_pose.pose.position.y = random.uniform(-4.5, 4.5)
             quat = tf.transformations.quaternion_from_euler(0, 0, random.uniform(-pi, pi))
             robot_pose.pose.orientation.z = quat[2]
             robot_pose.pose.orientation.w = quat[3]
-        else:
+        else: # inialize accordingly
             assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
             robot_pose.pose.position.x = init_pose[0]
             robot_pose.pose.position.y = init_pose[1]
@@ -150,7 +145,9 @@ class SoloEscapeEnv(object):
             robot_pose.pose.orientation.w = quat[3]
         # call '/gazebo/set_model_state' service
         self.setModelState(model_state=robot_pose)
-        rospy.logwarn("Logger was initialized at {}".format(robot_pose))
+        rospy.logdebug("Logger was initialized at {}".format(robot_pose))
+        self.unpausePhysics()
+        self._take_action(np.zeros(2))
         # episode should not be done
         self._episode_done = False
         rospy.logdebug("End Initializing Robot\n")
