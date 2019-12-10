@@ -135,8 +135,8 @@ class SoloEscapeEnv(object):
             init_pose.append(random.uniform(-4.5, 4.5))
             init_pose.append(random.uniform(-pi, pi))
         else: # inialize accordingly
-            assert np.absolute(init_pose[0]) > 4.5
-            assert np.absolute(init_pose[1]) > 4.5
+            assert np.absolute(init_pose[0]) <= 4.5
+            assert np.absolute(init_pose[1]) <= 4.5
             assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
         quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
         robot_pose.pose.position.x = init_pose[0]
