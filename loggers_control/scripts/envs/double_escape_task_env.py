@@ -4,9 +4,13 @@ Task environment for two loggers escaping from the walled cell, cooperatively.
 """
 from __future__ import absolute_import, division, print_function
 
+import sys
+from os import sys, path
+
 import numpy as np
 from numpy import pi
 from numpy import random
+import math
 import time
 
 import rospy
@@ -16,8 +20,81 @@ from gazebo_msgs.srv import SetModelState, SetLinkState
 from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
 
-from utils.double_utils import gen_random_pose
+# sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+# import utils
+# from utils import double_utils
 
+
+def generate_random_pose(num_poses=1):
+    """
+    generate a random rod pose in the room
+    with center at (0, 0), width 10 meters and depth 10 meters.
+    The robot has 0.2 meters as radius
+    Args:
+        num_poses: int number of poses going to be created
+    Returns:
+        pose_vectors: list of pose vectors, [[x1,y1,th1],[x2,y2,th2],...,[xn,yn,thn]]
+    """
+    def angleRange(x, y, room, L):
+        """
+        Compute rod angle based on a given robot position
+        """
+        min = 0
+        max = 0
+        dMinX = abs(x-room[0])
+        dMaxX = abs(x-room[1])
+        dMinY = abs(y-room[2])
+        dMaxY = abs(y-room[3])
+        if dMinX < L:
+            if dMinY < L:
+                min = -0.5*math.pi+math.acos(dMinY/L)
+                max = math.pi-math.acos(dMinX/L)
+            elif dMaxY < L:
+                min = -math.pi+math.acos(dMinX/L)
+                max = 0.5*math.pi-math.acos(dMaxY/L)
+            else:
+                min = -math.pi + math.acos(dMinX/L)
+                max = math.pi-math.acos(dMinX/L)
+        elif dMaxX < L:
+            if dMinY < L:
+                min = math.acos(dMaxX/L)
+                max = 1.5*math.pi-math.acos(dMinY/L)
+            elif dMaxY < L:
+                min = 0.5*math.pi+math.acos(dMaxY/L)
+                max = 2*math.pi-math.acos(dMaxX/L)
+            else:
+                min = math.acos(dMaxX/L)
+                max = 2*math.pi-math.acos(dMaxX/L)
+        else:
+            if dMinY < L:
+                min = -0.5*math.pi+math.acos(dMinY/L)
+                max = 1.5*math.pi-math.acos(dMinY/L)
+            elif dMaxY < L:
+                min = 0.5*math.pi+math.acos(dMaxY/L)
+                max = 2.5*math.pi-math.acos(dMaxY/L)
+            else:
+                min = -math.pi
+                max = math.pi
+        return min, max
+
+    random_pose = []
+    mag = 4.5
+    len_rod = 2
+    room = [-mag, mag, -mag, mag] # create a room with boundary
+    # randomize robot position
+    rx = random.uniform(-mag, mag)
+    ry = random.uniform(-mag, mag)
+    # randomize rod pose
+    min_angle, max_angle = angleRange(rx, ry, room, len_rod)
+    angle = random.uniform(min_angle, max_angle)
+    x = rx + 0.5*len_rod*math.cos(angle)
+    y = ry + 0.5*len_rod*math.sin(angle)
+    # randomize robots orientation
+    th_0 = random.uniform(-math.pi, math.pi)
+    th_1 = random.uniform(-math.pi, math.pi)
+    random_pose = [x, y, angle, th_0, th_1]
+
+    return random_pose
 
 class DoubleEscapeEnv(object):
     """
@@ -108,7 +185,7 @@ class DoubleEscapeEnv(object):
         except rospy.ServiceException as e:
             rospy.logfatal("Service call failed: {}".format(e))
 
-    def reset(self, init_pose=[0,0,0,0,0]):
+    def reset(self, init_pose=[]):
         """
         Reset environment function
         obs, info = env.reset()
@@ -154,18 +231,20 @@ class DoubleEscapeEnv(object):
         rod_state.reference_frame = "world"
         rod_state.pose.position.z = 0.245
         if not init_pose: # random initialize
-            init_pose = gen_random_pose()
+            init_pose = generate_random_pose()
         else:
             assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
             assert -pi<=init_pose[3]<= pi
             assert -pi<=init_pose[4]<= pi
+        quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
         rod_state.pose.position.x = init_pose[0]
         rod_state.pose.position.y = init_pose[1]
-        quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
         rod_state.pose.orientation.z = quat[2]
         rod_state.pose.orientation.w = quat[3]
         # call '/gazebo/set_model_state' service
-        self.setModelState(model_state=model_state)
+        print("init_pose: {}".format(init_pose))
+        self.setModelState(model_state=rod_state)
+        rospy.logdebug("two-logges was initialized at {}".format(rod_state))
         self.unpausePhysics()
         link_states = self.link_states
         self.pausePhysics()
@@ -191,7 +270,7 @@ class DoubleEscapeEnv(object):
         self.setLinkState(link_state=robot1_state)
         self.unpausePhysics()
         self._take_action(np.zeros(2), np.zeros(2))
-        rospy.logdebug("\ntwo_loggers initialized at {} \nlogger_0 orientation: {} \nlogger_1 orientation".format(model_state, init_pose[3], init_pose[4]))
+        rospy.logdebug("\ntwo_loggers initialized at {} \nlogger_0 orientation: {} \nlogger_1 orientation".format(rod_state, init_pose[3], init_pose[4]))
         # episode should not be done
         self._episode_done = False
         rospy.logdebug("End Initializing Robots\n")

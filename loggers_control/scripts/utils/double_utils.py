@@ -131,7 +131,7 @@ def adjust_reward(train_params, env):
 
     return adj_reward, done
 
-def gen_random_pose(num_poses=1):
+def random_pose_buffer(num_poses=1):
     """
     generate a random rod pose in the room
     with center at (0, 0), width 10 meters and depth 10 meters.
