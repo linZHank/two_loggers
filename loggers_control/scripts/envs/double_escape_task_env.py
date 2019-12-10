@@ -25,15 +25,13 @@ from geometry_msgs.msg import Pose, Twist
 # from utils import double_utils
 
 
-def generate_random_pose(num_poses=1):
+def generate_random_pose():
     """
     generate a random rod pose in the room
     with center at (0, 0), width 10 meters and depth 10 meters.
     The robot has 0.2 meters as radius
-    Args:
-        num_poses: int number of poses going to be created
     Returns:
-        pose_vectors: list of pose vectors, [[x1,y1,th1],[x2,y2,th2],...,[xn,yn,thn]]
+        random_pose
     """
     def angleRange(x, y, room, L):
         """
@@ -137,8 +135,6 @@ class DoubleEscapeEnv(object):
         # topic publisher
         self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
         self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=1)
-        # self.set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
-        # self.set_link_state_pub = rospy.Publisher("/gazebo/set_link_state", LinkState, queue_size=1)
         # topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)
@@ -295,7 +291,6 @@ class DoubleEscapeEnv(object):
         id_logger_1 = link_states.name.index("two_loggers::link_chassis_1")
         self.observation["logger_1"]["pose"] = link_states.pose[id_logger_1]
         self.observation["logger_1"]["twist"] = link_states.twist[id_logger_1]
-        # env status
         # compute status
         if self.observation["logger_0"]["pose"].position.x > 4.79 or self.observation["logger_1"]["pose"].position.x > 4.79:
             self.status = "east"
@@ -344,10 +339,8 @@ class DoubleEscapeEnv(object):
         cmd_vel_1 = Twist()
         cmd_vel_1.linear.x = action_1[0]
         cmd_vel_1.angular.z = action_1[1]
-        for _ in range(10):
-            self.cmdvel0_pub.publish(cmd_vel_0)
-            self.cmdvel1_pub.publish(cmd_vel_1)
-            self.rate.sleep()
+        self.cmdvel0_pub.publish(cmd_vel_0)
+        self.cmdvel1_pub.publish(cmd_vel_1)
         self.action_0 = action_0
         self.action_1 = action_1
         rospy.logdebug("\nlogger_0 take action ===> {}\nlogger_1 take action ===> {}".format(cmd_vel_0, cmd_vel_1))
