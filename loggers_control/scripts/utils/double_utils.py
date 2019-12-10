@@ -3,10 +3,10 @@
 Tools for double escape tasks
 """
 import numpy as np
+from numpy import random
 import rospy
 import tf
 import math
-import random
 import argparse
 from geometry_msgs.msg import Pose, Twist
 
@@ -131,7 +131,7 @@ def adjust_reward(train_params, env):
 
     return adj_reward, done
 
-def create_pose_buffer(num_poses=1024):
+def gen_random_pose(num_poses=1):
     """
     generate a random rod pose in the room
     with center at (0, 0), width 10 meters and depth 10 meters.
@@ -184,8 +184,8 @@ def create_pose_buffer(num_poses=1024):
 
         return min, max
 
-    pose_vectors = []
-    mag = 4.78
+    pose_buffer = []
+    mag = 4.5
     len_rod = 2
     room = [-mag, mag, -mag, mag] # create a room with boundary
     for i in range(num_poses):
@@ -200,9 +200,11 @@ def create_pose_buffer(num_poses=1024):
         # randomize robots orientation
         th_0 = random.uniform(-math.pi, math.pi)
         th_1 = random.uniform(-math.pi, math.pi)
-        pose_vectors.append([x, y, angle, th_0, th_1])
+        pose_buffer.append([x, y, angle, th_0, th_1])
+    if len(pose_buffer) == 1:
+        pose_buffer = pose_buffer[0]
 
-    return pose_vectors
+    return pose_buffer
 
 def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, final_eps):
     """

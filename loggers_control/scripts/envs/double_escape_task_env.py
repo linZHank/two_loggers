@@ -16,6 +16,8 @@ from gazebo_msgs.srv import SetModelState, SetLinkState
 from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
 
+from utils.double_utils import gen_random_pose
+
 
 class DoubleEscapeEnv(object):
     """
@@ -54,6 +56,7 @@ class DoubleEscapeEnv(object):
         self.unpause_physics_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause_physics_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.set_model_state_proxy = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+        self.set_link_state_proxy = rospy.ServiceProxy('/gazebo/set_model_state', SetLinkState)
         # topic publisher
         self.cmdvel0_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
         self.cmdvel1_pub = rospy.Publisher("/cmd_vel_1", Twist, queue_size=1)
@@ -98,17 +101,20 @@ class DoubleEscapeEnv(object):
         except rospy.ServiceException as e:
             rospy.logfatal("Service call failed: {}".format(e))
 
+    def setLinkState(self, link_state):
+        rospy.wait_for_service('/gazebo/set_link_state')
+        try:
+            self.set_link_state_proxy(link_state)
+        except rospy.ServiceException as e:
+            rospy.logfatal("Service call failed: {}".format(e))
+
     def reset(self, init_pose=[0,0,0,0,0]):
         """
         Reset environment function
         obs, info = env.reset()
         """
         rospy.logdebug("\nStart Environment Reset")
-        self._take_action(np.zeros(2), np.zeros(2))
-        self.reset_world()
         self._set_init(init_pose)
-        self.pauseSim()
-        self.unpauseSim()
         obs = self._get_observation()
         info = self._post_information()
         self.steps = 0
@@ -135,46 +141,55 @@ class DoubleEscapeEnv(object):
         """
         Set initial condition of two_loggers to a specific pose
         Args:
-            init_pose: [rod{x, y, angle}, robot_0{th_0}, robot_1{th_1}], set to a random pose if empty
+            init_pose: [rod::x, y, angle, robot_0::angle, robot_1::angle], set to a random pose if empty
         """
         rospy.logdebug("\nStart Initializing Robots")
-        model_state = ModelState()
-        model_state.model_name = "two_loggers"
-        model_state.reference_frame = "world"
-        model_state.pose.position.z = 0.25
-        if not init_pose:
-            # random initialize
-            pass
+        # prepare
+        self._take_action(np.zeros(2), np.zeros(2))
+        self.pausePhysics()
+        self.resetWorld()
+        # set rod pose
+        rod_state = ModelState()
+        rod_state.model_name = "two_loggers"
+        rod_state.reference_frame = "world"
+        rod_state.pose.position.z = 0.245
+        if not init_pose: # random initialize
+            init_pose = gen_random_pose()
         else:
-            model_state.pose.position.x = init_pose[0]
-            model_state.pose.position.y = init_pose[1]
-            model_state.pose.orientation.z = math.sin(0.5*init_pose[2])
-            model_state.pose.orientation.w = math.cos(0.5*init_pose[2])
-            # give the system a little time to set model
-            for _ in range(10):
-                self.set_model_state_pub.publish(model_state)
-                self.rate.sleep()
-            self._take_action(np.zeros(2), np.zeros(2)) # stablize model setting
-            # compute link_state for logger_0 and logger_1
-            link_states = self.link_states
-            link_name_0 = "two_loggers::link_chassis_0"
-            link_name_1 = "two_loggers::link_chassis_1"
-            link_state_0 = LinkState()
-            link_state_0.link_name = link_name_0
-            link_state_0.pose = link_states.pose[link_states.name.index(link_name_0)]
-            link_state_0.pose.orientation.z = math.sin(0.5*init_pose[3])
-            link_state_0.pose.orientation.w = math.cos(0.5*init_pose[3])
-            link_state_1 = LinkState()
-            link_state_1.link_name = link_name_1
-            link_state_1.pose = link_states.pose[link_states.name.index(link_name_1)]
-            link_state_1.pose.orientation.z = math.sin(0.5*init_pose[4])
-            link_state_1.pose.orientation.w = math.cos(0.5*init_pose[4])
-            # set orientation for both logger_0 and logger_1
-            for _ in range(10):
-                self.set_link_state_pub.publish(link_state_0)
-                self.set_link_state_pub.publish(link_state_1)
-                self.rate.sleep()
-        # stablize link setting
+            assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
+            assert -pi<=init_pose[3]<= pi
+            assert -pi<=init_pose[4]<= pi
+        rod_state.pose.position.x = init_pose[0]
+        rod_state.pose.position.y = init_pose[1]
+        quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
+        rod_state.pose.orientation.z = quat[2]
+        rod_state.pose.orientation.w = quat[3]
+        # call '/gazebo/set_model_state' service
+        self.setModelState(model_state=model_state)
+        self.unpausePhysics()
+        link_states = self.link_states
+        self.pausePhysics()
+        # set robot orientation
+        robot0_name = "two_loggers::link_chassis_0"
+        robot1_name = "two_loggers::link_chassis_1"
+        q0 = tf.transformations.quaternion_from_euler(0, 0, init_pose[3])
+        q1 = tf.transformations.quaternion_from_euler(0, 0, init_pose[4])
+        # set white robot orientation
+        robot0_state = LinkState()
+        robot0_state.link_name = robot0_name
+        robot0_state.pose = link_states.pose[link_states.name.index(robot0_name)]
+        robot0_state.pose.orientation.z = q0[2]
+        robot0_state.pose.orientation.z = q0[3]
+        # set black robot orientation
+        robot1_state = LinkState()
+        robot1_state.link_name = robot1_name
+        robot1_state.pose = link_states.pose[link_states.name.index(robot1_name)]
+        robot1_state.pose.orientation.z = q1[2]
+        robot1_state.pose.orientation.z = q1[3]
+        # call '/gazebo/set_link_state' service
+        self.setLinkState(link_state=robot0_state)
+        self.setLinkState(link_state=robot1_state)
+        self.unpausePhysics()
         self._take_action(np.zeros(2), np.zeros(2))
         rospy.logdebug("\ntwo_loggers initialized at {} \nlogger_0 orientation: {} \nlogger_1 orientation".format(model_state, init_pose[3], init_pose[4]))
         # episode should not be done

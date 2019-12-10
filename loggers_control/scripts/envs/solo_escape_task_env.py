@@ -131,18 +131,18 @@ class SoloEscapeEnv(object):
         robot_pose.reference_frame = "world"
         robot_pose.pose.position.z = 0.2
         if not init_pose: # inialize randomly
-            robot_pose.pose.position.x = random.uniform(-4.5, 4.5)
-            robot_pose.pose.position.y = random.uniform(-4.5, 4.5)
-            quat = tf.transformations.quaternion_from_euler(0, 0, random.uniform(-pi, pi))
-            robot_pose.pose.orientation.z = quat[2]
-            robot_pose.pose.orientation.w = quat[3]
+            init_pose.append(random.uniform(-4.5, 4.5))
+            init_pose.append(random.uniform(-4.5, 4.5))
+            init_pose.append(random.uniform(-pi, pi))
         else: # inialize accordingly
+            assert np.absolute(init_pose[0]) > 4.5
+            assert np.absolute(init_pose[1]) > 4.5
             assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
-            robot_pose.pose.position.x = init_pose[0]
-            robot_pose.pose.position.y = init_pose[1]
-            quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
-            robot_pose.pose.orientation.z = quat[2]
-            robot_pose.pose.orientation.w = quat[3]
+        quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
+        robot_pose.pose.position.x = init_pose[0]
+        robot_pose.pose.position.y = init_pose[1]
+        robot_pose.pose.orientation.z = quat[2]
+        robot_pose.pose.orientation.w = quat[3]
         # call '/gazebo/set_model_state' service
         self.setModelState(model_state=robot_pose)
         rospy.logdebug("Logger was initialized at {}".format(robot_pose))
