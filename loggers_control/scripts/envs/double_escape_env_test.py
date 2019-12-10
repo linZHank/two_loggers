@@ -17,7 +17,7 @@ from utils import double_utils
 
 if __name__ == "__main__":
     num_episodes = 10
-    num_steps = 100
+    num_steps = 10
 
     escaper = DoubleEscapeEnv()
     actions = np.array([[1,-1],[1,1]])
