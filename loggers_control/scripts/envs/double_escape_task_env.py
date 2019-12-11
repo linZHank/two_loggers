@@ -144,42 +144,42 @@ class DoubleEscapeEnv(object):
         try:
             self.pause_physics_proxy()
         except rospy.ServiceException as e:
-            rospy.logfatal("/gazebo/pause_physics service call failed")
+            rospy.logerr("/gazebo/pause_physics service call failed")
 
     def unpausePhysics(self):
         rospy.wait_for_service("/gazebo/unpause_physics")
         try:
             self.unpause_physics_proxy()
         except rospy.ServiceException as e:
-            rospy.logfatal("/gazebo/unpause_physics service call failed")
+            rospy.logerr("/gazebo/unpause_physics service call failed")
 
     def resetSimulation(self):
         rospy.wait_for_service("/gazebo/reset_simulation")
         try:
             self.reset_simulation_proxy()
         except rospy.ServiceException as e:
-            rospy.logfatal("/gazebo/reset_simulation service call failed")
+            rospy.logerr("/gazebo/reset_simulation service call failed")
 
     def resetWorld(self):
         rospy.wait_for_service("/gazebo/reset_world")
         try:
             self.reset_world_proxy()
         except rospy.ServiceException as e:
-            rospy.logfatal("/gazebo/reset_world service call failed")
+            rospy.logerr("/gazebo/reset_world service call failed")
 
     def setModelState(self, model_state):
         rospy.wait_for_service('/gazebo/set_model_state')
         try:
             self.set_model_state_proxy(model_state)
         except rospy.ServiceException as e:
-            rospy.logfatal("Service call failed: {}".format(e))
+            rospy.logerr("Service call failed: {}".format(e))
 
     def setLinkState(self, link_state):
         rospy.wait_for_service('/gazebo/set_link_state')
         try:
             self.set_link_state_proxy(link_state)
         except rospy.ServiceException as e:
-            rospy.logfatal("Service call failed: {}".format(e))
+            rospy.logerr("Service call failed: {}".format(e))
 
     def reset(self, init_pose=[]):
         """
@@ -226,15 +226,21 @@ class DoubleEscapeEnv(object):
         rod_state.model_name = "two_loggers"
         rod_state.reference_frame = "world"
         rod_state.pose.position.z = 0.245
-        if not init_pose: # random initialize
-            init_pose = generate_random_pose()
-        else:
+        # if not init_pose: # random initialize
+        #     init_pose = generate_random_pose()
+        # else:
+        #     assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
+        #     assert -pi<=init_pose[3]<= pi
+        #     assert -pi<=init_pose[4]<= pi
+        if init_pose: # random initialize
             assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
             assert -pi<=init_pose[3]<= pi
             assert -pi<=init_pose[4]<= pi
-        quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
+        else:
+            init_pose = generate_random_pose()
         rod_state.pose.position.x = init_pose[0]
         rod_state.pose.position.y = init_pose[1]
+        quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
         rod_state.pose.orientation.z = quat[2]
         rod_state.pose.orientation.w = quat[3]
         # call '/gazebo/set_model_state' service

@@ -56,35 +56,35 @@ class SoloEscapeEnv(object):
         try:
             self.pause_physics_proxy()
         except rospy.ServiceException as e:
-            rospy.logfatal("/gazebo/pause_physics service call failed")
+            rospy.logerr("/gazebo/pause_physics service call failed")
 
     def unpausePhysics(self):
         rospy.wait_for_service("/gazebo/unpause_physics")
         try:
             self.unpause_physics_proxy()
         except rospy.ServiceException as e:
-            rospy.logfatal("/gazebo/unpause_physics service call failed")
+            rospy.logerr("/gazebo/unpause_physics service call failed")
 
     def resetSimulation(self):
         rospy.wait_for_service("/gazebo/reset_simulation")
         try:
             self.reset_simulation_proxy()
         except rospy.ServiceException as e:
-            rospy.logfatal("/gazebo/reset_simulation service call failed")
+            rospy.logerr("/gazebo/reset_simulation service call failed")
 
     def resetWorld(self):
         rospy.wait_for_service("/gazebo/reset_world")
         try:
             self.reset_world_proxy()
         except rospy.ServiceException as e:
-            rospy.logfatal("/gazebo/reset_world service call failed")
+            rospy.logerr("/gazebo/reset_world service call failed")
 
     def setModelState(self, model_state):
         rospy.wait_for_service('/gazebo/set_model_state')
         try:
             self.set_model_state_proxy(model_state)
         except rospy.ServiceException as e:
-            rospy.logfatal("Service call failed: {}".format(e))
+            rospy.logerr("Service call failed: {}".format(e))
 
     def reset(self, init_pose=[]):
         """
@@ -123,7 +123,6 @@ class SoloEscapeEnv(object):
         """
         rospy.logdebug("\nStart Initializing Robot")
         # prepare
-        pose = np.zeros(3)
         self._take_action(np.zeros(2))
         self.pausePhysics()
         self.resetWorld()
@@ -135,18 +134,14 @@ class SoloEscapeEnv(object):
             assert np.absolute(init_pose[0]) <= 4.5
             assert np.absolute(init_pose[1]) <= 4.5
             assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
-            pose = np.array(init_pose)
-            print("specified init_pose: {}".format(pose))
         else: # inialize accordingly
-            pose[0] = random.uniform(-4.5, 4.5)
-            pose[1] = random.uniform(-4.5, 4.5)
-            pose[2] = random.uniform(-pi, pi)
-            # init_pose.append(random.uniform(-4.5, 4.5))
-            # init_pose.append(random.uniform(-pi, pi))
-            print("random init_pose: {}".format(init_pose))
-        robot_pose.pose.position.x = pose[0]
-        robot_pose.pose.position.y = pose[1]
-        quat = tf.transformations.quaternion_from_euler(0, 0, pose[2])
+            init_pose = [0]*3
+            init_pose[0] = random.uniform(-4.5, 4.5)
+            init_pose[1] = random.uniform(-4.5, 4.5)
+            init_pose[2] = random.uniform(-pi, pi)
+        robot_pose.pose.position.x = init_pose[0]
+        robot_pose.pose.position.y = init_pose[1]
+        quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
         robot_pose.pose.orientation.z = quat[2]
         robot_pose.pose.orientation.w = quat[3]
         # call '/gazebo/set_model_state' service
