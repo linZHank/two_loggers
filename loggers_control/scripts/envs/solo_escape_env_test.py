@@ -13,7 +13,7 @@ from solo_escape_task_env import SoloEscapeEnv
 
 if __name__ == "__main__":
     num_episodes = 10
-    num_steps = 16
+    num_steps = 8
 
     escaper = SoloEscapeEnv()
     escaper.reset()

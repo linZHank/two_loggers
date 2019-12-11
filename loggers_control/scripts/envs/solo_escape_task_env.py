@@ -23,7 +23,7 @@ class SoloEscapeEnv(object):
     SoloEscape Class
     """
     def __init__(self):
-        rospy.init_node("solo_escape_task_env", anonymous=True, log_level=rospy.INFO)
+        rospy.init_node("solo_escape_task_env", anonymous=True, log_level=rospy.DEBUG)
         # simulation parameters
         self.rate = rospy.Rate(100)
         # environment parameters
@@ -123,6 +123,7 @@ class SoloEscapeEnv(object):
         """
         rospy.logdebug("\nStart Initializing Robot")
         # prepare
+        pose = np.zeros(3)
         self._take_action(np.zeros(2))
         self.pausePhysics()
         self.resetWorld()
@@ -130,17 +131,22 @@ class SoloEscapeEnv(object):
         robot_pose.model_name = "logger"
         robot_pose.reference_frame = "world"
         robot_pose.pose.position.z = 0.2
-        if not init_pose: # inialize randomly
-            init_pose.append(random.uniform(-4.5, 4.5))
-            init_pose.append(random.uniform(-4.5, 4.5))
-            init_pose.append(random.uniform(-pi, pi))
-        else: # inialize accordingly
+        if init_pose: # inialize randomly
             assert np.absolute(init_pose[0]) <= 4.5
             assert np.absolute(init_pose[1]) <= 4.5
             assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
-        quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
-        robot_pose.pose.position.x = init_pose[0]
-        robot_pose.pose.position.y = init_pose[1]
+            pose = np.array(init_pose)
+            print("specified init_pose: {}".format(pose))
+        else: # inialize accordingly
+            pose[0] = random.uniform(-4.5, 4.5)
+            pose[1] = random.uniform(-4.5, 4.5)
+            pose[2] = random.uniform(-pi, pi)
+            # init_pose.append(random.uniform(-4.5, 4.5))
+            # init_pose.append(random.uniform(-pi, pi))
+            print("random init_pose: {}".format(init_pose))
+        robot_pose.pose.position.x = pose[0]
+        robot_pose.pose.position.y = pose[1]
+        quat = tf.transformations.quaternion_from_euler(0, 0, pose[2])
         robot_pose.pose.orientation.z = quat[2]
         robot_pose.pose.orientation.w = quat[3]
         # call '/gazebo/set_model_state' service
@@ -199,10 +205,10 @@ class SoloEscapeEnv(object):
         cmd_vel = Twist()
         cmd_vel.linear.x = action[0]
         cmd_vel.angular.z = action[1]
-        for _ in range(10):
+        self.cmd_vel_pub.publish(cmd_vel)
+        for _ in range(15): # 6.667Hz
             self.cmd_vel_pub.publish(cmd_vel)
             self.rate.sleep()
-        self.action = action
         rospy.logdebug("Logger take action ==> {}".format(cmd_vel))
         rospy.logdebug("End Taking Action\n")
 

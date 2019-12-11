@@ -339,8 +339,10 @@ class DoubleEscapeEnv(object):
         cmd_vel_1 = Twist()
         cmd_vel_1.linear.x = action_1[0]
         cmd_vel_1.angular.z = action_1[1]
-        self.cmdvel0_pub.publish(cmd_vel_0)
-        self.cmdvel1_pub.publish(cmd_vel_1)
+        for _ in range(10):
+            self.cmdvel0_pub.publish(cmd_vel_0)
+            self.cmdvel1_pub.publish(cmd_vel_1)
+            self.rate.sleep()
         self.action_0 = action_0
         self.action_1 = action_1
         rospy.logdebug("\nlogger_0 take action ===> {}\nlogger_1 take action ===> {}".format(cmd_vel_0, cmd_vel_1))
