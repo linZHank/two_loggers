@@ -42,7 +42,7 @@ if __name__ == "__main__":
         gamma = 0.99
         learning_rate = 1e-3
         batch_size = 2048
-        memory_cap = 100000
+        memory_cap = 1000000
         update_step = 8192
         decay_period = train_params['num_episodes']*3/5
         init_eps = 1.
