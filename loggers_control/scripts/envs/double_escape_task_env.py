@@ -122,7 +122,7 @@ class DoubleEscapeEnv(object):
         self.success_count = 0
         self.max_step = 2000
         self.steps = 0
-        self.status = "trapped"
+        self.status = ['trapped', 'trapped']
         self.model_states = ModelStates()
         self.link_states = LinkStates()
         # services
@@ -285,6 +285,7 @@ class DoubleEscapeEnv(object):
         """
         rospy.logdebug("\nStart Getting Observation")
         link_states = self.link_states
+        self.pausePhysics()
         # the log
         id_log = link_states.name.index("two_loggers::link_log")
         self.observation["log"]["pose"] = link_states.pose[id_log]
@@ -297,35 +298,49 @@ class DoubleEscapeEnv(object):
         id_logger_1 = link_states.name.index("two_loggers::link_chassis_1")
         self.observation["logger_1"]["pose"] = link_states.pose[id_logger_1]
         self.observation["logger_1"]["twist"] = link_states.twist[id_logger_1]
-        # compute status
-        if self.observation["logger_0"]["pose"].position.x > 4.79 or self.observation["logger_1"]["pose"].position.x > 4.79:
-            self.status = "east"
-        elif self.observation["logger_0"]["pose"].position.x < -4.79 or self.observation["logger_1"]["pose"].position.x < -4.79:
-            self.status = "west"
-        elif self.observation["logger_0"]["pose"].position.y > 4.79 or self.observation["logger_1"]["pose"].position.y > 4.79:
-            self.status = "north"
+        # compute logger_0's status
+        if self.observation["logger_0"]["pose"].position.x > 4.79:
+            self.status[0] = 'east'
+        elif self.observation["logger_0"]["pose"].position.x < -4.79:
+            self.status[0] = 'west'
+        elif self.observation["logger_0"]["pose"].position.y > 4.79:
+            self.status[0] = 'north'
         elif -6<=self.observation["logger_0"]["pose"].position.y < -4.79:
             if np.absolute(self.observation["logger_0"]["pose"].position.x) > 1:
-                self.status = "south"
+                self.status[0] = 'south'
             else:
                 if np.absolute(self.observation["logger_0"]["pose"].position.x) > 0.79:
-                    self.status = "sdoor" # stuck at door
+                    self.status[0] = 'door' # stuck at door
                 else:
-                    self.status = "tdoor" # through door
-        elif -6<=self.observation["logger_1"]["pose"].position.y < -4.79:
-            if np.absolute(self.observation["logger_1"]["pose"].position.x) > 1:
-                self.status = "south"
-            else:
-                if np.absolute(self.observation["logger_1"]["pose"].position.x) > 0.79:
-                    self.status = "sdoor" # stuck at door
-                else:
-                    self.status = "tdoor" # through door
-        elif self.observation["logger_0"]["pose"].position.y < -6 and self.observation["logger_1"]["pose"].position.y < -6:
-            self.status = "escaped"
-        elif self.observation["logger_0"]["pose"].position.z > 0.95 or self.observation["logger_1"]["pose"].position.z > 0.95 or self.observation["logger_0"]["pose"].position.z < 0.85 or self.observation["logger_1"]["pose"].position.z < 0.85:
-            self.status = "blew"
+                    self.status[0] = 'tunnel' # through door
+        elif self.observation['logger_0']['pose'].position.y < -6:
+            self.status[0] = 'escaped'
+        elif self.observation['logger_0']['pose'].position.z > 0.95 or self.observation['logger_0']['pose'].position.z < 0.85:
+            self.status[0] = 'blew'
         else:
-            self.status = "trapped"
+            self.status[0] = 'trapped'
+        # compute logger_1's status
+        if self.observation["logger_1"]["pose"].position.x > 4.79:
+            self.status[1] = 'east'
+        elif self.observation["logger_1"]["pose"].position.x < -4.79:
+            self.status[1] = 'west'
+        elif self.observation["logger_1"]["pose"].position.y > 4.79:
+            self.status[1] = 'north'
+        elif -6<=self.observation['logger_1']['pose'].position.y < -4.79:
+            if np.absolute(self.observation['logger_1']['pose'].position.x) > 1:
+                self.status[1] = 'south'
+            else:
+                if np.absolute(self.observation['logger_1']['pose'].position.x) > 0.79:
+                    self.status[1] = 'door' # stuck at door
+                else:
+                    self.status[1] = 'tunnel' # through door
+        elif self.observation['logger_1']['pose'].position.y < -6:
+            self.status[1] = 'escaped'
+        elif self.observation['logger_1']['pose'].position.z > 0.95 or  self.observation['logger_1']['pose'].position.z < 0.85:
+            self.status[1] = 'blew'
+        else:
+            self.status[1] = 'trapped'
+        self.unpausePhysics()
         # logging
         rospy.logdebug("Observation Get ==> {}".format(self.observation))
         rospy.logdebug("End Getting Observation\n")

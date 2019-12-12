@@ -23,7 +23,7 @@ class SoloEscapeEnv(object):
     SoloEscape Class
     """
     def __init__(self):
-        rospy.init_node("solo_escape_task_env", anonymous=True, log_level=rospy.DEBUG)
+        rospy.init_node("solo_escape_task_env", anonymous=True, log_level=rospy.INFO)
         # simulation parameters
         self.rate = rospy.Rate(100)
         # environment parameters
