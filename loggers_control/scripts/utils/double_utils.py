@@ -106,21 +106,18 @@ def adjust_reward(train_params, env):
     done = env._episode_done
     adj_reward = env.reward
     info = env.info
-    if info["status"] == "escaped":
+    if info["status"][0] == "escaped" and  info["status"][1] == "escaped":
         if train_params["success_bonus"]:
             adj_reward += train_params["success_bonus"]
         done = True
-    elif info["status"] == "sdoor":
+    elif info["status"][0] == "door" or info["status"][1] == "door":
         if train_params["door_bonus"]:
             adj_reward += train_params["door_bonus"]
         done = True
-    elif info["status"] == "tdoor":
-        if train_params["door_bonus"]:
-            adj_reward += train_params["door_bonus"]
-    elif info["status"] == "trapped":
+    elif info["status"][0] == "trapped" or info["status"][1] == "trapped":
         if train_params["time_bonus"]:
             adj_reward += train_params['time_bonus']
-    elif info["status"] == "blew":
+    elif info["status"][0] == "blew" or info["status"][1] == "blew":
         done = True
     else: # hit wall
         if train_params["wall_bonus"]:

@@ -287,29 +287,29 @@ class DoubleEscapeEnv(object):
         link_states = self.link_states
         self.pausePhysics()
         # the log
-        id_log = link_states.name.index("two_loggers::link_log")
-        self.observation["log"]["pose"] = link_states.pose[id_log]
-        self.observation["log"]["twist"] = link_states.twist[id_log]
+        id_log = link_states.name.index('two_loggers::link_log')
+        self.observation['log']['pose'] = link_states.pose[id_log]
+        self.observation['log']['twist'] = link_states.twist[id_log]
         # logger_0
-        id_logger_0 = link_states.name.index("two_loggers::link_chassis_0")
-        self.observation["logger_0"]["pose"] = link_states.pose[id_logger_0]
-        self.observation["logger_0"]["twist"] = link_states.twist[id_logger_0]
+        id_logger_0 = link_states.name.index('two_loggers::link_chassis_0')
+        self.observation['logger_0']['pose'] = link_states.pose[id_logger_0]
+        self.observation['logger_0']['twist'] = link_states.twist[id_logger_0]
         # logger_1
-        id_logger_1 = link_states.name.index("two_loggers::link_chassis_1")
-        self.observation["logger_1"]["pose"] = link_states.pose[id_logger_1]
-        self.observation["logger_1"]["twist"] = link_states.twist[id_logger_1]
+        id_logger_1 = link_states.name.index('two_loggers::link_chassis_1')
+        self.observation['logger_1']['pose'] = link_states.pose[id_logger_1]
+        self.observation['logger_1']['twist'] = link_states.twist[id_logger_1]
         # compute logger_0's status
-        if self.observation["logger_0"]["pose"].position.x > 4.79:
+        if self.observation['logger_0']['pose'].position.x > 4.79:
             self.status[0] = 'east'
-        elif self.observation["logger_0"]["pose"].position.x < -4.79:
+        elif self.observation['logger_0']['pose'].position.x < -4.79:
             self.status[0] = 'west'
-        elif self.observation["logger_0"]["pose"].position.y > 4.79:
+        elif self.observation['logger_0']['pose'].position.y > 4.79:
             self.status[0] = 'north'
-        elif -6<=self.observation["logger_0"]["pose"].position.y < -4.79:
-            if np.absolute(self.observation["logger_0"]["pose"].position.x) > 1:
+        elif -6<=self.observation['logger_0']['pose'].position.y < -4.79:
+            if np.absolute(self.observation['logger_0']['pose'].position.x) > 1:
                 self.status[0] = 'south'
             else:
-                if np.absolute(self.observation["logger_0"]["pose"].position.x) > 0.79:
+                if np.absolute(self.observation['logger_0']['pose'].position.x) > 0.79:
                     self.status[0] = 'door' # stuck at door
                 else:
                     self.status[0] = 'tunnel' # through door
@@ -320,11 +320,11 @@ class DoubleEscapeEnv(object):
         else:
             self.status[0] = 'trapped'
         # compute logger_1's status
-        if self.observation["logger_1"]["pose"].position.x > 4.79:
+        if self.observation['logger_1']['pose'].position.x > 4.79:
             self.status[1] = 'east'
-        elif self.observation["logger_1"]["pose"].position.x < -4.79:
+        elif self.observation['logger_1']['pose'].position.x < -4.79:
             self.status[1] = 'west'
-        elif self.observation["logger_1"]["pose"].position.y > 4.79:
+        elif self.observation['logger_1']["pose'].position.y > 4.79:
             self.status[1] = 'north'
         elif -6<=self.observation['logger_1']['pose'].position.y < -4.79:
             if np.absolute(self.observation['logger_1']['pose'].position.x) > 1:
@@ -375,7 +375,7 @@ class DoubleEscapeEnv(object):
             reward: reward in current step
         """
         rospy.logdebug("\nStart Computing Reward")
-        if self.status == "escaped":
+        if self.status[0] == "escaped" and self.status[1] == "escaped":
             self.reward = 1
             self.success_count += 1
             self._episode_done = True
