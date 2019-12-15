@@ -33,50 +33,24 @@ if __name__ == "__main__":
     # make an instance from env class
     env = DoubleEscapeEnv()
     env.reset()
-    # model path
-    date_time = datetime.now().strftime("%Y-%m-%d-%H-%M"),
-    model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent_0/model.h5"
-    model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent_1/model.h5"
     # create training parameters
     if not args.source: # source is empty, create new params
-        complete_episodes = 0
-        train_params = double_utils.create_train_params(date_time complete_episodes, args.source, args.normalize, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
-        # init agent parameters
+        # pre-extracted params
+        date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
         dim_state = len(double_utils.obs_to_state(env.observation, "all"))
         actions = np.array([np.array([1, -1]), np.array([1, 1])])
-        layer_sizes = [256, 256]
-        gamma = 0.99
-        learning_rate = 1e-4
-        batch_size = 2048
-        memory_cap = 1000000
-        update_step = 10000
-        decay_period = args.num_episodes/4
-        final_eps = 1e-2
-        agent_params_0 = double_utils.create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, final_eps)
-        agent_params_0['update_counter'] = 0
+        state_0 = double_utils.obs_to_state(obs, "all")
+        state_1 = double_utils.obs_to_state(obs, "all")
+        # train parameters
+        train_params = double_utils.create_train_params(complete_episodes=0, complete_steps=0, success_count=0, args.source, args.normalize, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
+        # agent parameters
+        agent_params_0 = double_utils.create_agent_params(dim_state, actions, ep_returns=[], ep_losses=[], mean=state_0, std=np.zeros(dim_state)+1e-15, args.layer_sizes, args.gamma, args.lr, args.batch_size, args.mem_cap, args.update_step, decay_period=train_params['num_episodes']*3/5, args.init_eps, args.final_eps)
         agent_params_1 = agent_params_0
         # instantiate new agents
         agent_0 = DQNAgent(agent_params_0)
         model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0/model.h5"
         agent_1 = DQNAgent(agent_params_1)
         model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1/model.h5"
-        assert os.path.dirname(os.path.dirname(model_path_0)) == os.path.dirname(os.path.dirname(model_path_1))
-        # init returns and losses storage
-        train_params['ep_returns'] = []
-        agent_params_0['ep_losses'] = []
-        agent_params_1['ep_losses'] = []
-        # init random starting poses
-        train_params['pose_buffer'] = double_utils.create_pose_buffer(train_params['num_episodes']+1)
-        # init first episode and step
-        obs, _ = env.reset(train_params['pose_buffer'][0])
-        state_0 = double_utils.obs_to_state(obs, "all")
-        state_1 = double_utils.obs_to_state(obs, "all")
-        train_params['success_count'] = 0
-        # new means and stds
-        mean_0 = state_0 # states average
-        std_0 = np.zeros(agent_params_0["dim_state"])+1e-8 # n*Var
-        mean_1 = state_1 # states average
-        std_1 = np.zeros(agent_params_1["dim_state"])+1e-8 # n*Var
     else: # source is not empty, load params
         model_load_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source
         # load train parameters
@@ -105,14 +79,14 @@ if __name__ == "__main__":
         state_0 = double_utils.obs_to_state(obs, "all")
         state_1 = double_utils.obs_to_state(obs, "all")
         env.success_count = train_params['success_count']
-        # load means and stds
-        mean_0 = agent_params_0['mean']
-        std_0 = agent_params_0['std']
-        mean_1 = agent_params_1['mean']
-        std_1 = agent_params_1['std']
+
 
     # learning
     start_time = time.time()
+    mean_0 = agent_params_0['mean']
+    std_0 = agent_params_0['std']
+    mean_1 = agent_params_1['mean']
+    std_1 = agent_params_1['std']
     ep = train_params['num_episodes'])
     while ep <= train_params['complete_episodes']:
         # check simulation crash
@@ -202,22 +176,21 @@ if __name__ == "__main__":
             state_0 = next_state_0
             state_1 = next_state_1
             # update q-statble net
-            agent_params_0['update_counter'] += 1
-            agent_params_1['update_counter'] += 1
-            if not agent_params_0['update_counter'] % agent_params_0['update_step']:
+            train_params['complete_steps'] += 1
+            if not train_params['complete_steps'] % agent_params_0['update_step']:
                 agent_0.qnet_stable.set_weights(agent_0.qnet_active.get_weights())
                 rospy.logerr("agent_0 Q-net weights updated!")
-            if not agent_params_1['update_counter'] % agent_params_1['update_step']:
+            if not train_params['complete_steps'] % agent_params_1['update_step']:
                 agent_1.qnet_stable.set_weights(agent_1.qnet_active.get_weights())
                 rospy.logerr("agent_1 Q-net weights updated!")
             if done:
-                train_params['complete_episodes'] += 1
                 break
-        ep_returns.append(sum(ep_rewards))
-        ep_losses_0.append(sum(loss_vals_0)/len(loss_vals_0))
-        ep_losses_1.append(sum(loss_vals_1)/len(loss_vals_1))
+        agent_params['ep_returns'].append(sum(ep_rewards))
+        agent_params_0['ep_losses'].append(sum(loss_vals_0)/len(loss_vals_0))
+        agent_params_1['ep_losses'].append(sum(loss_vals_1)/len(loss_vals_1))
         agent_0.save_model(model_path_0)
         agent_1.save_model(model_path_1)
+        train_params['complete_episodes'] += 1
         ep += 1
         # reset env
         obs, _ = env.reset(train_params['pose_buffer'][ep+1])
@@ -251,10 +224,10 @@ if __name__ == "__main__":
     data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_information.csv")
     data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_parameters.pkl")
     # save results
-    np.save(os.path.join(os.path.dirname(model_path_0), 'ep_returns.npy'), ep_returns)
-    np.save(os.path.join(os.path.dirname(model_path_1), 'ep_returns.npy'), ep_returns)
-    np.save(os.path.join(os.path.dirname(model_path_0), 'ep_losses.npy'), ep_losses_0)
-    np.save(os.path.join(os.path.dirname(model_path_1), 'ep_losses.npy'), ep_losses_1)
+    np.save(os.path.join(os.path.dirname(model_path_0), 'ep_returns.npy'), agent_params_0['ep_returns'])
+    np.save(os.path.join(os.path.dirname(model_path_1), 'ep_returns.npy'), agent_params_1['ep_returns'])
+    np.save(os.path.join(os.path.dirname(model_path_0), 'ep_losses.npy'), agent_params_0['ep_losses'])
+    np.save(os.path.join(os.path.dirname(model_path_1), 'ep_losses.npy'), agent_params_1['ep_losses'])
 
     # plot episodic returns
     data_utils.plot_returns(returns=ep_returns, mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
