@@ -52,34 +52,27 @@ if __name__ == "__main__":
         agent_1 = DQNAgent(agent_params_1)
         model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1/model.h5"
     else: # source is not empty, load params
-        model_load_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source
+        # instantiate loaded agents
+        model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_0/model.h5"
+        model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_1/model.h5"
         # load train parameters
-        train_params_path = os.path.join(model_load_dir, "train_params.pkl")
+        train_params_path = os.path.join(os.path.dirname(model_path_0), "train_parameters.pkl")
         with open(train_params_path, 'rb') as f:
             train_params = pickle.load(f)
-        train_params['source'] = args.source
-        train_params["date_time"] = date_time
-        ep_returns = train_params['ep_returns']
         # load agents parameters
-        agent_params_path_0 = os.path.join(model_load_dir,"agent_0/agent0_parameters.pkl")
-        with open(agent_params_path_0, 'rb') as f:
+        with open(os.path.join(os.path.dirname(model_path_0, 'agent_parameters.pkl', 'rb') as f:
             agent_params_0 = pickle.load(f) # load agent_0 model
-        agent_params_path_1 = os.path.join(model_load_dir,"agent_1/agent1_parameters.pkl")
-        with open(agent_params_path_1, 'rb') as f:
-            agent_params_1 = pickle.load(f) # load agent_1 model
+        with open(os.path.join(os.path.dirname(model_path_1, 'agent_parameters.pkl', 'rb') as f:
+            agent_params_1 = pickle.load(f) # load agent_0 model
         # load dqn models & memory buffers
         agent_0 = DQNAgent(agent_params_0)
-        model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0/model.h5"
-        agent_0.load_model(os.path.join(model_load_dir, "agent_0/model.h5"))
+        agent_0.load_model(model_path_0)
         agent_1 = DQNAgent(agent_params_1)
-        model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1/model.h5"
-        agent_1.load_model(os.path.join(model_load_dir, "agent_1/model.h5"))
+        agent_1.load_model(model_path_1)
         # init robots from loaded pose buffer
-        obs, _ = env.reset(train_params['pose_buffer'][train_params['complete_episodes']])
         state_0 = double_utils.obs_to_state(obs, "all")
         state_1 = double_utils.obs_to_state(obs, "all")
         env.success_count = train_params['success_count']
-
 
     # learning
     start_time = time.time()
