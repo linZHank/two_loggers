@@ -121,6 +121,7 @@ if __name__ == "__main__":
             inc_mean = data_utils.increment_mean(mean, next_state, (ep+1)*(st+1)+1)
             inc_std = data_utils.increment_std(std, mean, inc_mean, next_state, (ep+1)*(st+1)+1)
             # update mean and std
+            mean, std = inc_mean, inc_std
             agent_params['mean'] = mean
             agent_params['std'] = std
             # normalize next state
@@ -132,16 +133,6 @@ if __name__ == "__main__":
             # adjust reward based on bonus args
             rew, done = solo_utils.adjust_reward(train_params, env)
             ep_rewards.append(rew)
-            # store transitions
-            if not info["status"] == "blew":
-                agent.replay_memory.store((norm_state, action_index, rew, done, norm_next_state))
-                print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
-            else:
-                print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
-            agent.train()
-            loss_vals.append(agent.loss_value)
-            state = next_state
-            agent_params['update_counter'] += 1
             # log step
             rospy.loginfo(
                 "Episode: {}, Step: {}, epsilon: {} \nstate: {}, action: {}, next state: {} \nreward/episodic_return: {}/{}, status: {}, number of success: {}".format(
@@ -157,9 +148,20 @@ if __name__ == "__main__":
                     env.success_count
                 )
             )
+            # store transitions
+            if not info["status"] == "blew":
+                agent.replay_memory.store((norm_state, action_index, rew, done, norm_next_state))
+                print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
+            else:
+                print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
+            # train one epoch
+            agent.train()
+            loss_vals.append(agent.loss_value)
+            state = next_state
+            agent_params['update_counter'] += 1
             if not agent_params['update_counter'] % agent_params['update_step']:
                 agent.qnet_stable.set_weights(agent.qnet_active.get_weights())
-                rospy.loginfo("agent Q-net weights updated!")
+                rospy.logerr("agent Q-net weights updated!")
             if done:
                 train_params['complete_episodes'] += 1
                 rospy.logwarn(
@@ -171,7 +173,11 @@ if __name__ == "__main__":
         agent.save_model(model_path)
         obs, _ = env.reset()
         state = solo_utils.obs_to_state(obs)
+
     # time
+    end_time = time.time()
+    train_dur = end_time - start_time
+    env.reset()
 
     # save replay buffer memories
     agent.save_memory(model_path)
@@ -181,7 +187,7 @@ if __name__ == "__main__":
     # save train info
     train_info = train_params
     train_info['success_count'] = env.success_count
-    train_info['train_dur'] = time.time() - start_time
+    train_info['train_dur'] = train_dur
     train_info["agent_learning_rate"] = agent_params["learning_rate"]
     train_info["agent_state_dimension"] = agent_params["dim_state"]
     train_info["agent_action_options"] = agent_params["actions"]
