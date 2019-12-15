@@ -16,7 +16,7 @@ import rospy
 import pickle
 
 from envs.solo_escape_task_env import SoloEscapeEnv
-from utils import data_utils, solo_utils, tf_utils
+from utils import data_utils, solo_utils
 from utils.data_utils import bcolors
 from agents.dqn import DQNAgent
 from agents import dqn
@@ -108,7 +108,7 @@ if __name__ == "__main__":
                 break # terminate main loop if simulation crashed
             # normalize states
             if train_params['normalize']:
-                norm_state = tf_utils.normalize(state, mean, std)
+                norm_state = data_utils.normalize(state, mean, std)
                 rospy.logdebug("State normalized from {} \nto {}".format(state, norm_state))
             else:
                 norm_state = state
@@ -118,14 +118,14 @@ if __name__ == "__main__":
             obs, rew, done, info = env.step(action)
             next_state = solo_utils.obs_to_state(obs)
             # compute incremental mean and std
-            inc_mean = tf_utils.increment_mean(mean, next_state, (ep+1)*(st+1)+1)
-            inc_std = tf_utils.increment_std(std, mean, inc_mean, next_state, (ep+1)*(st+1)+1)
+            inc_mean = data_utils.increment_mean(mean, next_state, (ep+1)*(st+1)+1)
+            inc_std = data_utils.increment_std(std, mean, inc_mean, next_state, (ep+1)*(st+1)+1)
             # update mean and std
             agent_params['mean'] = mean
             agent_params['std'] = std
             # normalize next state
             if train_params['normalize']:
-                norm_next_state = tf_utils.normalize(next_state, mean, std)
+                norm_next_state = data_utils.normalize(next_state, mean, std)
                 rospy.logdebug("Next states normalized from {} \nto {}".format((next_state, norm_next_state)))
             else:
                 norm_next_state = next_state

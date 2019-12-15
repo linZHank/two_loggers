@@ -24,6 +24,30 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+def increment_mean(pre_mean, new_data, sample_size):
+    """
+    Compute incremental mean
+    """
+    inc_mean = pre_mean + (new_data-pre_mean) / sample_size
+
+    return inc_mean
+
+def increment_std(pre_std, pre_mean, inc_mean, new_data, sample_size):
+    """
+    Compute incremental standard deviation
+    """
+    pre_nVar = np.power(pre_std,2)*(sample_size-1)
+    inc_std = np.sqrt((pre_nVar+(new_data-pre_mean)*(new_data-inc_mean)) / sample_size)
+
+    return inc_std
+
+def normalize(data, mean, std):
+    """
+    z-standardize
+    """
+    normed_data = (data - mean) / np.clip(std, 1e-8, 1e16)
+
+    return normed_data
 
 # save pickle
 def save_pkl(content, fdir, fname):
