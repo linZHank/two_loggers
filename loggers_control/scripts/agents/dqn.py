@@ -67,15 +67,21 @@ class DQNAgent:
         # hyper-parameters
         self.dim_state = params["dim_state"]
         self.actions = params["actions"]
+        self.ep_returns = 0
+        self.ep_losses = 0
+        self.mean = np.zeros(self.dim_state)
+        self.std = 1e-16
         self.layer_sizes = params["layer_sizes"]
         if type(params["layer_sizes"]) == int:
             self.layer_sizes = [params["layer_sizes"]]
-        self.gamma = params["gamma"]
+        self.gamma = params["discount_rate"]
         self.learning_rate = params["learning_rate"]
         self.batch_size = params["batch_size"]
         self.memory_cap = params["memory_cap"]
         self.update_step = params["update_step"]
-        self.update_counter = 0
+        self.decay_period = params['decay_period']
+        self.init_eps = params['init_eps']
+        self.final_eps = params['final_eps']
         self.epsilon = 1
         self.loss_value = np.inf
         # Q(s,a;theta)
@@ -108,7 +114,7 @@ class DQNAgent:
             print(bcolors.WARNING, "Take a random action!", bcolors.ENDC)
             return np.random.randint(len(self.actions))
 
-    def linearly_decaying_epsilon(self, decay_period, episode, warmup_episodes=0, init_eps=1., final_eps=0.01):
+    def linearly_decaying_epsilon(self, episode, warmup_episodes=64):
         """
         Returns the current epsilon for the agent's epsilon-greedy policy. This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et al., 2015). The schedule is as follows:
             Begin at 1. until warmup_steps steps have been taken; then Linearly decay epsilon from 1. to final_eps in decay_period steps; and then Use epsilon from there on.
@@ -120,10 +126,10 @@ class DQNAgent:
         Returns:
             A float, the current epsilon value computed according to the schedule.
         """
-        episodes_left = decay_period + warmup_episodes - episode
-        bonus = (init_eps - final_eps) * episodes_left / decay_period
-        bonus = np.clip(bonus, 0., init_eps-final_eps)
-        self.epsilon = final_eps + bonus
+        episodes_left = self.decay_period + warmup_episodes - episode
+        bonus = (self.init_eps - self.final_eps) * episodes_left / self.decay_period
+        bonus = np.clip(bonus, 0., self.init_eps-self.final_eps)
+        self.epsilon = self.final_eps + bonus
 
         return self.epsilon
 

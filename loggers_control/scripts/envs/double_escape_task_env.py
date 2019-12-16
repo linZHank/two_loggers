@@ -226,12 +226,6 @@ class DoubleEscapeEnv(object):
         rod_state.model_name = "two_loggers"
         rod_state.reference_frame = "world"
         rod_state.pose.position.z = 0.245
-        # if not init_pose: # random initialize
-        #     init_pose = generate_random_pose()
-        # else:
-        #     assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
-        #     assert -pi<=init_pose[3]<= pi
-        #     assert -pi<=init_pose[4]<= pi
         if init_pose: # random initialize
             assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
             assert -pi<=init_pose[3]<= pi
@@ -244,7 +238,6 @@ class DoubleEscapeEnv(object):
         rod_state.pose.orientation.z = quat[2]
         rod_state.pose.orientation.w = quat[3]
         # call '/gazebo/set_model_state' service
-        print("init_pose: {}".format(init_pose))
         self.setModelState(model_state=rod_state)
         rospy.logdebug("two-logges was initialized at {}".format(rod_state))
         self.unpausePhysics()
@@ -315,7 +308,7 @@ class DoubleEscapeEnv(object):
                     self.status[0] = 'tunnel' # through door
         elif self.observation['logger_0']['pose'].position.y < -6:
             self.status[0] = 'escaped'
-        elif self.observation['logger_0']['pose'].position.z > 0.95 or self.observation['logger_0']['pose'].position.z < 0.85:
+        elif self.observation['logger_0']['pose'].position.z > 0.1 or self.observation['logger_0']['pose'].position.z < 0.08:
             self.status[0] = 'blew'
         else:
             self.status[0] = 'trapped'
@@ -324,7 +317,7 @@ class DoubleEscapeEnv(object):
             self.status[1] = 'east'
         elif self.observation['logger_1']['pose'].position.x < -4.79:
             self.status[1] = 'west'
-        elif self.observation['logger_1']["pose'].position.y > 4.79:
+        elif self.observation['logger_1']['pose'].position.y > 4.79:
             self.status[1] = 'north'
         elif -6<=self.observation['logger_1']['pose'].position.y < -4.79:
             if np.absolute(self.observation['logger_1']['pose'].position.x) > 1:
@@ -336,7 +329,7 @@ class DoubleEscapeEnv(object):
                     self.status[1] = 'tunnel' # through door
         elif self.observation['logger_1']['pose'].position.y < -6:
             self.status[1] = 'escaped'
-        elif self.observation['logger_1']['pose'].position.z > 0.95 or  self.observation['logger_1']['pose'].position.z < 0.85:
+        elif self.observation['logger_1']['pose'].position.z > 0.1 or  self.observation['logger_1']['pose'].position.z < 0.08:
             self.status[1] = 'blew'
         else:
             self.status[1] = 'trapped'
@@ -360,7 +353,7 @@ class DoubleEscapeEnv(object):
         cmd_vel_1 = Twist()
         cmd_vel_1.linear.x = action_1[0]
         cmd_vel_1.angular.z = action_1[1]
-        for _ in range(10):
+        for _ in range(15):
             self.cmdvel0_pub.publish(cmd_vel_0)
             self.cmdvel1_pub.publish(cmd_vel_1)
             self.rate.sleep()
@@ -383,7 +376,7 @@ class DoubleEscapeEnv(object):
         else:
             self.reward = -0.
             self._episode_done = False
-            rospy.loginfo("The log is trapped in the cell...")
+            rospy.loginfo("The loggers are trapped in the cell...")
         rospy.logdebug("Stepwise Reward: {}, Success Count: {}".format(self.reward, self.success_count))
         # check if steps out of range
         if self.steps > self.max_step:

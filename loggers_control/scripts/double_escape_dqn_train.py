@@ -32,9 +32,10 @@ if __name__ == "__main__":
     args = double_utils.get_args()
     # make an instance from env class
     env = DoubleEscapeEnv()
-    env.reset()
+    obs, info = env.reset()
     # create training parameters
     if not args.source: # source is empty, create new params
+        rospy.logerr("no source: {}".format(args.source))
         # pre-extracted params
         date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
         dim_state = len(double_utils.obs_to_state(env.observation, "all"))
@@ -42,9 +43,9 @@ if __name__ == "__main__":
         state_0 = double_utils.obs_to_state(obs, "all")
         state_1 = double_utils.obs_to_state(obs, "all")
         # train parameters
-        train_params = double_utils.create_train_params(complete_episodes=0, complete_steps=0, success_count=0, args.source, args.normalize, args.num_episodes, args.num_steps, args.time_bonus, args.wall_bonus, args.door_bonus, args.success_bonus)
+        train_params = double_utils.create_train_params(complete_episodes=0, complete_steps=0, success_count=0, source=args.source, normalize=args.normalize, num_episodes=args.num_episodes, num_steps=args.num_steps, time_bonus=args.time_bonus, wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, success_bonus=args.success_bonus)
         # agent parameters
-        agent_params_0 = double_utils.create_agent_params(dim_state, actions, ep_returns=[], ep_losses=[], mean=state_0, std=np.zeros(dim_state)+1e-15, args.layer_sizes, args.gamma, args.lr, args.batch_size, args.mem_cap, args.update_step, decay_period=train_params['num_episodes']*3/5, args.init_eps, args.final_eps)
+        agent_params_0 = double_utils.create_agent_params(dim_state=dim_state, actions=actions, ep_returns=[], ep_losses=[], mean=state_0, std=np.zeros(dim_state)+1e-15, layer_sizes=args.layer_sizes, discount_rate=args.gamma, learning_rate=args.lr, batch_size=args.batch_size, memory_cap=args.mem_cap, update_step=args.update_step, decay_period=train_params['num_episodes']*3/5, init_eps=args.init_eps, final_eps=args.final_eps)
         agent_params_1 = agent_params_0
         # instantiate new agents
         agent_0 = DQNAgent(agent_params_0)
@@ -52,17 +53,17 @@ if __name__ == "__main__":
         agent_1 = DQNAgent(agent_params_1)
         model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1/model.h5"
     else: # source is not empty, load params
+        rospy.logerr("source is: {}".format(args.source))
         # instantiate loaded agents
         model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_0/model.h5"
         model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_1/model.h5"
         # load train parameters
-        train_params_path = os.path.join(os.path.dirname(model_path_0), "train_parameters.pkl")
-        with open(train_params_path, 'rb') as f:
+        with open(os.path.dirname(os.path.dirname(model_path_0))+ "/train_parameters.pkl", 'rb') as f:
             train_params = pickle.load(f)
         # load agents parameters
-        with open(os.path.join(os.path.dirname(model_path_0, 'agent_parameters.pkl', 'rb') as f:
+        with open(os.path.dirname(model_path_0)+'/agent_parameters.pkl', 'rb') as f:
             agent_params_0 = pickle.load(f) # load agent_0 model
-        with open(os.path.join(os.path.dirname(model_path_1, 'agent_parameters.pkl', 'rb') as f:
+        with open(os.path.dirname(model_path_1)+'/agent_parameters.pkl', 'rb') as f:
             agent_params_1 = pickle.load(f) # load agent_0 model
         # load dqn models & memory buffers
         agent_0 = DQNAgent(agent_params_0)
@@ -80,16 +81,22 @@ if __name__ == "__main__":
     std_0 = agent_params_0['std']
     mean_1 = agent_params_1['mean']
     std_1 = agent_params_1['std']
-    ep = train_params['num_episodes'])
-    while ep <= train_params['complete_episodes']:
+    ep = 0
+    while ep <= train_params['num_episodes']:
         # check simulation crash
         if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
-            print(bcolors.FAIL, "Simulation Crashed", bcolors.ENDC)
+            rospy.logfatal("Simulation Crashed")
             train_params['complete_episodes'] = ep
             break # terminate main loop if simulation crashed
-        epsilon_0 = agent_0.linearly_decaying_epsilon(decay_period=agent_params_0['decay_period'], episode=ep, init_eps=agent_params_0['init_eps'], final_eps=agent_params_0['final_eps'])
-        epsilon_1 = agent_1.linearly_decaying_epsilon(decay_period=agent_params_1['decay_period'], episode=ep, init_eps=agent_params_1['init_eps'], final_eps=agent_params_1['final_eps'])
-        logging.info("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
+        if info["status"][0] == "blew" or info["status"][1] == "blew":
+            rospy.logerr("Model blew up, skip this episode")
+            obs, info = env.reset()
+            state_0 = double_utils.obs_to_state(obs, "all")
+            state_1 = double_utils.obs_to_state(obs, "all")
+            continue
+        epsilon_0 = agent_0.linearly_decaying_epsilon(episode=ep)
+        epsilon_1 = agent_1.linearly_decaying_epsilon(episode=ep)
+        rospy.logdebug("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         rospy.logdebug("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
@@ -135,18 +142,21 @@ if __name__ == "__main__":
             rew, done = double_utils.adjust_reward(train_params, env)
             ep_rewards.append(rew)
             train_params['success_count'] = env.success_count
+            train_params['complete_steps'] += 1
             # store transitions
             if not info["status"][0] == "blew" or info["status"][1] == "blew":
                 agent_0.replay_memory.store((norm_state_0, action_index_0, rew, done, norm_next_state_0))
                 agent_1.replay_memory.store((norm_state_1, action_index_1, rew, done, norm_next_state_1))
-                print(bcolors.OKBLUE, "transition saved to memory", bcolors.ENDC)
+                rospy.logwarn("transition saved to memory")
             else:
-                print(bcolors.FAIL, "model blew up, transition not saved", bcolors.ENDC)
+                rospy.logerr("model blew up, transition not saved")
             # log step
             rospy.loginfo(
-                "Episode: {}, Step: {}, epsilon_0: {}, epsilon_0: {} \nstate_0: {}, state_1: {}, \naction_0: {}, action_1: {}, \nnext_state_0: {}, next_state_1: {} \nreward/episodic_return: {}/{}, \nstatus: {}, \nnumber of success: {}".format(
+                "Episode: {}, Step: {}, Complete episodes: {}, Complete steps: {}, epsilon_0: {}, epsilon_0: {} \nstate_0: {}, state_1: {}, \naction_0: {}, action_1: {}, \nnext_state_0: {}, next_state_1: {} \nreward/episodic_return: {}/{}, \nstatus: {}, \nnumber of success: {}".format(
                     ep+1,
                     st+1,
+                    train_params['complete_episodes'],
+                    train_params['complete_steps'],
                     agent_0.epsilon,
                     agent_1.epsilon,
                     state_0,
@@ -169,16 +179,17 @@ if __name__ == "__main__":
             state_0 = next_state_0
             state_1 = next_state_1
             # update q-statble net
-            train_params['complete_steps'] += 1
             if not train_params['complete_steps'] % agent_params_0['update_step']:
                 agent_0.qnet_stable.set_weights(agent_0.qnet_active.get_weights())
                 rospy.logerr("agent_0 Q-net weights updated!")
-            if not train_params['complete_steps'] % agent_params_1['update_step']:
+            if not train_params['complete_steps'] %  agent_params_1['update_step']:
                 agent_1.qnet_stable.set_weights(agent_1.qnet_active.get_weights())
                 rospy.logerr("agent_1 Q-net weights updated!")
             if done:
+                rospy.logerr("Current episode done!")
                 break
-        agent_params['ep_returns'].append(sum(ep_rewards))
+        agent_params_0['ep_returns'].append(sum(ep_rewards))
+        agent_params_1['ep_returns'].append(sum(ep_rewards))
         agent_params_0['ep_losses'].append(sum(loss_vals_0)/len(loss_vals_0))
         agent_params_1['ep_losses'].append(sum(loss_vals_1)/len(loss_vals_1))
         agent_0.save_model(model_path_0)
@@ -186,7 +197,7 @@ if __name__ == "__main__":
         train_params['complete_episodes'] += 1
         ep += 1
         # reset env
-        obs, _ = env.reset(train_params['pose_buffer'][ep+1])
+        obs, _ = env.reset()
         state_0 = double_utils.obs_to_state(obs, "all")
         state_1 = double_utils.obs_to_state(obs, "all")
 
@@ -223,9 +234,9 @@ if __name__ == "__main__":
     np.save(os.path.join(os.path.dirname(model_path_1), 'ep_losses.npy'), agent_params_1['ep_losses'])
 
     # plot episodic returns
-    data_utils.plot_returns(returns=ep_returns, mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
+    data_utils.plot_returns(returns=agent_params_0['ep_returns'], mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
     # plot accumulated returns
-    data_utils.plot_returns(returns=ep_returns, mode=1, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
+    data_utils.plot_returns(returns=agent_params_0['ep_returns'], mode=1, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
     # plot averaged return
-    data_utils.plot_returns(returns=ep_returns, mode=2, save_flag=True,
+    data_utils.plot_returns(returns=agent_params_0['ep_returns'], mode=2, save_flag=True,
     fdir=os.path.dirname(os.path.dirname(model_path_0)))

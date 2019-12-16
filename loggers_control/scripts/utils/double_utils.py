@@ -21,7 +21,7 @@ def get_args():
     parser.add_argument('--wall_bonus', type=float, default=0)
     parser.add_argument('--door_bonus', type=float, default=0)
     parser.add_argument('--success_bonus', type=float, default=0)
-    parser.add_argument('--layer_sizes', nargs='+', type=int, help='use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]', default=128 64)
+    parser.add_argument('--layer_sizes', nargs='+', type=int, help='use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]', default=128)
     parser.add_argument('--gamma', type=float, default=0.99) # discount rate
     parser.add_argument('--lr', type=float, default=0.001) # learning rate
     parser.add_argument('--batch_size', type=int, default=2048)
@@ -111,16 +111,16 @@ def adjust_reward(train_params, env):
         if train_params["success_bonus"]:
             adj_reward += train_params["success_bonus"]
         done = True
-    elif info["status"][0] == "door" or info["status"][1] == "door":
+    if info["status"][0] == "door" or info["status"][1] == "door":
         if train_params["door_bonus"]:
             adj_reward += train_params["door_bonus"]
         done = True
-    elif info["status"][0] == "trapped" or info["status"][1] == "trapped":
+    if info["status"][0] == "trapped" or info["status"][1] == "trapped":
         if train_params["time_bonus"]:
             adj_reward += train_params['time_bonus']
-    elif info["status"][0] == "blew" or info["status"][1] == "blew":
+    if info["status"][0] == "blew" or info["status"][1] == "blew":
         done = True
-    else: # hit wall
+    if info['status'][0] == 'north' or info['status'][0] == 'west' or info['status'][0] == 'south' or info['status'][0] == 'east' or info['status'][1] == 'north' or info['status'][1] == 'west' or info['status'][1] == 'south' or info['status'][1] == 'east': # hit wall
         if train_params["wall_bonus"]:
             adj_reward += train_params["wall_bonus"]
         done = True

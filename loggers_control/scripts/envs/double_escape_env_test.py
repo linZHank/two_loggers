@@ -32,7 +32,7 @@ if __name__ == "__main__" and __package__ is None:
         rospy.loginfo("Logger was reset with observation: {} \nwith information: {}".format(obs, info))
         for st in range(num_steps):
             obs, rew, done, info = escaper.step(action_0, action_1)
-            rospy.loginfo("Episode: {}, Step: {}, action: {}".format(ep, st, (action_0, action_1)))
+            rospy.loginfo("Episode: {}, Step: {}, action: {}, status: {}".format(ep, st, (action_0, action_1), info))
 
     rospy.logwarn("test finished")
 
