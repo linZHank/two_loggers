@@ -1,6 +1,5 @@
 """
-An implementation of Deep Q-network (DQN) for solo_escape_task
-DQN is a Model free, off policy, reinforcement learning algorithm (https://deepmind.com/research/dqn/)
+Evaluation of learned model for double_escape_task
 Author: LinZHanK (linzhank@gmail.com)
 """
 from __future__ import absolute_import, division, print_function
@@ -25,56 +24,55 @@ if __name__ == "__main__":
     env.reset()
     # load agent models
     model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-07-17-17-57/"
-    params0_path = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
+    agent_params_0_path = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
     with open(params0_path, "rb") as f:
-        agent0_params = pickle.load(f)
-    params1_path = os.path.join(model_dir,"agent_1/agent1_parameters.pkl")
+        agent_params_0 = pickle.load(f)
+    agent_params_1_path = os.path.join(model_dir,"agent_1/agent1_parameters.pkl")
     with open(params1_path, "rb") as f:
-        agent1_params = pickle.load(f)
+        agent_params_1 = pickle.load(f)
+    # load train parameters
+    with open(model_dir+"/train_parameters.pkl", 'rb') as f:
+        train_params = pickle.load(f)
     # instantiate agents
-    agent_0 = DQNAgent(agent0_params)
+    agent_0 = DQNAgent(agent_params_0)
     agent_0.load_model(os.path.join(model_dir, "agent_0/model.h5"))
-    agent_1 = DQNAgent(agent1_params)
+    agent_1 = DQNAgent(agent_params_1)
     agent_1.load_model(os.path.join(model_dir, "agent_1/model.h5"))
 
     # evaluation params
     num_episodes = 100
-    num_steps = 400
-    pose_buffer = double_utils.create_pose_buffer(num_episodes)
+    num_steps = 200
     ep = 0
     # start evaluating
     while ep < num_episodes:
-        obs, _ = env.reset(pose_buffer[ep])
+        obs, _ = env.reset()
         done = False
-        state_agt0 = double_utils.obs_to_state(obs, "all")
-        state_agt1 = double_utils.obs_to_state(obs, "all")
+        state_0 = double_utils.obs_to_state(obs, "all")
+        state_1 = double_utils.obs_to_state(obs, "all")
         for st in range(num_steps):
-            agent0_acti = np.argmax(agent_0.qnet_active.predict(state_agt0.reshape(1,-1)))
-            agent0_action = agent0_params["actions"][agent0_acti]
-            agent1_acti = np.argmax(agent_1.qnet_active.predict(state_agt1.reshape(1,-1)))
-            agent1_action = agent1_params["actions"][agent1_acti]
-            obs, rew, done, info = env.step(agent0_action, agent1_action)
-            if info['status'] == "north" or info['status'] == "west" or info['status'] == "south" or info['status'] == "east" or info['status'] == "sdoor":
-                done = True
-            elif  info['status'] == "blew":
-                done = True
-                ep -= 1
-            next_state_agt0 = double_utils.obs_to_state(obs, "all")
-            next_state_agt1 = double_utils.obs_to_state(obs, "all")
-            state_agt0 = next_state_agt0
-            state_agt1 = next_state_agt1
+            action_index_0 = np.argmax(agent_0.qnet_active.predict(state_0.reshape(1,-1)))
+            action_0 = agent_params_0["actions"][action_index_0]
+            action_index_1 = np.argmax(agent_1.qnet_active.predict(state_1.reshape(1,-1)))
+            action_1 = agent_params_1["actions"][action_index_1]
+            obs, rew, done, info = env.step(action_0, action_1)
+            rew, done = double_utils.adjust_reward(train_params, env)
+
+            next_state_0 = double_utils.obs_to_state(obs, "all")
+            next_state_1 = double_utils.obs_to_state(obs, "all")
+            state_0 = next_state_0
+            state_1 = next_state_1
             # logging
             print(
                 bcolors.OKGREEN,
                 "Episode: {}, Step: {} \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward: {}, status: {} \nsuccess_count: {}".format(
                     ep,
                     st,
-                    agent0_acti,
-                    agent0_action,
-                    agent1_acti,
-                    agent1_action,
-                    next_state_agt0,
-                    next_state_agt1,
+                    action_index_0,
+                    action_0,
+                    action_index_1,
+                    action_1,
+                    next_state_0,
+                    next_state_1,
                     rew,
                     info["status"],
                     env.success_count

@@ -14,8 +14,8 @@ from geometry_msgs.msg import Pose, Twist
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', type=str, default='')
-    parser.add_argument('--num_episodes', type=int, default=20000)
-    parser.add_argument('--num_steps', type=int, default=400)
+    parser.add_argument('--num_episodes', type=int, default=10000)
+    parser.add_argument('--num_steps', type=int, default=200)
     parser.add_argument('--normalize', action='store_true', default=False)
     parser.add_argument('--time_bonus', type=float, default=0)
     parser.add_argument('--wall_bonus', type=float, default=0)
