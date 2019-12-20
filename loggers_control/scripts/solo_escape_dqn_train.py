@@ -31,7 +31,7 @@ if __name__ == "__main__":
     if not args.source: # source is empty, create new params
         rospy.logwarn("Start a new training")
         date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        dim_state = len(double_utils.obs_to_state(env.observation, "all"))
+        dim_state = len(solo_utils.obs_to_state(env.observation))
         actions = np.array([np.array([1, -1]), np.array([1, 1])])
         # train parameters
         train_params = solo_utils.create_train_params(complete_episodes=0, complete_steps=0, success_count=0, source=args.source, normalize=args.normalize, num_episodes=args.num_episodes, num_steps=args.num_steps, time_bonus=args.time_bonus, wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, success_bonus=args.success_bonus)
@@ -39,11 +39,11 @@ if __name__ == "__main__":
         agent_params = solo_utils.create_agent_params(dim_state=dim_state, actions=actions, ep_returns=[], ep_losses=[], mean=np.zeros(dim_state), std=np.zeros(dim_state)+1e-15, layer_sizes=args.layer_sizes, discount_rate=args.gamma, learning_rate=args.lr, batch_size=args.batch_size, memory_cap=args.mem_cap, update_step=args.update_step, decay_period=train_params['num_episodes']*9/10, init_eps=args.init_eps, final_eps=args.final_eps)
         # instantiate new agents
         agent = DQNAgent(agent_params)
-        model_path = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0/model.h5"
+        model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+date_time+"/agent_0/model.h5"
     else: # source is not empty, load params
         rospy.logwarn("Continue training from source: {}".format(args.source))
         # load train parameters
-        model_path = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent/model.h5"
+        model_path = os.path.dirname(sys.path[0])+"/saved_models/solo_escape/dqn/"+args.source+"/agent/model.h5"
         with open(os.path.dirname(os.path.dirname(model_path))+ "/train_parameters.pkl", 'rb') as f:
             train_params = pickle.load(f)
         # load agents parameters
@@ -128,7 +128,6 @@ if __name__ == "__main__":
             agent.train()
             loss_vals.append(agent.loss_value)
             state = next_state
-            agent_params['update_counter'] += 1
             # update q-statble net
             if not train_params['complete_steps'] % agent_params['update_step']:
                 agent.qnet_stable.set_weights(agent.qnet_active.get_weights())
