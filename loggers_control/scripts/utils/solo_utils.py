@@ -19,15 +19,23 @@ from geometry_msgs.msg import Pose, Twist
 # make arg parser
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--datetime', type=str, default='')
     parser.add_argument('--source', type=str, default='')
     parser.add_argument('--num_episodes', type=int, default=10000)
-    parser.add_argument('--num_steps', type=int, default=100)
+    parser.add_argument('--num_steps', type=int, default=200)
     parser.add_argument('--normalize', action='store_true', default=False)
     parser.add_argument('--time_bonus', type=float, default=0)
     parser.add_argument('--wall_bonus', type=float, default=0)
     parser.add_argument('--door_bonus', type=float, default=0)
     parser.add_argument('--success_bonus', type=float, default=0)
+    parser.add_argument('--layer_sizes', nargs='+', type=int, help='use space to separate layer sizes, e.g. --layer_sizes 4 16 = [4,16]', default=128)
+    parser.add_argument('--gamma', type=float, default=0.99) # discount rate
+    parser.add_argument('--lr', type=float, default=0.001) # learning rate
+    parser.add_argument('--batch_size', type=int, default=2048)
+    parser.add_argument('--mem_cap', type=int, default=1000000)
+    parser.add_argument('--update_step', type=int, default=8192)
+    parser.add_argument('--init_eps', type=float, default=1.)
+    parser.add_argument('--final_eps', type=float, default=0.05)
+
     return parser.parse_args()
 
 def obs_to_state(observation):
@@ -96,15 +104,17 @@ def reward_to_go(ep_rewards):
         rtgs[i] = ep_rewards[i] + (rtgs[i+1] if i+1 < n else 0)
     return rtgs
 
-def create_train_params(date_time, complete_episodes, source, normalize, num_episodes, num_steps, time_bonus, wall_bonus, door_bonus, success_bonus):
+def create_train_params(complete_episodes, complete_steps, success_count, source, normalize, num_episodes, num_steps, time_bonus, wall_bonus, door_bonus, success_bonus):
     """
     Create training parameters dict based on args
     """
     train_params = {}
-    train_params["date_time"] = date_time
+    # train_params["date_time"] = date_time
+    train_params['complete_episodes'] = complete_episodes
+    train_params['complete_steps'] = complete_steps
+    train_params['success_count'] = success_count
     train_params['source'] = source
     train_params['normalize'] = normalize
-    train_params['complete_episodes'] = complete_episodes
     train_params["num_episodes"] = num_episodes
     train_params["num_steps"] = num_steps
     train_params["time_bonus"] = time_bonus
@@ -113,3 +123,26 @@ def create_train_params(date_time, complete_episodes, source, normalize, num_epi
     train_params["success_bonus"] = success_bonus
 
     return train_params
+
+def create_agent_params(dim_state, actions, ep_returns, ep_losses, mean, std, layer_sizes, discount_rate, learning_rate, batch_size, memory_cap, update_step, decay_period, init_eps, final_eps):
+    """
+    Create agent parameters dict based on args
+    """
+    agent_params = {}
+    agent_params["dim_state"] = dim_state
+    agent_params["actions"] = actions
+    agent_params["ep_returns"] = ep_returns
+    agent_params["ep_losses"] = ep_losses
+    agent_params["mean"] = mean
+    agent_params["std"] = std
+    agent_params["layer_sizes"] = layer_sizes
+    agent_params["discount_rate"] = discount_rate
+    agent_params["learning_rate"] = learning_rate
+    agent_params["batch_size"] = batch_size
+    agent_params["memory_cap"] = memory_cap
+    agent_params["update_step"] = update_step
+    agent_params["decay_period"] = decay_period
+    agent_params['init_eps'] = init_eps
+    agent_params['final_eps'] = final_eps
+
+    return agent_params

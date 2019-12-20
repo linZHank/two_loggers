@@ -5,7 +5,7 @@ DQN is a model free, off policy, reinforcement learning algorithm (https://deepm
 Author: LinZHanK (linzhank@gmail.com)
 
 Train new models example:
-    python double_escape_dqn_train.py --num_episodes 20000 --num_steps 400 --normalize --update_step 10000 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
+    python double_escape_dqn_train.py --num_episodes 10000 --num_steps 200 --normalize --update_step 10000 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
 Continue training models example:
     python double_escape_dqn_train.py --source '2019-07-17-17-57' --num_episodes 100
 """
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     obs, info = env.reset()
     # create training parameters
     if not args.source: # source is empty, create new params
-        rospy.logerr("no source: {}".format(args.source))
+        rospy.logwarn("Start a new training")
         # pre-extracted params
         date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
         dim_state = len(double_utils.obs_to_state(env.observation, "all"))
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         agent_1 = DQNAgent(agent_params_1)
         model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1/model.h5"
     else: # source is not empty, load params
-        rospy.logerr("source is: {}".format(args.source))
+        rospy.logwarn("Continue training from source: {}".format(args.source))
         # instantiate loaded agents
         model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_0/model.h5"
         model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_1/model.h5"
@@ -81,23 +81,23 @@ if __name__ == "__main__":
     std_0 = agent_params_0['std']
     mean_1 = agent_params_1['mean']
     std_1 = agent_params_1['std']
-    ep = 0
+    ep = train_params['complete_episodes']
     while ep <= train_params['num_episodes']:
         # check simulation crash
-        if sum(np.isnan(state_0)) >= 1 or sum(np.isnan(state_1)) >= 1:
+        if sum(np.isnan(state_0)) or sum(np.isnan(state_1)):
             rospy.logfatal("Simulation Crashed")
             train_params['complete_episodes'] = ep
             break # terminate main loop if simulation crashed
         if info["status"][0] == "blew" or info["status"][1] == "blew":
             rospy.logerr("Model blew up, skip this episode")
             obs, info = env.reset()
-            state_0 = double_utils.obs_to_state(obs, "all")
-            state_1 = double_utils.obs_to_state(obs, "all")
+            # state_0 = double_utils.obs_to_state(obs, "all")
+            # state_1 = double_utils.obs_to_state(obs, "all")
             continue
         epsilon_0 = agent_0.linearly_decaying_epsilon(episode=ep)
         epsilon_1 = agent_1.linearly_decaying_epsilon(episode=ep)
-        rospy.logdebug("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
-        rospy.logdebug("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
+        # rospy.logdebug("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
+        # rospy.logdebug("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
             # check simulation crash
