@@ -14,7 +14,7 @@ from tensorflow.keras.layers import Dense
 import rospy
 
 from envs.double_escape_task_env import DoubleEscapeEnv
-from utils import data_utils, double_utils, tf_utils
+from utils import data_utils, double_utils
 from utils.data_utils import bcolors
 from agents.dqn import DQNAgent
 
@@ -23,16 +23,14 @@ if __name__ == "__main__":
     env = DoubleEscapeEnv()
     env.reset()
     # load agent models
-    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-07-17-17-57/"
-    agent_params_0_path = os.path.join(model_dir,"agent_0/agent0_parameters.pkl")
-    with open(params0_path, "rb") as f:
+    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-12-20-12-10/"
+    with open(os.path.join(model_dir,"agent_0/agent_parameters.pkl"), "rb") as f:
         agent_params_0 = pickle.load(f)
-    agent_params_1_path = os.path.join(model_dir,"agent_1/agent1_parameters.pkl")
-    with open(params1_path, "rb") as f:
+    with open(os.path.join(model_dir,"agent_1/agent_parameters.pkl"), "rb") as f:
         agent_params_1 = pickle.load(f)
-    # load train parameters
-    with open(model_dir+"/train_parameters.pkl", 'rb') as f:
-        train_params = pickle.load(f)
+    # # load train parameters
+    # with open(model_dir+"/train_parameters.pkl", 'rb') as f:
+    #     train_params = pickle.load(f)
     # instantiate agents
     agent_0 = DQNAgent(agent_params_0)
     agent_0.load_model(os.path.join(model_dir, "agent_0/model.h5"))
@@ -43,10 +41,15 @@ if __name__ == "__main__":
     num_episodes = 100
     num_steps = 200
     ep = 0
+    eval_params = {'wall_bonus': False,'door_bonus':False,'time_bonus':False,'success_bonus':False,'num_steps':num_steps}
     # start evaluating
-    while ep < num_episodes:
-        obs, _ = env.reset()
+    while ep <= num_episodes:
+        obs, info = env.reset()
         done = False
+        if info["status"][0] == "blew" or info["status"][1] == "blew":
+            rospy.logerr("Model blew up, skip this episode")
+            obs, info = env.reset()
+            continue
         state_0 = double_utils.obs_to_state(obs, "all")
         state_1 = double_utils.obs_to_state(obs, "all")
         for st in range(num_steps):
@@ -55,7 +58,7 @@ if __name__ == "__main__":
             action_index_1 = np.argmax(agent_1.qnet_active.predict(state_1.reshape(1,-1)))
             action_1 = agent_params_1["actions"][action_index_1]
             obs, rew, done, info = env.step(action_0, action_1)
-            rew, done = double_utils.adjust_reward(train_params, env)
+            rew, done = double_utils.adjust_reward(eval_params, env)
 
             next_state_0 = double_utils.obs_to_state(obs, "all")
             next_state_1 = double_utils.obs_to_state(obs, "all")

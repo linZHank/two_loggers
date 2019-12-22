@@ -46,7 +46,7 @@ if __name__ == "__main__":
         train_params = double_utils.create_train_params(complete_episodes=0, complete_steps=0, success_count=0, source=args.source, normalize=args.normalize, num_episodes=args.num_episodes, num_steps=args.num_steps, time_bonus=args.time_bonus, wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, success_bonus=args.success_bonus)
         # agent parameters
         agent_params_0 = double_utils.create_agent_params(dim_state=dim_state, actions=actions, ep_returns=[], ep_losses=[], mean=state_0, std=np.zeros(dim_state)+1e-15, layer_sizes=args.layer_sizes, discount_rate=args.gamma, learning_rate=args.lr, batch_size=args.batch_size, memory_cap=args.mem_cap, update_step=args.update_step, decay_period=train_params['num_episodes']*9/10, init_eps=args.init_eps, final_eps=args.final_eps)
-        agent_params_1 = agent_params_0
+        agent_params_1 = double_utils.create_agent_params(dim_state=dim_state, actions=actions, ep_returns=[], ep_losses=[], mean=state_1, std=np.zeros(dim_state)+1e-15, layer_sizes=args.layer_sizes, discount_rate=args.gamma, learning_rate=args.lr, batch_size=args.batch_size, memory_cap=args.mem_cap, update_step=args.update_step, decay_period=train_params['num_episodes']*9/10, init_eps=args.init_eps, final_eps=args.final_eps)
         # instantiate new agents
         agent_0 = DQNAgent(agent_params_0)
         model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0/model.h5"
@@ -91,8 +91,6 @@ if __name__ == "__main__":
         if info["status"][0] == "blew" or info["status"][1] == "blew":
             rospy.logerr("Model blew up, skip this episode")
             obs, info = env.reset()
-            # state_0 = double_utils.obs_to_state(obs, "all")
-            # state_1 = double_utils.obs_to_state(obs, "all")
             continue
         epsilon_0 = agent_0.linearly_decaying_epsilon(episode=ep)
         epsilon_1 = agent_1.linearly_decaying_epsilon(episode=ep)
