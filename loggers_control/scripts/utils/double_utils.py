@@ -78,7 +78,7 @@ def obs_to_state(observation, mode):
     cos_yaw = np.cos(euler[2])
     sin_yaw = np.sin(euler[2])
     yaw_dot = observation["logger_0"]["twist"].angular.z
-    state_logger0 = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
+    state_0 = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
     # compute logger_1 state
     x = observation["logger_1"]["pose"].position.x
     y = observation["logger_1"]["pose"].position.y
@@ -94,14 +94,14 @@ def obs_to_state(observation, mode):
     cos_yaw = np.cos(euler[2])
     sin_yaw = np.sin(euler[2])
     yaw_dot = observation["logger_1"]["twist"].angular.z
-    state_logger1 = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
+    state_1 = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
 
     if mode == "logger_0":
-        return np.concatenate((state_log, state_logger0), axis=0)
+        return np.concatenate((state_log, state_0), axis=0)
     elif mode == "logger_1":
-        return np.concatenate((state_log, state_logger1), axis=0)
+        return np.concatenate((state_log, state_1), axis=0)
     elif mode == "all":
-        return np.concatenate((state_log, state_logger0, state_logger1), axis=0)
+        return np.concatenate((state_log, state_0, state_1), axis=0)
 
 def adjust_reward(train_params, env):
     done = env._episode_done
