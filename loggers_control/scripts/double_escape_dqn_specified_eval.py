@@ -23,7 +23,8 @@ from agents.dqn import DQNAgent
 
 if __name__ == '__main__':
     # specify init config
-    init_config = [3.25,-4,-pi,-pi/2,-pi/2]
+    date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
+    init_config = [2.5,-2.25,0.2*pi,pi/2,pi/2]
     # instantiate env
     env = DoubleEscapeEnv()
     obs, info = env.reset(init_config)
@@ -53,8 +54,7 @@ if __name__ == '__main__':
         action_index_1 = np.argmax(agent_1.qnet_active.predict(state_1.reshape(1,-1)))
         action_1 = agent_params_1["actions"][action_index_1]
         obs, rew, done, info = env.step(action_0, action_1)
-        rew, done = double_utils.adjustplt.xlim(-5,5)
-_reward(eval_params, env)
+        rew, done = double_utils.adjust_reward(eval_params, env)
         next_state_0 = double_utils.obs_to_state(obs, "all")
         next_state_1 = double_utils.obs_to_state(obs, "all")
         state_0 = next_state_0
@@ -81,7 +81,6 @@ _reward(eval_params, env)
     # save and plot trajectories
     traj_0 = -np.asarray(traj_0)
     traj_1 = -np.asarray(traj_1)
-    date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     traj_dir = os.path.join(model_dir, 'validate_cases', date_time)
     if not os.path.exists(traj_dir):
         os.makedirs(traj_dir)
