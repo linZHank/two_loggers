@@ -241,22 +241,26 @@ class DoubleEscapeEnv(object):
         self.setModelState(model_state=rod_state)
         rospy.logdebug("two-logges was initialized at {}".format(rod_state))
         self.unpausePhysics()
+        for _ in range(10):
+            self.rate.sleep()
         link_states = self.link_states
         self.pausePhysics()
         # set robot orientation
-        robot0_name = "two_loggers::link_chassis_0"
-        robot1_name = "two_loggers::link_chassis_1"
         q0 = tf.transformations.quaternion_from_euler(0, 0, init_pose[3])
         q1 = tf.transformations.quaternion_from_euler(0, 0, init_pose[4])
         # set white robot orientation
+        robot0_name = 'two_loggers::link_chassis_0'
         robot0_state = LinkState()
         robot0_state.link_name = robot0_name
+        robot0_state.reference_frame = 'world'
         robot0_state.pose = link_states.pose[link_states.name.index(robot0_name)]
         robot0_state.pose.orientation.z = q0[2]
         robot0_state.pose.orientation.z = q0[3]
         # set black robot orientation
+        robot1_name = 'two_loggers::link_chassis_1'
         robot1_state = LinkState()
         robot1_state.link_name = robot1_name
+        robot1_state.reference_frame = 'world'
         robot1_state.pose = link_states.pose[link_states.name.index(robot1_name)]
         robot1_state.pose.orientation.z = q1[2]
         robot1_state.pose.orientation.z = q1[3]
