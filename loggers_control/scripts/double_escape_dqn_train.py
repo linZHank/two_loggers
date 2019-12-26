@@ -94,8 +94,6 @@ if __name__ == "__main__":
             continue
         epsilon_0 = agent_0.linearly_decaying_epsilon(episode=ep)
         epsilon_1 = agent_1.linearly_decaying_epsilon(episode=ep)
-        # rospy.logdebug("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
-        # rospy.logdebug("epsilon_0: {}, epsilon_1: {}".format(epsilon_0, epsilon_1))
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
             # check simulation crash

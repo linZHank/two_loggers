@@ -241,8 +241,6 @@ class DoubleEscapeEnv(object):
         self.setModelState(model_state=rod_state)
         rospy.logdebug("two-logges was initialized at {}".format(rod_state))
         self.unpausePhysics()
-        for _ in range(10):
-            self.rate.sleep()
         link_states = self.link_states
         self.pausePhysics()
         # set robot orientation

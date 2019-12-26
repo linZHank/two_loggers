@@ -133,6 +133,22 @@ class DQNAgent:
 
         return self.epsilon
 
+    def exponentially_decaying_epsilon(self, episode, warmup_episodes=128, decay_rate=0.9995):
+        """
+        Returns the current epsilon for the agent's epsilon-greedy policy:
+            Begin at 1. until warmup_steps steps have been taken; then exponentially decay epsilon from 1. to final_eps; and then Use epsilon from there on.
+        Args:
+            episode: int, the number of training steps completed so far.
+            warmup_episodes: int, the number of steps taken before epsilon is decayed.
+            decay_rate: exponential rate of epsilon decay
+        Returns:
+            A float, the current epsilon value computed according to the schedule.
+        """
+        if episode >= warmup_episodes:
+            self.epsilon *= decay_rate
+        self.episode = np.clip(self.episode, self.init_eps, self.final_eps)
+        return self.epsilon
+
     def train(self):
         # sample a minibatch from replay buffer
         minibatch = self.replay_memory.sample_batch(self.batch_size)
