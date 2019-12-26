@@ -20,7 +20,7 @@ import pdb
 if __name__ == "__main__" and __package__ is None:
     # sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
     # from utils import double_utils
-    num_episodes = 2
+    num_episodes = 20
     num_steps = 20
 
     escaper = DoubleEscapeEnv()

@@ -18,7 +18,7 @@ from tensorflow.keras import Model
 
 logging.basicConfig(level=logging.INFO)
 
-def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, init_eps, final_eps):
+def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, batch_size, memory_cap, update_step, decay_period, decay_rate, init_eps, final_eps):
     """
     Create agent parameters dict based on args
     """
@@ -32,6 +32,7 @@ def create_agent_params(dim_state, actions, layer_sizes, gamma, learning_rate, b
     agent_params["memory_cap"] = memory_cap
     agent_params["update_step"] = update_step
     agent_params["decay_period"] = decay_period
+    agent_params["decay_rate"] = decay_rate
     agent_params['init_eps'] = init_eps
     agent_params['final_eps'] = final_eps
 
@@ -80,6 +81,7 @@ class DQNAgent:
         self.memory_cap = params["memory_cap"]
         self.update_step = params["update_step"]
         self.decay_period = params['decay_period']
+        self.decay_rate = params['decay_rate']
         self.init_eps = params['init_eps']
         self.final_eps = params['final_eps']
         self.epsilon = 1
@@ -133,7 +135,7 @@ class DQNAgent:
 
         return self.epsilon
 
-    def exponentially_decaying_epsilon(self, episode, warmup_episodes=128, decay_rate=0.9995):
+    def exponentially_decaying_epsilon(self, episode, warmup_episodes=128):
         """
         Returns the current epsilon for the agent's epsilon-greedy policy:
             Begin at 1. until warmup_steps steps have been taken; then exponentially decay epsilon from 1. to final_eps; and then Use epsilon from there on.
@@ -145,7 +147,7 @@ class DQNAgent:
             A float, the current epsilon value computed according to the schedule.
         """
         if episode >= warmup_episodes:
-            self.epsilon *= decay_rate
+            self.epsilon *= self.decay_rate
         self.episode = np.clip(self.epsilon, self.init_eps, self.final_eps)
 
         return self.epsilon
