@@ -92,8 +92,10 @@ if __name__ == "__main__":
             rospy.logerr("Model blew up, skip this episode")
             obs, info = env.reset()
             continue
-        epsilon_0 = agent_0.linearly_decaying_epsilon(episode=ep)
-        epsilon_1 = agent_1.linearly_decaying_epsilon(episode=ep)
+        # epsilon_0 = agent_0.linearly_decaying_epsilon(episode=ep)
+        # epsilon_1 = agent_1.linearly_decaying_epsilon(episode=ep)
+        epsilon_0 = agent_0.exponentially_decaying_epsilon(episode=ep)
+        epsilon_1 = agent_1.exponentially_decaying_epsilon(episode=ep)
         done, ep_rewards, loss_vals_0, loss_vals_1 = False, [], [], []
         for st in range(train_params["num_steps"]):
             # check simulation crash

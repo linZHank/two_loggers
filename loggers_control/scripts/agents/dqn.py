@@ -146,7 +146,8 @@ class DQNAgent:
         """
         if episode >= warmup_episodes:
             self.epsilon *= decay_rate
-        self.episode = np.clip(self.episode, self.init_eps, self.final_eps)
+        self.episode = np.clip(self.epsilon, self.init_eps, self.final_eps)
+
         return self.epsilon
 
     def train(self):
