@@ -27,7 +27,9 @@ def get_args():
     parser.add_argument('--batch_size', type=int, default=2048)
     parser.add_argument('--mem_cap', type=int, default=1000000)
     parser.add_argument('--update_step', type=int, default=8192)
-    parser.add_argument('--decay_rate', type=float, default=0.9999)
+    parser.add_argument('--decay_mode', type=str, default='lin')
+    parser.add_argument('--decay_period', type=float, help='for linear epsilon decay only', default=5000)
+    parser.add_argument('--decay_rate', type=float, help='for exponential epsilon decay only', default=0.9995)
     parser.add_argument('--init_eps', type=float, default=1.)
     parser.add_argument('--final_eps', type=float, default=0.05)
 
@@ -226,15 +228,14 @@ def create_train_params(complete_episodes, complete_steps, success_count, source
 
     return train_params
 
-def create_agent_params(dim_state, actions, ep_returns, ep_losses, mean, std, layer_sizes, discount_rate, learning_rate, batch_size, memory_cap, update_step, decay_period, decay_rate, init_eps, final_eps):
+def create_agent_params(name, dim_state, actions, mean, std, layer_sizes, discount_rate, learning_rate, batch_size, memory_cap, update_step, decay_mode, decay_period, decay_rate, init_eps, final_eps):
     """
     Create agent parameters dict based on args
     """
     agent_params = {}
+    agent_params['name'] = name
     agent_params["dim_state"] = dim_state
     agent_params["actions"] = actions
-    agent_params["ep_returns"] = ep_returns
-    agent_params["ep_losses"] = ep_losses
     agent_params["mean"] = mean
     agent_params["std"] = std
     agent_params["layer_sizes"] = layer_sizes
@@ -243,6 +244,7 @@ def create_agent_params(dim_state, actions, ep_returns, ep_losses, mean, std, la
     agent_params["batch_size"] = batch_size
     agent_params["memory_cap"] = memory_cap
     agent_params["update_step"] = update_step
+    agent_params["decay_mode"] = decay_mode
     agent_params["decay_period"] = decay_period
     agent_params["decay_rate"] = decay_rate
     agent_params['init_eps'] = init_eps

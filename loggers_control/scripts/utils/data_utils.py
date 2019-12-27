@@ -101,7 +101,7 @@ def plot_returns(returns, mode, save_flag, fdir):
     if mode == 0: # plot return of each episode
         ax.plot(np.arange(len(returns)), returns)
         ax.set(xlabel='Episode', ylabel='Returns')
-        ax.set_ylim([-1,1])
+        # ax.set_ylim([-1,1])
         figure_dir = os.path.join(fdir,'episodic_returns.png')
         ax.grid()
     elif mode == 1: # plot accumulated return of each episode
@@ -112,7 +112,7 @@ def plot_returns(returns, mode, save_flag, fdir):
     else: # plot averaged return of eacj episode
         ax.plot(np.arange(len(ave_returns)), ave_returns)
         ax.set(xlabel='Episode', ylabel='Averaged Returns')
-        ax.set_ylim([-1,1])
+        # ax.set_ylim([-1,1])
         figure_dir = os.path.join(fdir, 'averaged_returns.png')
         ax.grid()
     if save_flag:
