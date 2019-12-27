@@ -82,7 +82,7 @@ class DQNAgent:
             print(bcolors.WARNING, "{} Take a random action!".format(self.name), bcolors.ENDC)
             return np.random.randint(len(self.actions))
 
-    def linear_decay_epsilon(self, episode, decay_period, init_eps, final_eps, warmup_episodes=16):
+    def linear_decay_epsilon(self, episode, decay_period, init_eps, final_eps, warmup_episodes=64):
         """
         Returns the current epsilon for the agent's epsilon-greedy policy. This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et al., 2015). The schedule is as follows:
             Begin at 1. until warmup_steps steps have been taken; then Linearly decay epsilon from 1. to final_eps in decay_period steps; and then Use epsilon from there on.
@@ -101,7 +101,7 @@ class DQNAgent:
 
         return self.epsilon
 
-    def exponential_decay_epsilon(self, episode, decay_rate, init_eps, final_eps, warmup_episodes=16):
+    def exponential_decay_epsilon(self, episode, decay_rate, init_eps, final_eps, warmup_episodes=64):
         """
         Returns the current epsilon for the agent's epsilon-greedy policy:
             Begin at 1. until warmup_steps steps have been taken; then exponentially decay epsilon from 1. to final_eps; and then Use epsilon from there on.
@@ -114,7 +114,8 @@ class DQNAgent:
         """
         if episode >= warmup_episodes:
             self.epsilon *= decay_rate
-        self.episode = np.clip(self.epsilon, final_eps, init_eps)
+        if self.epsilon <= final_eps:
+            self.epsilon = final_eps
 
         return self.epsilon
 
