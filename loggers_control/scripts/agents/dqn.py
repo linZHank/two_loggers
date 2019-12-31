@@ -142,27 +142,28 @@ class DQNAgent:
         # reset training metrics
         self.mse_metric.reset_states()
 
-    def save_model(self, model_path):
+    def save_model(self, model_dir):
         self.qnet_active.summary()
+        self.qnet_stable.summary()
         # create model saving directory if not exist
-        model_dir = os.path.dirname(model_path)
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
         # save model
-        self.qnet_active.save(model_path)
-        print("Q_net model saved at {}".format(model_path))
+        self.qnet_active.save(os.path.join(model_dir,'active_model.h5'))
+        self.qnet_stable.save(os.path.join(model_dir,'stable_model.h5'))
+        print("Q_net models saved at {}".format(model_dir))
 
-    def load_model(self, model_path):
-        self.qnet_active = tf.keras.models.load_model(model_path)
-        self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
-        print("Q-Net model loaded")
+    def load_model(self, model_dir):
+        self.qnet_active = tf.keras.models.load_model(os.path.join(model_dir,'active_model.h5'))
+        self.qnet_stable = tf.keras.models.load_model(os.path.join(model_dir,'stable_model.h5'))
+        print("Q-Net models loaded")
         self.qnet_active.summary()
+        self.qnet_stable.summary()
 
-    def save_memory(self, memory_path):
-        mem_dir = os.path.dirname(memory_path)
+    def save_memory(self, memory_dir):
         # save transition buffer memory
-        data_utils.save_pkl(content=self.replay_memory, fdir=mem_dir, fname='memory.pkl')
-        print("transitions memory saved at {}".format(mem_dir))
+        data_utils.save_pkl(content=self.replay_memory, fdir=memory_dir, fname='memory.pkl')
+        print("transitions memory saved at {}".format(memory_dir))
 
     def load_memory(self, memory_path):
         with open(memory_path, 'rb') as f:

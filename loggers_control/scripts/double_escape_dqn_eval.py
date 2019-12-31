@@ -23,7 +23,7 @@ if __name__ == "__main__":
     env = DoubleEscapeEnv()
     env.reset()
     # load agent models
-    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-12-27-15-07/"
+    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-12-29-19-43/"
     with open(os.path.join(model_dir,"agent_0/agent_parameters.pkl"), "rb") as f:
         agent_params_0 = pickle.load(f)
     with open(os.path.join(model_dir,"agent_1/agent_parameters.pkl"), "rb") as f:
@@ -33,9 +33,9 @@ if __name__ == "__main__":
     #     train_params = pickle.load(f)
     # instantiate agents
     agent_0 = DQNAgent(agent_params_0)
-    agent_0.load_model(os.path.join(model_dir, "agent_0/model.h5"))
+    agent_0.load_model(os.path.join(model_dir, "agent_0"))
     agent_1 = DQNAgent(agent_params_1)
-    agent_1.load_model(os.path.join(model_dir, "agent_1/model.h5"))
+    agent_1.load_model(os.path.join(model_dir, "agent_1"))
 
     # evaluation params
     num_episodes = 100

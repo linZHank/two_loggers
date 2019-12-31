@@ -29,6 +29,7 @@ import pdb
 
 if __name__ == "__main__":
     # create argument parser
+    date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     args = double_utils.get_args()
     # make an instance from env class
     env = DoubleEscapeEnv()
@@ -37,11 +38,10 @@ if __name__ == "__main__":
     if not args.source: # source is empty, create new params
         rospy.logwarn("Start a new training")
         # pre-extracted params
-        date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
         dim_state = len(double_utils.obs_to_state(env.observation, "all"))
         actions = np.array([np.array([1, -1]), np.array([1, 1])])
         # train parameters
-        train_params = double_utils.create_train_params(complete_episodes=0, complete_steps=0, success_count=0, source=args.source, normalize=args.normalize, num_episodes=args.num_episodes, num_steps=args.num_steps, time_bonus=args.time_bonus, wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, success_bonus=args.success_bonus)
+        train_params = double_utils.create_train_params(complete_episodes=0, complete_steps=0, success_count=0, source='', normalize=args.normalize, num_episodes=args.num_episodes, num_steps=args.num_steps, time_bonus=args.time_bonus, wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, success_bonus=args.success_bonus)
         # agent parameters
         agent_params_0 = double_utils.create_agent_params(name='logger_0', dim_state=dim_state, actions=actions, mean=np.zeros(dim_state), std=np.zeros(dim_state)+1e-15, layer_sizes=args.layer_sizes, discount_rate=args.gamma, learning_rate=args.lr, batch_size=args.batch_size, memory_cap=args.mem_cap, update_step=args.update_step, decay_mode=args.decay_mode, decay_period=args.decay_period, decay_rate=args.decay_rate, init_eps=args.init_eps, final_eps=args.final_eps)
         ep_returns_0 = []
@@ -49,33 +49,35 @@ if __name__ == "__main__":
         ep_returns_1 = []
         # instantiate new agents
         agent_0 = DQNAgent(agent_params_0)
-        model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0/model.h5"
         agent_1 = DQNAgent(agent_params_1)
-        model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1/model.h5"
     else: # source is not empty, load params
         rospy.logwarn("Continue training from source: {}".format(args.source))
-        # specify model paths
-        model_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_0/model.h5"
-        model_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_1/model.h5"
+        # specify model loading paths
+        load_dir_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_0/"
+        load_dir_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_1/"
         # load train parameters
-        with open(os.path.dirname(os.path.dirname(model_path_0))+ "/train_parameters.pkl", 'rb') as f:
+        with open(os.path.dirname(load_dir_0)+ "/train_parameters.pkl", 'rb') as f:
             train_params = pickle.load(f)
         env.success_count = train_params['success_count']
+        train_params['num_episodes'] = args.num_episodes
         # load agents parameters and replay buffers
-        with open(os.path.dirname(model_path_0)+'/agent_parameters.pkl', 'rb') as f:
+        with open(load_dir_0+'/agent_parameters.pkl', 'rb') as f:
             agent_params_0 = pickle.load(f) # load agent_0 model
-        with open(os.path.dirname(model_path_1)+'/agent_parameters.pkl', 'rb') as f:
+        with open(load_dir_1+'/agent_parameters.pkl', 'rb') as f:
             agent_params_1 = pickle.load(f) # load agent_0 model
         # load dqn models & memory buffers
         agent_0 = DQNAgent(agent_params_0)
-        agent_0.load_model(model_path_0)
-        agent_0.load_memory(os.path.join(os.path.dirname(model_path_0), 'memory.pkl'))
+        agent_0.load_model(load_dir_0)
+        agent_0.load_memory(os.path.join(load_dir_0, 'memory.pkl'))
         agent_1 = DQNAgent(agent_params_1)
-        agent_1.load_model(model_path_1)
-        agent_1.load_memory(os.path.join(os.path.dirname(model_path_1), 'memory.pkl'))
+        agent_1.load_model(load_dir_1)
+        agent_1.load_memory(os.path.join(load_dir_1, 'memory.pkl'))
         # load ep_returns
-        ep_returns_0 = np.load(os.path.join(os.path.dirname(model_path_0), 'ep_returns.npy'))
-        ep_returns_1 = np.load(os.path.join(os.path.dirname(model_path_1), 'ep_returns.npy'))
+        ep_returns_0 = np.load(os.path.join(load_dir_0, 'ep_returns.npy')).tolist()
+        ep_returns_1 = np.load(os.path.join(load_dir_1, 'ep_returns.npy')).tolist()
+    # specify model saving path
+    save_dir_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0/"
+    save_dir_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1/"
 
     # learning
     start_time = time.time()
@@ -84,7 +86,7 @@ if __name__ == "__main__":
     mean_1 = agent_params_1['mean']
     std_1 = agent_params_1['std']
     ep = train_params['complete_episodes']
-    while ep <= train_params['num_episodes']:
+    while ep < train_params['num_episodes']:
         # reset env
         obs, _ = env.reset()
         state_0 = double_utils.obs_to_state(obs, "all")
@@ -201,8 +203,8 @@ if __name__ == "__main__":
                 break
         ep_returns_0.append(sum(ep_rewards))
         ep_returns_1.append(sum(ep_rewards))
-        agent_0.save_model(model_path_0)
-        agent_1.save_model(model_path_1)
+        agent_0.save_model(save_dir_0)
+        agent_1.save_model(save_dir_1)
         train_params['complete_episodes'] += 1
         ep += 1
         rospy.loginfo("Episode : {} summary \nreturn: {} \naveraged return: {}".format(ep, sum(ep_rewards), sum(ep_returns_0)/len(ep_returns_0)))
@@ -214,28 +216,27 @@ if __name__ == "__main__":
     env.reset()
 
     # save replay buffer memories
-    agent_0.save_memory(model_path_0)
-    agent_1.save_memory(model_path_1)
+    agent_0.save_memory(save_dir_0)
+    agent_1.save_memory(save_dir_1)
     # save agent parameters
-    data_utils.save_pkl(content=agent_params_0, fdir=os.path.dirname(model_path_0), fname="agent_parameters.pkl")
-    data_utils.save_pkl(content=agent_params_1, fdir=os.path.dirname(model_path_1), fname="agent_parameters.pkl")
+    data_utils.save_pkl(content=agent_params_0, fdir=save_dir_0, fname="agent_parameters.pkl")
+    data_utils.save_pkl(content=agent_params_1, fdir=save_dir_1, fname="agent_parameters.pkl")
     # create train info
     train_info = train_params
     train_info["train_dur"] = train_dur
     train_info['success_count'] = env.success_count
 
     # save train info
-    data_utils.save_csv(content=train_info, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_information.csv")
-    data_utils.save_pkl(content=train_params, fdir=os.path.dirname(os.path.dirname(model_path_0)), fname="train_parameters.pkl")
+    data_utils.save_csv(content=train_info, fdir=os.path.dirname(save_dir_0), fname="train_information.csv")
+    data_utils.save_pkl(content=train_params, fdir=os.path.dirname(save_dir_0), fname="train_parameters.pkl")
     # save results
-    np.save(os.path.join(os.path.dirname(model_path_0), 'ep_returns.npy'), ep_returns_0)
-    np.save(os.path.join(os.path.dirname(model_path_1), 'ep_returns.npy'), ep_returns_1)
-
+    np.save(os.path.join(save_dir_0, 'ep_returns.npy'), ep_returns_0)
+    np.save(os.path.join(save_dir_1, 'ep_returns.npy'), ep_returns_1)
 
     # plot episodic returns
-    data_utils.plot_returns(returns=ep_returns_0, mode=0, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
+    data_utils.plot_returns(returns=ep_returns_0, mode=0, save_flag=True, fdir=os.path.dirname(save_dir_0))
     # plot accumulated returns
-    data_utils.plot_returns(returns=ep_returns_0, mode=1, save_flag=True, fdir=os.path.dirname(os.path.dirname(model_path_0)))
+    data_utils.plot_returns(returns=ep_returns_0, mode=1, save_flag=True, fdir=os.path.dirname(save_dir_0))
     # plot averaged return
     data_utils.plot_returns(returns=ep_returns_0, mode=2, save_flag=True,
-    fdir=os.path.dirname(os.path.dirname(model_path_0)))
+    fdir=os.path.dirname(save_dir_0))
