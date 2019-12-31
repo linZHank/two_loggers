@@ -59,6 +59,7 @@ if __name__ == "__main__":
         with open(os.path.dirname(load_dir_0)+ "/train_parameters.pkl", 'rb') as f:
             train_params = pickle.load(f)
         env.success_count = train_params['success_count']
+        train_params['source'] = args.source
         train_params['num_episodes'] = args.num_episodes
         # load agents parameters and replay buffers
         with open(load_dir_0+'/agent_parameters.pkl', 'rb') as f:
@@ -76,8 +77,8 @@ if __name__ == "__main__":
         ep_returns_0 = np.load(os.path.join(load_dir_0, 'ep_returns.npy')).tolist()
         ep_returns_1 = np.load(os.path.join(load_dir_1, 'ep_returns.npy')).tolist()
     # specify model saving path
-    save_dir_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0/"
-    save_dir_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1/"
+    save_dir_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0"
+    save_dir_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1"
 
     # learning
     start_time = time.time()
