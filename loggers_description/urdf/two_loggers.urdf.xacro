@@ -11,14 +11,14 @@
   <!-- <xacro:property name="R_LOG" value="0.01"/>
   <xacro:property name="L_LOG" value="2"/> -->
   <xacro:property name="R_LOG" value="0.02"/>
-  <xacro:property name="L_LOG" value="2.1"/>
+  <xacro:property name="L_LOG" value="2"/>
   <xacro:property name="M_LOG" value="0.04"/>
   <!-- properties of link_hat* -->
   <xacro:property name="R_HAT" value="0.02"/>
   <xacro:property name="L_HAT" value="0.1"/>
   <xacro:property name="M_HAT" value="0.5"/>
   <!-- properties of link_chassis* -->
-  <xacro:property name="R_CHASSIS" value="0.2"/>
+  <xacro:property name="R_CHASSIS" value="0.25"/>
   <xacro:property name="L_CHASSIS" value="0.1"/>
   <xacro:property name="M_CHASSIS" value="2"/>
   <!-- properties of link_caster* -->
