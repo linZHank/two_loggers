@@ -53,8 +53,8 @@ if __name__ == "__main__":
     else: # source is not empty, load params
         rospy.logwarn("Continue training from source: {}".format(args.source))
         # specify model loading paths
-        load_dir_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_0/"
-        load_dir_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_1/"
+        load_dir_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_0"
+        load_dir_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_1"
         # load train parameters
         with open(os.path.dirname(load_dir_0)+ "/train_parameters.pkl", 'rb') as f:
             train_params = pickle.load(f)
