@@ -138,6 +138,9 @@ class DoubleEscapeEnv(object):
         # topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)
+        # get ros params
+        self.world_name = rospy.get_param('/world_name')
+        self.exit_width = rospy.get_param('/exit_width')
 
     def pausePhysics(self):
         rospy.wait_for_service("/gazebo/pause_physics")
@@ -302,11 +305,11 @@ class DoubleEscapeEnv(object):
             self.status[0] = 'north'
         elif -6<=self.observation['logger_0']['pose'].position.y < -4.79:
             # if np.absolute(self.observation['logger_0']['pose'].position.x) > 1:
-            if np.absolute(self.observation['logger_0']['pose'].position.x) > 0.5:
+            if np.absolute(self.observation['logger_0']['pose'].position.x) > self.exit_width/2.:
                 self.status[0] = 'south'
             else:
                 # if np.absolute(self.observation['logger_0']['pose'].position.x) > 0.79:
-                if np.absolute(self.observation['logger_0']['pose'].position.x) > 0.295:
+                if np.absolute(self.observation['logger_0']['pose'].position.x) > (self.exit_width/2-0.25-0.005): # radius_robot=0.25
                     self.status[0] = 'door' # stuck at door
                 else:
                     self.status[0] = 'tunnel' # through door
@@ -325,11 +328,11 @@ class DoubleEscapeEnv(object):
             self.status[1] = 'north'
         elif -6<=self.observation['logger_1']['pose'].position.y < -4.79:
             # if np.absolute(self.observation['logger_1']['pose'].position.x) > 1:
-            if np.absolute(self.observation['logger_1']['pose'].position.x) > 0.5:
+            if np.absolute(self.observation['logger_1']['pose'].position.x) > self.exit_width/2.:
                 self.status[1] = 'south'
             else:
                 # if np.absolute(self.observation['logger_1']['pose'].position.x) > 0.79:
-                if np.absolute(self.observation['logger_1']['pose'].position.x) > 0.295:
+                if np.absolute(self.observation['logger_1']['pose'].position.x) > (self.exit_width/2-0.25-0.005): # radius_robot=0.25
                     self.status[1] = 'door' # stuck at door
                 else:
                     self.status[1] = 'tunnel' # through door

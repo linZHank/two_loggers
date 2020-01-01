@@ -25,7 +25,7 @@ def get_args():
     parser.add_argument('--gamma', type=float, default=0.99) # discount rate
     parser.add_argument('--lr', type=float, default=0.001) # learning rate
     parser.add_argument('--batch_size', type=int, default=2048)
-    parser.add_argument('--mem_cap', type=int, default=1000000)
+    parser.add_argument('--mem_cap', type=int, default=100000)
     parser.add_argument('--update_step', type=int, default=8192)
     parser.add_argument('--decay_mode', type=str, default='lin')
     parser.add_argument('--decay_period', type=float, help='for linear epsilon decay only', default=5000)

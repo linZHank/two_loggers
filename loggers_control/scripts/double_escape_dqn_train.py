@@ -224,6 +224,7 @@ if __name__ == "__main__":
     data_utils.save_pkl(content=agent_params_1, fdir=save_dir_1, fname="agent_parameters.pkl")
     # create train info
     train_info = train_params
+    train_info["world_name"] = env.world_name
     train_info["train_dur"] = train_dur
     train_info['success_count'] = env.success_count
 
