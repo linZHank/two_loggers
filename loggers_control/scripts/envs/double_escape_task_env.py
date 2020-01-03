@@ -297,19 +297,19 @@ class DoubleEscapeEnv(object):
         self.observation['logger_1']['pose'] = link_states.pose[id_logger_1]
         self.observation['logger_1']['twist'] = link_states.twist[id_logger_1]
         # compute logger_0's status
-        if self.observation['logger_0']['pose'].position.x > 4.79:
+        if self.observation['logger_0']['pose'].position.x > 4.745:
             self.status[0] = 'east'
-        elif self.observation['logger_0']['pose'].position.x < -4.79:
+        elif self.observation['logger_0']['pose'].position.x < -4.745:
             self.status[0] = 'west'
-        elif self.observation['logger_0']['pose'].position.y > 4.79:
+        elif self.observation['logger_0']['pose'].position.y > 4.745:
             self.status[0] = 'north'
-        elif -6<=self.observation['logger_0']['pose'].position.y < -4.79:
+        elif -6<=self.observation['logger_0']['pose'].position.y < -4.745:
             # if np.absolute(self.observation['logger_0']['pose'].position.x) > 1:
             if np.absolute(self.observation['logger_0']['pose'].position.x) > self.exit_width/2.:
                 self.status[0] = 'south'
             else:
                 # if np.absolute(self.observation['logger_0']['pose'].position.x) > 0.79:
-                if np.absolute(self.observation['logger_0']['pose'].position.x) > (self.exit_width/2-0.25-0.005): # radius_robot=0.25
+                if np.absolute(self.observation['logger_0']['pose'].position.x) > (self.exit_width/2-0.25-0.005): # robot_radius=0.25
                     self.status[0] = 'door' # stuck at door
                 else:
                     self.status[0] = 'tunnel' # through door
@@ -320,19 +320,19 @@ class DoubleEscapeEnv(object):
         else:
             self.status[0] = 'trapped'
         # compute logger_1's status
-        if self.observation['logger_1']['pose'].position.x > 4.79:
+        if self.observation['logger_1']['pose'].position.x > 4.745:
             self.status[1] = 'east'
-        elif self.observation['logger_1']['pose'].position.x < -4.79:
+        elif self.observation['logger_1']['pose'].position.x < -4.745:
             self.status[1] = 'west'
-        elif self.observation['logger_1']['pose'].position.y > 4.79:
+        elif self.observation['logger_1']['pose'].position.y > 4.745:
             self.status[1] = 'north'
-        elif -6<=self.observation['logger_1']['pose'].position.y < -4.79:
+        elif -6<=self.observation['logger_1']['pose'].position.y < -4.745:
             # if np.absolute(self.observation['logger_1']['pose'].position.x) > 1:
             if np.absolute(self.observation['logger_1']['pose'].position.x) > self.exit_width/2.:
                 self.status[1] = 'south'
             else:
                 # if np.absolute(self.observation['logger_1']['pose'].position.x) > 0.79:
-                if np.absolute(self.observation['logger_1']['pose'].position.x) > (self.exit_width/2-0.25-0.005): # radius_robot=0.25
+                if np.absolute(self.observation['logger_1']['pose'].position.x) > (self.exit_width/2-0.25-0.005): # robot_radius=0.25
                     self.status[1] = 'door' # stuck at door
                 else:
                     self.status[1] = 'tunnel' # through door
