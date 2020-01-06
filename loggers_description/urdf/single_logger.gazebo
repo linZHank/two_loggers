@@ -17,7 +17,7 @@
       <updateRate>100</updateRate>
       <leftJoint>joint_chassis_lwheel</leftJoint>
       <rightJoint>joint_chassis_rwheel</rightJoint>
-      <wheelSeparation>0.2</wheelSeparation>
+      <wheelSeparation>0.25</wheelSeparation>
       <wheelDiameter>0.18</wheelDiameter>
       <wheelTorque>1</wheelTorque>
       <!--wheelAcceleration>${wheel_accel}</wheelAcceleration-->
@@ -52,7 +52,7 @@
   <!--   <!-\- <mu1>0</mu1> -\-> -->
   <!--   <!-\- <mu2>0</mu2> -\-> -->
   <!--   <!-\- <slip1>1</slip1> -\-> -->
-  <!--   <!-\- <slip2>1</slip2> -\-> --> 
+  <!--   <!-\- <slip2>1</slip2> -\-> -->
   <!--   <mu1>10000</mu1> -->
   <!--   <mu2>10000</mu2> -->
   <!--   <minDepth>0.001</minDepth> -->
@@ -60,8 +60,8 @@
   <!-- </gazebo> -->
 
   <gazebo reference="link_caster">
-    <mu1>0.0001</mu1>
-    <mu2>0.0001</mu2>
+    <mu1>0</mu1>
+    <mu2>0</mu2>
     <material>Gazebo/DarkGrey</material>
   </gazebo>
 
@@ -74,4 +74,3 @@
   </gazebo>
 
 </robot>
-

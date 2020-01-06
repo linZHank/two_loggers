@@ -39,6 +39,8 @@ class SoloEscapeEnv(object):
         self.max_step = 1000
         self.steps = 0
         self.status = "trapped"
+        self.world_name = rospy.get_param('/world_name')
+        self.exit_width = rospy.get_param('/exit_width')
         self.model_states = ModelStates()
         # services
         self.reset_world_proxy = rospy.ServiceProxy('/gazebo/reset_world', Empty)
@@ -129,7 +131,7 @@ class SoloEscapeEnv(object):
         robot_pose = ModelState()
         robot_pose.model_name = "logger"
         robot_pose.reference_frame = "world"
-        robot_pose.pose.position.z = 0.2
+        robot_pose.pose.position.z = 0.19
         if init_pose: # inialize randomly
             assert np.absolute(init_pose[0]) <= 4.5
             assert np.absolute(init_pose[1]) <= 4.5
@@ -165,23 +167,23 @@ class SoloEscapeEnv(object):
         self.observation["pose"] = model_states.pose[id_logger]
         self.observation["twist"] = model_states.twist[id_logger]
         # compute status
-        if self.observation["pose"].position.x > 4.79:
+        if self.observation["pose"].position.x > 4.745:
             self.status = "east"
-        elif self.observation["pose"].position.x < -4.79:
+        elif self.observation["pose"].position.x < -4.745:
             self.status = "west"
-        elif self.observation["pose"].position.y > 4.79:
+        elif self.observation["pose"].position.y > 4.745:
             self.status = "north"
-        elif -6 <= self.observation["pose"].position.y < -4.79:
-            if np.absolute(self.observation["pose"].position.x) > 1:
+        elif -6 <= self.observation["pose"].position.y < -4.745:
+            if np.absolute(self.observation["pose"].position.x) > self.exit_width/2.:
                 self.status = "south"
             else:
-                if np.absolute(self.observation["pose"].position.x) > 0.79:
-                    self.status = "sdoor" # stuck at door
+                if np.absolute(self.observation["pose"].position.x) > (self.exit_width/2-0.25-0.005): # robot_radius=0.25
+                    self.status = 'door' # stuck at door
                 else:
-                    self.status = "tdoor" # through door
+                    self.status = "tunnel" # through door
         elif self.observation["pose"].position.y < -6:
             self.status = "escaped"
-        elif self.observation['pose'].position.z > 0.25 or self.observation['pose'].position.z < 0.15:
+        elif self.observation['pose'].position.z > 0.2 or self.observation['pose'].position.z < 0.18:
             self.status = "blew"
         else:
             self.status = "trapped"

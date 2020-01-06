@@ -21,8 +21,7 @@
     </include>
 
     <!-- Load the URDF into the ROS Parameter Server -->
-    <param name="robot_description"
-    command="$(find xacro)/xacro --inorder '$(find loggers_description)/urdf/two_loggers.urdf.xacro'" />
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find loggers_description)/urdf/two_loggers.urdf.xacro'" />
     <!-- ros params for RL envs -->
     <param name="world_name" type="str" value="$(arg sim_world_name)" />
     <param name="exit_width" type="double" value="2.0" unless="$(arg narrow)" />

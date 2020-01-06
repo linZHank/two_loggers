@@ -33,8 +33,8 @@
   </gazebo>
 
   <gazebo reference="link_caster_0">
-    <mu1>0.01</mu1>
-    <mu2>0.01</mu2>
+    <mu1>0</mu1>
+    <mu2>0</mu2>
     <material>Gazebo/Grey</material>
   </gazebo>
 

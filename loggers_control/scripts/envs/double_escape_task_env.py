@@ -123,6 +123,8 @@ class DoubleEscapeEnv(object):
         self.max_step = 2000
         self.steps = 0
         self.status = ['trapped', 'trapped']
+        self.world_name = rospy.get_param('/world_name')
+        self.exit_width = rospy.get_param('/exit_width')
         self.model_states = ModelStates()
         self.link_states = LinkStates()
         # services
@@ -138,9 +140,6 @@ class DoubleEscapeEnv(object):
         # topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)
-        # get ros params
-        self.world_name = rospy.get_param('/world_name')
-        self.exit_width = rospy.get_param('/exit_width')
 
     def pausePhysics(self):
         rospy.wait_for_service("/gazebo/pause_physics")

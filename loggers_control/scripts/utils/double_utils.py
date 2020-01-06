@@ -10,7 +10,7 @@ import math
 import argparse
 from geometry_msgs.msg import Pose, Twist
 
-# make arg parser
+
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', type=str, default='')
@@ -251,6 +251,3 @@ def create_agent_params(name, dim_state, actions, mean, std, layer_sizes, discou
     agent_params['final_eps'] = final_eps
 
     return agent_params
-
-def sum_train_info(train_params, add_ons):
-    pass

@@ -7,7 +7,7 @@ Author: LinZHanK (linzhank@gmail.com)
 Train new models example:
     python double_escape_dqn_train.py --num_episodes 10000 --num_steps 200 --normalize --update_step 10000 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
 Continue training models example:
-    python double_escape_dqn_train.py --source '2019-07-17-17-57' --num_episodes 100
+    python double_escape_dqn_train.py --source '2019-07-17-17-57' --num_episodes 15000
 """
 from __future__ import absolute_import, division, print_function
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     ep = train_params['complete_episodes']
     while ep < train_params['num_episodes']:
         # reset env
-        obs, _ = env.reset()
+        obs, info = env.reset()
         state_0 = double_utils.obs_to_state(obs, "all")
         state_1 = double_utils.obs_to_state(obs, "all")
         # check simulation crash
@@ -114,6 +114,7 @@ if __name__ == "__main__":
             epsilon_1 = agent_1.exponential_decay_epsilon(episode=ep, decay_rate=agent_params_1['decay_rate'], init_eps=agent_params_1['init_eps'], final_eps=agent_params_1['final_eps'])
         else:
             raise Exception("Epsilon decay mode not recognized.")
+        # run policy
         done, ep_rewards = False, []
         for st in range(train_params["num_steps"]):
             # check simulation crash
@@ -168,19 +169,19 @@ if __name__ == "__main__":
                 rospy.logerr("model blew up, transition not saved")
             # log step
             rospy.loginfo(
-                "Episode: {}, Step: {}, Complete episodes: {}, Complete steps: {}, epsilon_0: {}, epsilon_1: {} \nstate_0: {}, state_1: {}, \naction_0: {}, action_1: {}, \nnext_state_0: {}, next_state_1: {} \nreward/episodic_return: {}/{}, \nstatus: {}, \nnumber of success: {}".format(
+                "Episode: {}, Step: {}, Complete episodes: {}, Complete steps: {}, \nepsilon_0: {}, epsilon_1: {} \nstate_0: {}, state_1: {}, \naction_0: {}, action_1: {}, \nnext_state_0: {}, next_state_1: {} \nreward/episodic_return: {}/{}, \nstatus: {}, \nnumber of success: {}".format(
                     ep+1,
                     st+1,
                     train_params['complete_episodes'],
                     train_params['complete_steps'],
                     agent_0.epsilon,
                     agent_1.epsilon,
-                    state_0,
-                    state_1,
+                    refine_state_0,
+                    refine_state_1,
                     action_0,
                     action_1,
-                    next_state_0,
-                    next_state_1,
+                    refine_next_state_0,
+                    refine_next_state_1,
                     rew,
                     sum(ep_rewards),
                     info["status"],
@@ -208,6 +209,7 @@ if __name__ == "__main__":
         agent_1.save_model(save_dir_1)
         train_params['complete_episodes'] += 1
         ep += 1
+        # log episode
         rospy.loginfo("Episode : {} summary \nreturn: {} \naveraged return: {}".format(ep, sum(ep_rewards), sum(ep_returns_0)/len(ep_returns_0)))
 
 
