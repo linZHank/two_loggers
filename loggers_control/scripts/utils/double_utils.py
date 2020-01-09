@@ -31,7 +31,7 @@ def get_args():
     parser.add_argument('--decay_period', type=float, help='for linear epsilon decay only', default=5000)
     parser.add_argument('--decay_rate', type=float, help='for exponential epsilon decay only', default=0.9995)
     parser.add_argument('--init_eps', type=float, default=1.)
-    parser.add_argument('--final_eps', type=float, default=0.05)
+    parser.add_argument('--final_eps', type=float, default=0.1)
 
     return parser.parse_args()
 

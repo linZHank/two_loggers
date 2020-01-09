@@ -5,9 +5,9 @@ DQN is a model free, off policy, reinforcement learning algorithm (https://deepm
 Author: LinZHanK (linzhank@gmail.com)
 
 Train new models example:
-    python double_escape_dqn_train.py --num_episodes 10000 --num_steps 200 --normalize --update_step 10000 --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1
+    python double_escape_dqn_train.py --num_episodes 10000 --num_steps 200 --normalize --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1 --layer_sizes 256 128  --update_step 10000 --decay_mode 'exp' --decay_rate 0.999 --final_eps 0.05
 Continue training models example:
-    python double_escape_dqn_train.py --source '2019-07-17-17-57' --num_episodes 15000
+    python double_escape_dqn_train.py --source '2020-01-04-19-06' --num_episodes 15000
 """
 from __future__ import absolute_import, division, print_function
 
