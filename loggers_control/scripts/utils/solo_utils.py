@@ -85,6 +85,9 @@ def adjust_reward(train_params, env):
     elif info["status"] == "trapped":
         if train_params["time_bonus"]:
             adj_reward += train_params["time_bonus"]
+    elif info['status'] == 'tunnel':
+        if train_params["time_bonus"]:
+            adj_reward += train_params["time_bonus"]
     else: # hit wall
         if train_params["wall_bonus"]:
             adj_reward += train_params["wall_bonus"]
