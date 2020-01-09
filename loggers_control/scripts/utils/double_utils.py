@@ -121,6 +121,9 @@ def adjust_reward(train_params, env):
     if info["status"][0] == "trapped" or info["status"][1] == "trapped":
         if train_params["time_bonus"]:
             adj_reward += train_params['time_bonus']
+    if info['status'][0] == 'tunnel' or info['status'][1] == 'tunnel':
+        if train_params["time_bonus"]:
+            adj_reward += train_params["time_bonus"]
     if info["status"][0] == "blew" or info["status"][1] == "blew":
         done = True
     if info['status'][0] == 'north' or info['status'][0] == 'west' or info['status'][0] == 'south' or info['status'][0] == 'east' or info['status'][1] == 'north' or info['status'][1] == 'west' or info['status'][1] == 'south' or info['status'][1] == 'east': # hit wall
