@@ -23,7 +23,7 @@ if __name__ == "__main__":
     env = DoubleEscapeEnv()
     env.reset()
     # load agent models
-    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2020-01-08-11-54/"
+    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-12-31-17-43/"
     with open(os.path.join(model_dir,"agent_0/agent_parameters.pkl"), "rb") as f:
         agent_params_0 = pickle.load(f)
     with open(os.path.join(model_dir,"agent_1/agent_parameters.pkl"), "rb") as f:
