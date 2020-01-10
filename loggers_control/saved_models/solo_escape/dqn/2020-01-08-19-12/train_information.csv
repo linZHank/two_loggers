@@ -1,0 +1,13 @@
+normalize,False
+complete_episodes,3000
+num_episodes,3000
+wall_bonus,-0.1
+num_steps,100
+door_bonus,0
+source,
+success_count,301
+complete_steps,98647
+success_bonus,3.0
+world_name,wall_exit
+time_bonus,-0.01
+train_dur,28676.7375922
