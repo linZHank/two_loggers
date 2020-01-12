@@ -23,7 +23,7 @@ if __name__ == "__main__":
     env = DoubleEscapeEnv()
     env.reset()
     # load agent models
-    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-12-31-17-43/"
+    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2020-01-10-15-10/"
     with open(os.path.join(model_dir,"agent_0/agent_parameters.pkl"), "rb") as f:
         agent_params_0 = pickle.load(f)
     with open(os.path.join(model_dir,"agent_1/agent_parameters.pkl"), "rb") as f:
@@ -65,22 +65,18 @@ if __name__ == "__main__":
             state_0 = next_state_0
             state_1 = next_state_1
             # logging
-            print(
-                bcolors.OKGREEN,
-                "Episode: {}, Step: {} \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward: {}, status: {} \nsuccess_count: {}".format(
+            rospy.loginfo(
+                "Episode: {}, Step: {} \naction0: {}->{}, action0: {}->{}, reward: {}, status: {} \nsuccess_count: {}".format(
                     ep,
                     st,
                     action_index_0,
                     action_0,
                     action_index_1,
                     action_1,
-                    next_state_0,
-                    next_state_1,
                     rew,
                     info["status"],
                     env.success_count
                 ),
-                bcolors.ENDC
             )
             if done:
                 ep += 1
