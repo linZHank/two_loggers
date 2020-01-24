@@ -23,7 +23,7 @@ if __name__ == "__main__":
     env = DoubleEscapeEnv()
     env.reset()
     # load agent models
-    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2020-01-10-15-10/"
+    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2020-01-19-13-12/"
     with open(os.path.join(model_dir,"agent_0/agent_parameters.pkl"), "rb") as f:
         agent_params_0 = pickle.load(f)
     with open(os.path.join(model_dir,"agent_1/agent_parameters.pkl"), "rb") as f:
@@ -50,8 +50,8 @@ if __name__ == "__main__":
             rospy.logerr("Model blew up, skip this episode")
             obs, info = env.reset()
             continue
-        state_0 = double_utils.obs_to_state(obs, "all")
-        state_1 = double_utils.obs_to_state(obs, "all")
+        state_0 = double_utils.obs_to_state(obs, "logger_0")
+        state_1 = double_utils.obs_to_state(obs, "logger_1")
         for st in range(num_steps):
             action_index_0 = np.argmax(agent_0.qnet_active.predict(state_0.reshape(1,-1)))
             action_0 = agent_params_0["actions"][action_index_0]
@@ -60,8 +60,8 @@ if __name__ == "__main__":
             obs, rew, done, info = env.step(action_0, action_1)
             rew, done = double_utils.adjust_reward(eval_params, env)
 
-            next_state_0 = double_utils.obs_to_state(obs, "all")
-            next_state_1 = double_utils.obs_to_state(obs, "all")
+            next_state_0 = double_utils.obs_to_state(obs, "logger_0")
+            next_state_1 = double_utils.obs_to_state(obs, "logger_1")
             state_0 = next_state_0
             state_1 = next_state_1
             # logging
