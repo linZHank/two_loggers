@@ -35,7 +35,7 @@ def get_args():
 
     return parser.parse_args()
 
-def obs_to_state(observation, mode):
+def obs_to_state(observation, mode, noise=False):
     """
     Convert observation to state
     Args:
@@ -99,9 +99,13 @@ def obs_to_state(observation, mode):
     yaw_dot = observation["logger_1"]["twist"].angular.z
     state_1 = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
 
-    if mode == "logger_0":
+    if mode == "self_0":
+        return state_0
+    elif mode == "self_1":
+        return state_1
+    if mode == "lognbot_0":
         return np.concatenate((state_log, state_0), axis=0)
-    elif mode == "logger_1":
+    elif mode == "lognbot_1":
         return np.concatenate((state_log, state_1), axis=0)
     elif mode == "all":
         return np.concatenate((state_log, state_0, state_1), axis=0)

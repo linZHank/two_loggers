@@ -38,7 +38,7 @@ if __name__ == "__main__":
     if not args.source: # source is empty, create new params
         rospy.logwarn("Start a new training")
         # pre-extracted params
-        dim_state = len(double_utils.obs_to_state(env.observation, 'logger_0'))
+        dim_state = len(double_utils.obs_to_state(env.observation, 'lognbot_0'))
         actions = np.array([np.array([1, -1]), np.array([1, 1])])
         # train parameters
         train_params = double_utils.create_train_params(complete_episodes=0, complete_steps=0, success_count=0, source='', normalize=args.normalize, num_episodes=args.num_episodes, num_steps=args.num_steps, time_bonus=args.time_bonus, wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, success_bonus=args.success_bonus)

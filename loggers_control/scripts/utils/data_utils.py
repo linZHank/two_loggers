@@ -109,7 +109,7 @@ def plot_returns(returns, mode, save_flag, fdir):
         ax.set(xlabel='Episode', ylabel='Accumulated Returns')
         figure_dir = os.path.join(fdir, 'accumulated_returns.png')
         ax.grid()
-    else: # plot averaged return of eacj episode
+    else: # plot averaged return of each episode
         ax.plot(np.arange(len(ave_returns)), ave_returns)
         ax.set(xlabel='Episode', ylabel='Averaged Returns')
         # ax.set_ylim([-1,1])
