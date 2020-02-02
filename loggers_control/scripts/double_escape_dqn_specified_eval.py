@@ -24,11 +24,11 @@ from agents.dqn import DQNAgent
 if __name__ == '__main__':
     # specify init config
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    # init_config = [3.25,-4,0,pi/2,pi/2]
+    init_config = [3.25,-4,0,pi/2,pi/2]
     # init_config = [2.5,-2.25,0.2*pi,pi/2,pi/2]
     # init_config = [0.3875,-1.69,-0.6*pi,0,0]
     # init_config = [-2.487,-1.735,-0.2*pi,pi/2,pi/2]
-    init_config = [-3.225,-3.7,-19*pi/20,pi/2,pi/2]
+    # init_config = [-3.225,-3.7,-19*pi/20,pi/2,pi/2]
     # instantiate env
     env = DoubleEscapeEnv()
     obs, info = env.reset(init_config)
