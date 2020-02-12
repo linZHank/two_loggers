@@ -5,9 +5,9 @@ DQN is a model free, off policy, reinforcement learning algorithm (https://deepm
 Author: LinZHanK (linzhank@gmail.com)
 
 Train new models example:
-    python double_escape_dqn_train.py --num_episodes 10000 --num_steps 200 --normalize --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1 --layer_sizes 256 128  --update_step 10000 --decay_mode 'exp' --decay_rate 0.999 --final_eps 0.05
+    python coop_escape_dqn_train.py --num_episodes 10000 --num_steps 200 --normalize --time_bonus -0.0025 --wall_bonus -0.025 --door_bonus 0 --success_bonus 1 --layer_sizes 256 128  --update_step 10000 --decay_mode 'exp' --decay_rate 0.999 --final_eps 0.05
 Continue training models example:
-    python double_escape_dqn_train.py --source '2020-01-04-19-06' --num_episodes 15000
+    python coop_escape_dqn_train.py --source '2020-01-04-19-06' --num_episodes 15000
 """
 from __future__ import absolute_import, division, print_function
 
@@ -20,8 +20,8 @@ import tensorflow as tf
 import rospy
 import pickle
 
-from envs.double_escape_task_env import DoubleEscapeEnv
-from utils import data_utils, double_utils
+from envs.coop_escape_task_env import CoopEscapeEnv
+from utils import data_utils, coop_utils
 from agents.dqn import DQNAgent
 
 import pdb
@@ -30,22 +30,22 @@ import pdb
 if __name__ == "__main__":
     # create argument parser
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    args = double_utils.get_args()
+    args = coop_utils.get_args()
     # make an instance from env class
-    env = DoubleEscapeEnv()
+    env = CoopEscapeEnv()
     obs, info = env.reset()
     # create training parameters
     if not args.source: # source is empty, create new params
         rospy.logwarn("Start a new training")
         # pre-extracted params
-        dim_state = len(double_utils.obs_to_state(env.observation, "all"))
+        dim_state = len(coop_utils.obs_to_state(env.observation, "all"))
         actions = np.array([np.array([1, -1]), np.array([1, 1])])
         # train parameters
-        train_params = double_utils.create_train_params(complete_episodes=0, complete_steps=0, success_count=0, source='', normalize=args.normalize, num_episodes=args.num_episodes, num_steps=args.num_steps, time_bonus=args.time_bonus, wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, success_bonus=args.success_bonus)
+        train_params = coop_utils.create_train_params(complete_episodes=0, complete_steps=0, success_count=0, source='', normalize=args.normalize, num_episodes=args.num_episodes, num_steps=args.num_steps, time_bonus=args.time_bonus, wall_bonus=args.wall_bonus, door_bonus=args.door_bonus, success_bonus=args.success_bonus)
         # agent parameters
-        agent_params_0 = double_utils.create_agent_params(name='logger_0', dim_state=dim_state, actions=actions, mean=np.zeros(dim_state), std=np.zeros(dim_state)+1e-15, layer_sizes=args.layer_sizes, discount_rate=args.gamma, learning_rate=args.lr, batch_size=args.batch_size, memory_cap=args.mem_cap, update_step=args.update_step, decay_mode=args.decay_mode, decay_period=args.decay_period, decay_rate=args.decay_rate, init_eps=args.init_eps, final_eps=args.final_eps)
+        agent_params_0 = coop_utils.create_agent_params(name='logger_0', dim_state=dim_state, actions=actions, mean=np.zeros(dim_state), std=np.zeros(dim_state)+1e-15, layer_sizes=args.layer_sizes, discount_rate=args.gamma, learning_rate=args.lr, batch_size=args.batch_size, memory_cap=args.mem_cap, update_step=args.update_step, decay_mode=args.decay_mode, decay_period=args.decay_period, decay_rate=args.decay_rate, init_eps=args.init_eps, final_eps=args.final_eps)
         ep_returns_0 = []
-        agent_params_1 = double_utils.create_agent_params(name='logger_1', dim_state=dim_state, actions=actions, mean=np.zeros(dim_state), std=np.zeros(dim_state)+1e-15, layer_sizes=args.layer_sizes, discount_rate=args.gamma, learning_rate=args.lr, batch_size=args.batch_size, memory_cap=args.mem_cap, update_step=args.update_step, decay_mode=args.decay_mode, decay_period=args.decay_period, decay_rate=args.decay_rate, init_eps=args.init_eps, final_eps=args.final_eps)
+        agent_params_1 = coop_utils.create_agent_params(name='logger_1', dim_state=dim_state, actions=actions, mean=np.zeros(dim_state), std=np.zeros(dim_state)+1e-15, layer_sizes=args.layer_sizes, discount_rate=args.gamma, learning_rate=args.lr, batch_size=args.batch_size, memory_cap=args.mem_cap, update_step=args.update_step, decay_mode=args.decay_mode, decay_period=args.decay_period, decay_rate=args.decay_rate, init_eps=args.init_eps, final_eps=args.final_eps)
         ep_returns_1 = []
         # instantiate new agents
         agent_0 = DQNAgent(agent_params_0)
@@ -53,8 +53,8 @@ if __name__ == "__main__":
     else: # source is not empty, load params
         rospy.logwarn("Continue training from source: {}".format(args.source))
         # specify model loading paths
-        load_dir_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_0"
-        load_dir_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+args.source+"/agent_1"
+        load_dir_0 = os.path.dirname(sys.path[0])+"/saved_models/coop_escape/dqn/"+args.source+"/agent_0"
+        load_dir_1 = os.path.dirname(sys.path[0])+"/saved_models/coop_escape/dqn/"+args.source+"/agent_1"
         # load train parameters
         with open(os.path.dirname(load_dir_0)+ "/train_parameters.pkl", 'rb') as f:
             train_params = pickle.load(f)
@@ -77,8 +77,8 @@ if __name__ == "__main__":
         ep_returns_0 = np.load(os.path.join(load_dir_0, 'ep_returns.npy')).tolist()
         ep_returns_1 = np.load(os.path.join(load_dir_1, 'ep_returns.npy')).tolist()
     # specify model saving path
-    save_dir_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_0"
-    save_dir_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/"+date_time+"/agent_1"
+    save_dir_0 = os.path.dirname(sys.path[0])+"/saved_models/coop_escape/dqn/"+date_time+"/agent_0"
+    save_dir_1 = os.path.dirname(sys.path[0])+"/saved_models/coop_escape/dqn/"+date_time+"/agent_1"
 
     # learning
     start_time = time.time()
@@ -90,8 +90,8 @@ if __name__ == "__main__":
     while ep < train_params['num_episodes']:
         # reset env
         obs, info = env.reset()
-        state_0 = double_utils.obs_to_state(obs, "all")
-        state_1 = double_utils.obs_to_state(obs, "all")
+        state_0 = coop_utils.obs_to_state(obs, "all")
+        state_1 = coop_utils.obs_to_state(obs, "all")
         # check simulation crash
         if sum(np.isnan(state_0)) or sum(np.isnan(state_1)):
             rospy.logfatal("Simulation Crashed")
@@ -134,8 +134,8 @@ if __name__ == "__main__":
             action_index_1 = agent_1.epsilon_greedy(refine_state_1)
             action_1 = agent_1.actions[action_index_1]
             obs, rew, done, info = env.step(action_0, action_1)
-            next_state_0 = double_utils.obs_to_state(obs, "all")
-            next_state_1 = double_utils.obs_to_state(obs, "all")
+            next_state_0 = coop_utils.obs_to_state(obs, "all")
+            next_state_1 = coop_utils.obs_to_state(obs, "all")
             # compute incremental mean and std
             inc_mean_0 = data_utils.increment_mean(mean_0, next_state_0, (ep+1)*(st+1)+1)
             inc_std_0 = data_utils.increment_std(std_0, mean_0, inc_mean_0, next_state_0, (ep+1)*(st+1)+1)
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                 refine_next_state_0 = next_state_0
                 refine_next_state_1 = next_state_1
             # adjust reward based on bonus options
-            rew, done = double_utils.adjust_reward(train_params, env)
+            rew, done = coop_utils.adjust_reward(train_params, env)
             ep_rewards.append(rew)
             train_params['success_count'] = env.success_count
             train_params['complete_steps'] += 1

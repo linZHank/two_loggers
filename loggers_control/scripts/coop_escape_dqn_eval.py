@@ -1,5 +1,5 @@
 """
-Evaluation of learned model for double_escape_task
+Evaluation of learned model for coop_escape_task
 Author: LinZHanK (linzhank@gmail.com)
 """
 from __future__ import absolute_import, division, print_function
@@ -13,17 +13,17 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense
 import rospy
 
-from envs.double_escape_task_env import DoubleEscapeEnv
-from utils import data_utils, double_utils
+from envs.coop_escape_task_env import CoopEscapeEnv
+from utils import data_utils, coop_utils
 from utils.data_utils import bcolors
 from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
     # instantiate env
-    env = DoubleEscapeEnv()
+    env = CoopEscapeEnv()
     env.reset()
     # load agent models
-    model_dir = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2020-01-19-13-12/"
+    model_dir = os.path.dirname(sys.path[0])+"/saved_models/coop_escape/dqn/2020-01-19-13-12/"
     with open(os.path.join(model_dir,"agent_0/agent_parameters.pkl"), "rb") as f:
         agent_params_0 = pickle.load(f)
     with open(os.path.join(model_dir,"agent_1/agent_parameters.pkl"), "rb") as f:
@@ -50,18 +50,18 @@ if __name__ == "__main__":
             rospy.logerr("Model blew up, skip this episode")
             obs, info = env.reset()
             continue
-        state_0 = double_utils.obs_to_state(obs, "logger_0")
-        state_1 = double_utils.obs_to_state(obs, "logger_1")
+        state_0 = coop_utils.obs_to_state(obs, "logger_0")
+        state_1 = coop_utils.obs_to_state(obs, "logger_1")
         for st in range(num_steps):
             action_index_0 = np.argmax(agent_0.qnet_active.predict(state_0.reshape(1,-1)))
             action_0 = agent_params_0["actions"][action_index_0]
             action_index_1 = np.argmax(agent_1.qnet_active.predict(state_1.reshape(1,-1)))
             action_1 = agent_params_1["actions"][action_index_1]
             obs, rew, done, info = env.step(action_0, action_1)
-            rew, done = double_utils.adjust_reward(eval_params, env)
+            rew, done = coop_utils.adjust_reward(eval_params, env)
 
-            next_state_0 = double_utils.obs_to_state(obs, "logger_0")
-            next_state_1 = double_utils.obs_to_state(obs, "logger_1")
+            next_state_0 = coop_utils.obs_to_state(obs, "logger_0")
+            next_state_1 = coop_utils.obs_to_state(obs, "logger_1")
             state_0 = next_state_0
             state_1 = next_state_1
             # logging
