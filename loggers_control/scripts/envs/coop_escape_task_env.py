@@ -94,12 +94,12 @@ def generate_random_pose():
 
     return random_pose
 
-class DoubleEscapeEnv(object):
+class CoopEscapeEnv(object):
     """
-    DoubleEscape Class
+    Cooperative escape environment Class
     """
     def __init__(self):
-        rospy.init_node("double_escape_task_env", anonymous=True, log_level=rospy.INFO)
+        rospy.init_node("coop_escape_task_env", anonymous=True, log_level=rospy.INFO)
         # init simulation parameters
         self.rate = rospy.Rate(100)
         # init environment parameters

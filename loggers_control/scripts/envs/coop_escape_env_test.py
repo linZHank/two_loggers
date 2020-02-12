@@ -12,7 +12,7 @@ import rospy
 from std_srvs.srv import Empty
 from geometry_msgs.msg import Pose, Twist
 
-from double_escape_task_env import DoubleEscapeEnv
+from double_escape_task_env import CoopEscapeEnv
 # from .utils.double_utils import create_pose_buffer, obs_to_state
 import pdb
 # pdb.set_trace()
@@ -23,7 +23,7 @@ if __name__ == "__main__" and __package__ is None:
     num_episodes = 20
     num_steps = 20
 
-    escaper = DoubleEscapeEnv()
+    escaper = CoopEscapeEnv()
     escaper.reset()
     for ep in range(num_episodes):
         obs, info = escaper.reset()
