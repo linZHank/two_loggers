@@ -127,7 +127,8 @@ class DQNAgent:
         with tf.GradientTape() as tape:
             # run forward pass
             pred_q = tf.math.reduce_sum(tf.cast(self.qnet_active(batch_states), tf.float32) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
-            target_q = batch_rewards + (1. - batch_done_flags) * gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
+            target_q = batch_rewards + (1. - batch_done_flags) * gamma * tf.math.reduce_sum(self.qnet_stable(batch_next_states)*tf.one_hot(tf.math.argmax(self.qnet_active(batch_next_states),axis=1),len(self.actions)),axis=1) # DDQN
+            # target_q = batch_rewards + (1. - batch_done_flags) * gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1) # DQN
             # compute loss value
             loss_value = self.loss_fn(y_true=target_q, y_pred=pred_q)
         # use the gradient tape to automatically retrieve the gradients of the trainable variables with respect to the loss.
