@@ -50,8 +50,8 @@ if __name__ == "__main__":
             rospy.logerr("Model blew up, skip this episode")
             obs, info = env.reset()
             continue
-        state_0 = coop_utils.obs_to_state(obs, "logger_0")
-        state_1 = coop_utils.obs_to_state(obs, "logger_1")
+        state_0 = coop_utils.obs_to_state(obs, "lognbot_0")
+        state_1 = coop_utils.obs_to_state(obs, "lognbot_1")
         for st in range(num_steps):
             action_index_0 = np.argmax(agent_0.qnet_active.predict(state_0.reshape(1,-1)))
             action_0 = agent_params_0["actions"][action_index_0]
@@ -60,8 +60,8 @@ if __name__ == "__main__":
             obs, rew, done, info = env.step(action_0, action_1)
             rew, done = coop_utils.adjust_reward(eval_params, env)
 
-            next_state_0 = coop_utils.obs_to_state(obs, "logger_0")
-            next_state_1 = coop_utils.obs_to_state(obs, "logger_1")
+            next_state_0 = coop_utils.obs_to_state(obs, "lognbot_0")
+            next_state_1 = coop_utils.obs_to_state(obs, "lognbot_1")
             state_0 = next_state_0
             state_1 = next_state_1
             # logging
