@@ -55,7 +55,7 @@
   </link>
 
   <joint name="joint_hat_chassis" type="continuous">
-    <origin rpy="0 0 ${PI/2}" xyz="0.0 0 ${(-L_HAT-L_CHASSIS)/2}"/>
+    <origin rpy="0 0 ${PI/2}" xyz="0 0 ${(-L_HAT-L_CHASSIS)/2}"/>
     <parent link="link_hat"/>
     <child link="link_chassis" />
     <axis rpy="0 0 0" xyz="0 0 1"/>
