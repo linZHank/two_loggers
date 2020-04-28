@@ -8,15 +8,17 @@ from numpy import pi
 import rospy
 import tf
 
-from solo_escape_task_env import SoloEscapeEnv
+from solo_escape_discrete_env import SoloEscapeDiscreteEnv
 
 
 if __name__ == "__main__":
     num_episodes = 10
     num_steps = 8
 
-    escaper = SoloEscapeEnv()
-    escaper.reset()
+    env = SoloEscapeDiscreteEnv()
+    for _ in range(100):
+        obs = env.reset()
+        rospy.logdebug("obs: {}".format(obs))
     # test 1
     # for ep in range(num_episodes):
     #     obs, info = escaper.reset()
@@ -27,13 +29,13 @@ if __name__ == "__main__":
     #         rospy.loginfo("Episode: {}, Step: {}, action: {}".format(ep, st, action))
 
     # test 2
-    for ep in range(num_episodes):
-        obs, info = escaper.reset()
-        action = np.random.randn(2)
-        rospy.loginfo("Logger was reset with observation: {} \nwith information: {}".format(obs, info))
-        for st in range(num_steps):
-            obs, rew, done, info = escaper.step(action)
-            rospy.loginfo("Episode: {}, Step: {}, action: {}".format(ep, st, action))
+    # for ep in range(num_episodes):
+    #     obs, info = escaper.reset()
+    #     action = np.random.randn(2)
+    #     rospy.loginfo("Logger was reset with observation: {} \nwith information: {}".format(obs, info))
+    #     for st in range(num_steps):
+    #         obs, rew, done, info = escaper.step(action)
+    #         rospy.loginfo("Episode: {}, Step: {}, action: {}".format(ep, st, action))
 
     # test 3
     # x = np.linspace(-4.5, 4.5, num=num_episodes)
@@ -48,5 +50,4 @@ if __name__ == "__main__":
     #     for st in range(num_steps):
     #         obs, rew, done, info = escaper.step(action)
     #         # rospy.loginfo("Episode: {}, Step: {}, action: {}".format(ep, st, action))
-    pass
     rospy.logwarn("test finished")
