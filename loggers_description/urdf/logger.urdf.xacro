@@ -25,7 +25,7 @@
     <xacro:include filename="$(find loggers_description)/urdf/materials.xacro" />
 
     <!-- building the robot in following-->
-    <xacro:macro name="logger_base_macro">
+    <xacro:macro name="logger_macro">
         <link name="chassis">
             <visual>
                 <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -125,7 +125,7 @@
             <material>Gazebo/Wood</material>
         </gazebo>
 
-        <joint name="chassis_right_wheel" type="continuous">
+        <joint name="chassis-right_wheel" type="continuous">
             <origin rpy="0 0 0" xyz="${-R_CHASSIS/2} ${R_CHASSIS/2} 0"/>
             <child link="right_wheel" />
             <parent link="chassis"/>
@@ -192,6 +192,24 @@
         <material>Gazebo/Red</material>
     </gazebo>
 
+    <!-- differential_drive_controller plugin -->
+    <gazebo>
+        <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+            <legacyMode>false</legacyMode>
+            <alwaysOn>true</alwaysOn>
+            <updateRate>100</updateRate>
+            <leftJoint>chassis-left_wheel</leftJoint>
+            <rightJoint>chassis-right_wheel</rightJoint>
+            <wheelSeparation>0.25</wheelSeparation>
+            <wheelDiameter>0.18</wheelDiameter>
+            <wheelTorque>1</wheelTorque>
+            <!--wheelAcceleration>${wheel_accel}</wheelAcceleration-->
+            <commandTopic>cmd_vel_0</commandTopic>
+            <odometryTopic>odom</odometryTopic>
+            <odometryFrame>odom</odometryFrame>
+            <robotBaseFrame>chassis</robotBaseFrame>
+        </plugin>
+    </gazebo>
 
     </xacro:macro>
 </robot>

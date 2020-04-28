@@ -6,6 +6,6 @@
     <xacro:include filename="$(find loggers_description)/urdf/logger.urdf.xacro" />
 
     <!-- Instantiate logger_base_macro once (has no parameters atm) -->
-    <xacro:logger_base_macro />
+    <xacro:logger_macro />
 
 </robot>

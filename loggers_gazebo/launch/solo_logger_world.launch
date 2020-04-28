@@ -21,14 +21,14 @@
     </include>
 
     <!-- Load the URDF into the ROS Parameter Server -->
-    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find loggers_description)/urdf/single_logger.urdf.xacro'" />
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find loggers_description)/urdf/logger_0.urdf.xacro'" />
     <!-- ros params for RL envs -->
     <param name="world_name" type="str" value="$(arg sim_world_name)" />
     <param name="exit_width" type="double" value="2.0" unless="$(arg narrow)" />
     <param name="exit_width" type="double" value="1.0" if="$(arg narrow)" />
 
     <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
-    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"               respawn="false" output="screen"
-    args="-urdf -z 0.19 -Y -1.57 -model logger -param robot_description"/>
+    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+    args="-urdf -Y 3.14 -model logger -param robot_description"/>
 
 </launch>
