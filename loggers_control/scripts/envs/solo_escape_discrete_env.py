@@ -27,12 +27,13 @@ class SoloEscapeDiscreteEnv(object):
     def __init__(self):
         rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.DEBUG)
         # env properties
+        self.name = 'solo_escape'
         self.rate = rospy.Rate(1000) # gazebo world is running at 1000 Hz
         self.max_steps = 999
         self.step_counter = 0
         self.observation_space = (6,) # x, y, x_d, y_d, th, th_d
         self.action_space = (5,) # cmd_vel: [-1,-1], [-1,1], [1,-1], [1,1], [0,0]
-        self.actions = np.array([[1,1], [1,-1], [-1,1], [-1,-1], [0,0]])
+        self.actions = np.array([[2,1], [2,-1], [-2,1], [-2,-1], [0,0]])
         # robot properties
         self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()

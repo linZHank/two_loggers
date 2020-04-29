@@ -1,24 +1,22 @@
+#!/usr/bin/env python
 """
 DQN class
 """
-
-
 from __future__ import absolute_import, division, print_function
 
 import sys
 import os
 import numpy as np
 import random
+from datetime import datetime
 import pickle
 import tensorflow as tf
 import rospy
 
-from utils import data_utils
-from utils.data_utils import bcolors
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.layers import Dense
-from tensorflow.keras import Model
+# from tensorflow import keras
+# from tensorflow.keras import layers
+# from tensorflow.keras.layers import Dense
+# from tensorflow.keras import Model
 
 
 class Memory:
@@ -31,7 +29,7 @@ class Memory:
     def store(self, experience):
         # pop a random experience if memory full
         if len(self.memory) >= self.memory_cap:
-            self.memory.pop(random.randint(0, len(self.memory)-1))
+            self.memory.pop(0)
         self.memory.append(experience)
         rospy.logdebug("experience: {} stored to memory".format(experience))
 
@@ -43,38 +41,51 @@ class Memory:
             batch = random.sample(self.memory, batch_size)
         rospy.logdebug("A batch of memories are sampled with size: {}".format(batch_size))
 
-        return zip(*batch)
-
+        return list(zip(*batch))
 
 class DQNAgent:
-    def __init__(self, params):
-        # agent parameters
-        self.name = params['name']
-        self.dim_state = params["dim_state"]
-        self.actions = params["actions"]
+    def __init__(self, env, name, layer_sizes=[64,64], update_epoch=8000, learning_rate=0.001, batch_size=8192, gamma =0.999, init_eps=1., final_eps=.1, warmup_episodes=100):
+        # fixed
+        self.name = name
+        self.env = env
+        self.date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
+        self.model_dir = os.path.join(sys.path[0], 'saved_models/dqn', env.name, self.date_time, str(name))
+        self.save_frequency = 100000
+        # hyper-parameters
+        self.dim_state = env.observation_space[0]
+        self.action_space = env.action_space # [f_x,f_y]
+        self.memory_cap = int(env.max_steps*100)
+        self.layer_sizes = layer_sizes
+        self.update_epoch = update_epoch
+        self.learning_rate = learning_rate
+        self.batch_size = batch_size
+        self.gamma = gamma
+        self.init_eps = init_eps
+        self.final_eps = final_eps
+        self.warmup_episodes = warmup_episodes
+        # variables
         self.epsilon = 1
-        self.layer_sizes = params["layer_sizes"]
-        if type(params["layer_sizes"]) == int:
-            self.layer_sizes = [params["layer_sizes"]]
-        self.update_step = params["update_step"]
+        self.epoch_counter = 0
         # Q(s,a;theta)
         assert len(self.layer_sizes) >= 1
         inputs = tf.keras.Input(shape=(self.dim_state,), name='state')
-        x = layers.Dense(self.layer_sizes[0], activation='relu')(inputs)
+        x = tf.keras.layers.Dense(self.layer_sizes[0], activation='relu')(inputs)
         for i in range(1,len(self.layer_sizes)):
-            x = layers.Dense(self.layer_sizes[i], activation='relu')(x)
-        outputs = layers.Dense(len(self.actions))(x)
-        self.qnet_active = Model(inputs=inputs, outputs=outputs, name='qnet_model')
+            x = tf.keras.layers.Dense(self.layer_sizes[i], activation='relu')(x)
+        outputs = tf.keras.layers.Dense(self.action_space[0])(x)
+        self.qnet_active = tf.keras.Model(inputs=inputs, outputs=outputs, name='qnet_model')
+        self.qnet_active.summary()
         # clone active Q-net to create stable Q-net
         self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
         # optimizer
-        self.optimizer = tf.keras.optimizers.Adam(lr=params['learning_rate'])
+        self.optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
         # loss function
         self.loss_fn = tf.keras.losses.MeanSquaredError()
         # metrics
-        self.mse_metric = keras.metrics.MeanSquaredError()
+        self.mse_metric = tf.keras.metrics.MeanSquaredError()
         # init replay memory
-        self.replay_memory = Memory(memory_cap=params['memory_cap'])
+        self.replay_memory = Memory(memory_cap=self.memory_cap)
+        # self.replay_memory = deque(maxlen=self.memory_cap)
 
     def epsilon_greedy(self, state):
         """
@@ -82,57 +93,49 @@ class DQNAgent:
         Else, return a random index
         """
         if np.random.rand() > self.epsilon:
-            return np.argmax(self.qnet_active(state.reshape(1,-1)))
+            action = np.argmax(self.qnet_active(state.reshape(1,-1)))
         else:
-            print(bcolors.WARNING, "{} Take a random action!".format(self.name), bcolors.ENDC)
-            return np.random.randint(len(self.actions))
+            action = np.random.randint(self.action_space[0])
+            rospy.logdebug("{} Take a random action!".format(self.name))
 
-    def linear_decay_epsilon(self, episode, decay_period, init_eps, final_eps, warmup_episodes=64):
+        return action
+
+    def linear_epsilon_decay(self, episode, decay_period):
         """
         Returns the current epsilon for the agent's epsilon-greedy policy. This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et al., 2015). The schedule is as follows:
             Begin at 1. until warmup_steps steps have been taken; then Linearly decay epsilon from 1. to final_eps in decay_period steps; and then Use epsilon from there on.
         Args:
-            decay_period: float, the period over which epsilon is decayed.
-            episode: int, the number of training steps completed so far.
-            warmup_episodes: int, the number of steps taken before epsilon is decayed.
-            final_eps: float, the final value to which to decay the epsilon parameter.
+            decay_period: int
+            episode: int
         Returns:
-            A float, the current epsilon value computed according to the schedule.
         """
-        episodes_left = decay_period + warmup_episodes - episode
-        bonus = (init_eps - final_eps) * episodes_left / decay_period
-        bonus = np.clip(bonus, 0., init_eps-final_eps)
-        self.epsilon = final_eps + bonus
+        episodes_left = decay_period + self.warmup_episodes - episode
+        bonus = (self.init_eps - self.final_eps) * episodes_left / decay_period
+        bonus = np.clip(bonus, 0., self.init_eps-self.final_eps)
+        self.epsilon = self.final_eps + bonus
 
-        return self.epsilon
-
-    def exponential_decay_epsilon(self, episode, decay_rate, init_eps, final_eps, warmup_episodes=64):
+    def exponential_epsilon_decay(self, episode, decay_rate):
         """
         Returns the current epsilon for the agent's epsilon-greedy policy:
             Begin at 1. until warmup_steps steps have been taken; then exponentially decay epsilon from 1. to final_eps; and then Use epsilon from there on.
         Args:
             episode: int, the number of training steps completed so far.
-            warmup_episodes: int, the number of steps taken before epsilon is decayed.
             decay_rate: exponential rate of epsilon decay
         Returns:
-            A float, the current epsilon value computed according to the schedule.
         """
-        if episode >= warmup_episodes:
+        if episode >= self.warmup_episodes:
             self.epsilon *= decay_rate
-        if self.epsilon <= final_eps:
-            self.epsilon = final_eps
+        if self.epsilon <= self.final_eps:
+            self.epsilon = self.final_eps
 
-        return self.epsilon
-
-    def train(self, batch_size, gamma):
+    def train(self, auto_save=True):
         # sample a minibatch from replay buffer
-        minibatch = self.replay_memory.sample_batch(batch_size)
+        minibatch = self.replay_memory.sample_batch(batch_size=self.batch_size)
         (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
         # open a GradientTape to record the operations run during the forward pass
         with tf.GradientTape() as tape:
-            # run forward pass
-            pred_q = tf.math.reduce_sum(tf.cast(self.qnet_active(batch_states), tf.float32) * tf.one_hot(batch_actions, len(self.actions)), axis=-1)
-            target_q = batch_rewards + (1. - batch_done_flags) * gamma * tf.math.reduce_max(self.qnet_stable(batch_next_states), axis=-1)
+            pred_q = tf.math.reduce_sum(self.qnet_active(batch_states) * tf.one_hot(batch_actions, self.action_space[0]), axis=-1)
+            target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_sum(self.qnet_stable(batch_next_states)*tf.one_hot(tf.math.argmax(self.qnet_active(batch_next_states),axis=1), self.action_space[0]),axis=1) # double DQN trick
             # compute loss value
             loss_value = self.loss_fn(y_true=target_q, y_pred=pred_q)
         # use the gradient tape to automatically retrieve the gradients of the trainable variables with respect to the loss.
@@ -142,35 +145,67 @@ class DQNAgent:
         # update metrics
         self.mse_metric(target_q, pred_q)
         # display metrics
-        train_mse = self.mse_metric.result()
-        print(bcolors.OKGREEN, "{} mse: {}".format(self.name, train_mse), bcolors.ENDC)
+        rospy.loginfo("{} mse: {}".format(self.name, self.mse_metric.result()))
         # reset training metrics
         self.mse_metric.reset_states()
+        # update qnet_stable
+        self.epoch_counter += 1
+        if not self.epoch_counter % self.update_epoch:
+            self.qnet_stable.set_weights(self.qnet_active.get_weights())
+            logging.warning("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTarget Q-net updated\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
+        if auto_save:
+            if not self.epoch_counter % self.save_frequency:
+                self.save_model()
 
-    def save_model(self, model_dir):
+    def save_model(self):
         self.qnet_active.summary()
-        self.qnet_stable.summary()
         # create model saving directory if not exist
-        if not os.path.exists(model_dir):
-            os.makedirs(model_dir)
+        model_path = os.path.join(self.model_dir, 'models', str(self.epoch_counter)+'.h5')
+        if not os.path.exists(os.path.dirname(model_path)):
+            os.makedirs(os.path.dirname(model_path))
         # save model
-        self.qnet_active.save(os.path.join(model_dir,'active_model.h5'))
-        self.qnet_stable.save(os.path.join(model_dir,'stable_model.h5'))
-        print("Q_net models saved at {}".format(model_dir))
+        self.qnet_active.save(model_path)
+        # self.qnet_stable.save(os.path.join(model_dir, 'stable_model-'+str(self.epoch_counter)+'.h5'))
+        logging.info("Q_net models saved at {}".format(model_path))
 
-    def load_model(self, model_dir):
-        self.qnet_active = tf.keras.models.load_model(os.path.join(model_dir,'active_model.h5'))
-        self.qnet_stable = tf.keras.models.load_model(os.path.join(model_dir,'stable_model.h5'))
-        print("Q-Net models loaded")
+    def load_model(self, model_path):
+        self.qnet_active = tf.keras.models.load_model(model_path)
+        self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
+        logging.warning("Q-Net models loaded")
         self.qnet_active.summary()
-        self.qnet_stable.summary()
 
-    def save_memory(self, memory_dir):
-        # save transition buffer memory
-        data_utils.save_pkl(content=self.replay_memory, fdir=memory_dir, fname='memory.pkl')
-        print("transitions memory saved at {}".format(memory_dir))
+    def save_memory(self):
+        memory_path = os.path.join(self.model_dir, 'memory.pkl')
+        if not os.path.exists(os.path.dirname(memory_path)):
+            os.makedirs(os.path.dirname(memory_path))
+        with open(memory_path, 'wb') as f:
+            pickle.dump(self.replay_memory, f, pickle.HIGHEST_PROTOCOL)
+        logging.info("Replay memory saved at {}".format(memory_path))
 
     def load_memory(self, memory_path):
         with open(memory_path, 'rb') as f:
             self.replay_memory = pickle.load(f)
-        print("Replay Buffer Loaded")
+        logging.warning("Replay Buffer Loaded")
+
+    def save_params(self):
+        hyper_params = dict(
+            dim_state = self.dim_state,
+            action_space = self.action_space[0],
+            memory_cap = self.memory_cap,
+            layer_sizes = self.layer_sizes,
+            update_epoch = self.update_epoch,
+            learning_rate = self.learning_rate,
+            batch_size = self.batch_size,
+            gamma = self.gamma,
+            init_eps = self.init_eps,
+            final_eps = self.final_eps,
+            warmup_episodes = self.warmup_episodes,
+            epsilon = self.epsilon,
+            epoch_counter = self.epoch_counter
+        )
+        params_path = os.path.join(self.model_dir, 'hyper_params.pkl')
+        if not os.path.exists(os.path.dirname(params_path)):
+            os.makedirs(os.path.dirname(params_path))
+        with open(params_path, 'wb') as f:
+            pickle.dump(hyper_params, f, pickle.HIGHEST_PROTOCOL)
+        logging.info("Hyper-parameters saved at {}".format(params_path))
