@@ -27,7 +27,7 @@ if __name__ == "__main__":
     agent = DQNAgent(env=env, name='dqn_logger')
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     model_dir = sys.path[0]+"/saved_models/solo_escape/dqn/"+date_time
-    num_episodes = 10000
+    num_episodes = 1000
     num_steps = env.max_steps
     num_samples = 1 # sample k times to train q-net
     episodic_returns, sedimentary_returns = [], []
@@ -54,7 +54,7 @@ if __name__ == "__main__":
             if info == "escaped":
                 success_counter += 1
             # log step
-            rospy.logdebug("\n-\nepisode: {}, step: {}, epsilon: {} \nstate: {} \naction: {} \nnext_state: {} \nreward: {} \ndone: {} \ninfo: {} \nsucceed: {}\n-\n".format(ep+1, st+1, agent.epsilon, obs, act, next_obs, rew, done, info,success_counter))
+            rospy.loginfo("\n-\nepisode: {}, step: {}, epsilon: {} \nstate: {} \naction: {} \nnext_state: {} \nreward: {} \ndone: {} \ninfo: {} \nsucceed: {}\n-\n".format(ep+1, st+1, agent.epsilon, obs, act, next_obs, rew, done, info,success_counter))
             obs = next_obs.copy()
             if done:
                 # summarize episode

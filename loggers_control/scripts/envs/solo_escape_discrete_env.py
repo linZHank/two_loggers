@@ -106,7 +106,7 @@ class SoloEscapeDiscreteEnv(object):
             self.rate.sleep()
         # set init pose
         self.pausePhysics()
-        # self.resetWorld()
+        self.resetWorld()
         self._set_pose()
         self.unpausePhysics()
         for _ in range(15): # zero cmd_vel for another 0.025 sec. Important! Or wrong obs
@@ -131,13 +131,13 @@ class SoloEscapeDiscreteEnv(object):
         self._take_action(action)
         obs = self._get_observation()
         # update status
-        if obs[0] > 4.75:
+        if obs[0] > 4.7:
             self.status = "east"
-        elif obs[0] < -4.75:
+        elif obs[0] < -4.7:
             self.status = "west"
-        elif obs[1] > 4.75:
+        elif obs[1] > 4.7:
             self.status = "north"
-        elif -6 <= obs[1] < -4.75:
+        elif -6 <= obs[1] <= -4.7:
             if np.absolute(obs[0]) > self.exit_width/2.:
                 self.status = "south"
             else:
@@ -145,13 +145,14 @@ class SoloEscapeDiscreteEnv(object):
                     self.status = 'door' # stuck at door
                 else:
                     self.status = "trapped" # tunneling through door
-        elif obs[1] < -6:
+        elif obs[1] < -6.25:
             self.status = "escaped"
         else:
             self.status = "trapped"
+        # compute reward and done
+        self.step_counter += 1 # make sure inc step counter before compute reward
         reward, done = self._compute_reward()
         info = self.status
-        self.step_counter += 1
         rospy.logdebug("End Environment Step\n")
 
         return obs, reward, done, info
@@ -194,8 +195,8 @@ class SoloEscapeDiscreteEnv(object):
         logger_pose.reference_frame = "world"
         logger_pose.pose.position.z = 0.1
         if sum(np.isinf(self.spawning_pool)): # inialize randomly
-            x = random.uniform(-4.5, 4.5)
-            y = random.uniform(-4.5, 4.5)
+            x = random.uniform(-4, 4)
+            y = random.uniform(-4, 4)
             quat = tf.transformations.quaternion_from_euler(0, 0, random.uniform(-pi, pi))
         else: # inialize accordingly
             assert np.absolute(self.spawning_pool[0]) <= 4.5
@@ -238,7 +239,7 @@ class SoloEscapeDiscreteEnv(object):
         rospy.logdebug("\nStart Computing Reward")
         reward, done = 0, False
         if self.status == 'escaped':
-            reward = 100
+            reward = 300.
             done = True
             rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
         elif self.status == 'trapped':
@@ -246,7 +247,7 @@ class SoloEscapeDiscreteEnv(object):
             done = False
             rospy.logdebug("\nLogger is trapped\n")
         else: # collision
-            reward = -1.
+            reward = -100.
             done = True
             rospy.logdebug("\nLogger had a collision\n")
         rospy.logdebug("reward: {}, done: {}".format(reward, done))
