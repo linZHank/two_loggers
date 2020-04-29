@@ -13,11 +13,24 @@ import pickle
 import tensorflow as tf
 import rospy
 
-# from tensorflow import keras
-# from tensorflow.keras import layers
-# from tensorflow.keras.layers import Dense
-# from tensorflow.keras import Model
-
+# restrict GPU and memory growth
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        # Visible devices must be set before GPUs have been initialized
+        print(e)
+    # Restrict TensorFlow to only use the first GPU
+    try:
+        tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
+        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+    except RuntimeError as e:
+        # Visible devices must be set before GPUs have been initialized
+        print(e)
 
 class Memory:
     """
@@ -152,7 +165,7 @@ class DQNAgent:
         self.epoch_counter += 1
         if not self.epoch_counter % self.update_epoch:
             self.qnet_stable.set_weights(self.qnet_active.get_weights())
-            logging.warning("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTarget Q-net updated\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
+            rospy.logwarn("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTarget Q-net updated\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
         if auto_save:
             if not self.epoch_counter % self.save_frequency:
                 self.save_model()
@@ -166,12 +179,12 @@ class DQNAgent:
         # save model
         self.qnet_active.save(model_path)
         # self.qnet_stable.save(os.path.join(model_dir, 'stable_model-'+str(self.epoch_counter)+'.h5'))
-        logging.info("Q_net models saved at {}".format(model_path))
+        rospy.loginfo("Q_net models saved at {}".format(model_path))
 
     def load_model(self, model_path):
         self.qnet_active = tf.keras.models.load_model(model_path)
         self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
-        logging.warning("Q-Net models loaded")
+        rospy.logwarn("Q-Net models loaded")
         self.qnet_active.summary()
 
     def save_memory(self):
@@ -180,12 +193,12 @@ class DQNAgent:
             os.makedirs(os.path.dirname(memory_path))
         with open(memory_path, 'wb') as f:
             pickle.dump(self.replay_memory, f, pickle.HIGHEST_PROTOCOL)
-        logging.info("Replay memory saved at {}".format(memory_path))
+        rospy.loginfo("Replay memory saved at {}".format(memory_path))
 
     def load_memory(self, memory_path):
         with open(memory_path, 'rb') as f:
             self.replay_memory = pickle.load(f)
-        logging.warning("Replay Buffer Loaded")
+        rospy.logwarn("Replay Buffer Loaded")
 
     def save_params(self):
         hyper_params = dict(
@@ -208,4 +221,4 @@ class DQNAgent:
             os.makedirs(os.path.dirname(params_path))
         with open(params_path, 'wb') as f:
             pickle.dump(hyper_params, f, pickle.HIGHEST_PROTOCOL)
-        logging.info("Hyper-parameters saved at {}".format(params_path))
+        rospy.loginfo("Hyper-parameters saved at {}".format(params_path))

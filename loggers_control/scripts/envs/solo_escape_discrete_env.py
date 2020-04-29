@@ -25,7 +25,7 @@ class SoloEscapeDiscreteEnv(object):
     SoloEscape Class
     """
     def __init__(self):
-        rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.DEBUG)
+        rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.INFO)
         # env properties
         self.name = 'solo_escape'
         self.rate = rospy.Rate(1000) # gazebo world is running at 1000 Hz
