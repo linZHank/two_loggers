@@ -15,7 +15,7 @@ import time
 import rospy
 import tf
 from std_srvs.srv import Empty
-from gazebo_msgs.srv import SetModelState
+from gazebo_msgs.srv import SetModelState, GetModelState
 from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
 
@@ -27,11 +27,12 @@ class SoloEscapeDiscreteEnv(object):
     def __init__(self):
         rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.DEBUG)
         # env properties
-        self.rate = rospy.Rate(100)
-        self.max_steps = 1000
+        self.rate = rospy.Rate(1000) # gazebo world is running at 1000 Hz
+        self.max_steps = 999
         self.step_counter = 0
         self.observation_space = (6,) # x, y, x_d, y_d, th, th_d
         self.action_space = (5,) # cmd_vel: [-1,-1], [-1,1], [1,-1], [1,1], [0,0]
+        self.actions = np.array([[1,1], [1,-1], [-1,1], [-1,-1], [0,0]])
         # robot properties
         self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
@@ -46,10 +47,11 @@ class SoloEscapeDiscreteEnv(object):
         self.unpause_physics_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause_physics_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.set_model_state_proxy = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+        self.get_model_state_proxy = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
         # topic publisher
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
         # subscriber
-        rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
+        rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback) # model states are under monitoring
 
     def pausePhysics(self):
         rospy.wait_for_service("/gazebo/pause_physics")
@@ -89,40 +91,78 @@ class SoloEscapeDiscreteEnv(object):
     def reset(self):
         """
         Reset environment
-        obs = env.reset()
+        Usage:
+            obs = env.reset()
+        Args:
+        Returns:
+            obs
         """
         rospy.logdebug("\nStart Environment Reset")
         # zero cmd_vel
-        cmd_vel = Twist()
-        self.cmd_vel_pub.publish(cmd_vel)
-        # reset world
+        zero_cmd_vel = Twist()
+        for _ in range(15): # zero cmd_vel for about 0.025 sec. Important! Or wrong obs
+            self.cmd_vel_pub.publish(zero_cmd_vel)
+            self.rate.sleep()
+        # set init pose
         self.pausePhysics()
-        self.resetWorld()
-        # set pose
-        logger_pose = ModelState()
-        logger_pose.model_name = "logger"
-        logger_pose.reference_frame = "world"
-        logger_pose.pose.position.z = 0.19
-        if sum(np.isinf(self.spawning_pool)): # inialize randomly
-            x = random.uniform(-4.5, 4.5)
-            y = random.uniform(-4.5, 4.5)
-            quat = tf.transformations.quaternion_from_euler(0, 0, random.uniform(-pi, pi))
-        else: # inialize accordingly
-            assert np.absolute(self.spawning_pool[0]) <= 4.5
-            assert np.absolute(self.spawning_pool[1]) <= 4.5
-            assert -pi<=self.spawning_pool[2]<= pi # theta within [-pi,pi]
-            x = self.spawning_pool[0].copy()
-            y = self.spawning_pool[1].copy()
-            quat = tf.transformations.quaternion_from_euler(0, 0, self.spawning_pool[2].copy())
-        logger_pose.pose.position.x = x
-        logger_pose.pose.position.y = y
-        logger_pose.pose.orientation.z = quat[2]
-        logger_pose.pose.orientation.w = quat[3]
-        self.setModelState(model_state=logger_pose)
+        # self.resetWorld()
+        self._set_pose()
         self.unpausePhysics()
+        for _ in range(15): # zero cmd_vel for another 0.025 sec. Important! Or wrong obs
+            self.cmd_vel_pub.publish(zero_cmd_vel)
+            self.rate.sleep()
         # get obs
+        obs = self._get_observation()
+        # reset params
+        self.status = 'trapped'
+        self.step_counter = 0
+        rospy.logerr("\nEnvironment Reset!!!\n")
+
+        return obs
+
+    def step(self, action):
+        """
+        Manipulate the environment with an action
+        obs, rew, done, info = env.step(action)
+        """
+        assert 0 <= action <= self.action_space[0]
+        rospy.logdebug("\nStart Environment Step")
+        self._take_action(action)
+        obs = self._get_observation()
+        # update status
+        if obs[0] > 4.75:
+            self.status = "east"
+        elif obs[0] < -4.75:
+            self.status = "west"
+        elif obs[1] > 4.75:
+            self.status = "north"
+        elif -6 <= obs[1] < -4.75:
+            if np.absolute(obs[0]) > self.exit_width/2.:
+                self.status = "south"
+            else:
+                if np.absolute(obs[0]) > (self.exit_width/2-0.25-0.005): # robot_radius=0.25
+                    self.status = 'door' # stuck at door
+                else:
+                    self.status = "trapped" # tunneling through door
+        elif obs[1] < -6:
+            self.status = "escaped"
+        else:
+            self.status = "trapped"
+        reward, done = self._compute_reward()
+        info = self.status
+        self.step_counter += 1
+        rospy.logdebug("End Environment Step\n")
+
+        return obs, reward, done, info
+
+    def _get_observation(self):
+        """
+        Get observation of looger's state
+        Args:
+        Returns:
+            obs: array([x,y,xdot,ydot,theta,thetadot])
+        """
         obs = np.zeros(self.observation_space[0])
-        # model_states = self.model_states
         id_logger = self.model_states.name.index("logger")
         logger_pose = self.model_states.pose[id_logger]
         logger_twist = self.model_states.twist[id_logger]
@@ -139,157 +179,96 @@ class SoloEscapeDiscreteEnv(object):
         obs[3] = logger_twist.linear.y
         obs[4] = quat[2]
         obs[5] = logger_twist.angular.z
-        # reset params
-        self.status = 'active'
-        self.step_counter = 0
-        rospy.logerr("\nEnvironment Reset!!!\n")
 
         return obs
 
-    # def step(self, action):
-    #     """
-    #     Manipulate the environment with an action
-    #     obs, rew, done, info = env.step(action)
-    #     """
-    #     rospy.logdebug("\nStart Environment Step")
-    #     self._take_action(action)
-    #     obs = self._get_observation()
-    #     reward, done = self._compute_reward()
-    #     info = self._post_information()
-    #     self.steps += 1
-    #     rospy.logdebug("End Environment Step\n")
-    #
-    #     return obs, reward, done, info
-    #
-    # def _set_init(self, init_pose):
-    #     """
-    #     Set initial condition for single logger, Set the logger at a random pose inside cell.
-    #     Args:
-    #         init_pose: [x, y, theta]
-    #     """
-    #     rospy.logdebug("\nStart Initializing Robot")
-    #     # prepare
-    #     self._take_action(np.zeros(2))
-    #     self.pausePhysics()
-    #     self.resetWorld()
-    #     robot_pose = ModelState()
-    #     robot_pose.model_name = "logger"
-    #     robot_pose.reference_frame = "world"
-    #     robot_pose.pose.position.z = 0.19
-    #     if init_pose: # inialize randomly
-    #         assert np.absolute(init_pose[0]) <= 4.5
-    #         assert np.absolute(init_pose[1]) <= 4.5
-    #         assert -pi<=init_pose[2]<= pi # theta within [-pi,pi]
-    #     else: # inialize accordingly
-    #         init_pose = [0]*3
-    #         init_pose[0] = random.uniform(-4.5, 4.5)
-    #         init_pose[1] = random.uniform(-4.5, 4.5)
-    #         init_pose[2] = random.uniform(-pi, pi)
-    #     robot_pose.pose.position.x = init_pose[0]
-    #     robot_pose.pose.position.y = init_pose[1]
-    #     quat = tf.transformations.quaternion_from_euler(0, 0, init_pose[2])
-    #     robot_pose.pose.orientation.z = quat[2]
-    #     robot_pose.pose.orientation.w = quat[3]
-    #     # call '/gazebo/set_model_state' service
-    #     self.setModelState(model_state=robot_pose)
-    #     rospy.logdebug("Logger was initialized at {}".format(robot_pose))
-    #     self.unpausePhysics()
-    #     self._take_action(np.zeros(2))
-    #     # episode should not be done
-    #     self._episode_done = False
-    #     rospy.logdebug("End Initializing Robot\n")
-    #
-    # def _get_observation(self):
-    #     """
-    #     Get observations from env
-    #     Return:
-    #     observation: [x, y, v_x, v_y, cos(yaw), sin(yaw), yaw_dot]
-    #     """
-    #     rospy.logdebug("\nStart Getting Observation")
-    #     model_states = self._get_model_states()
-    #     id_logger = model_states.name.index("logger")
-    #     self.observation["pose"] = model_states.pose[id_logger]
-    #     self.observation["twist"] = model_states.twist[id_logger]
-    #     # compute status
-    #     if self.observation["pose"].position.x > 4.745:
-    #         self.status = "east"
-    #     elif self.observation["pose"].position.x < -4.745:
-    #         self.status = "west"
-    #     elif self.observation["pose"].position.y > 4.745:
-    #         self.status = "north"
-    #     elif -6 <= self.observation["pose"].position.y < -4.745:
-    #         if np.absolute(self.observation["pose"].position.x) > self.exit_width/2.:
-    #             self.status = "south"
-    #         else:
-    #             if np.absolute(self.observation["pose"].position.x) > (self.exit_width/2-0.25-0.005): # robot_radius=0.25
-    #                 self.status = 'door' # stuck at door
-    #             else:
-    #                 self.status = "tunnel" # through door
-    #     elif self.observation["pose"].position.y < -6:
-    #         self.status = "escaped"
-    #     elif self.observation['pose'].position.z > 0.2 or self.observation['pose'].position.z < 0.18:
-    #         self.status = "blew"
-    #     else:
-    #         self.status = "trapped"
-    #     rospy.logdebug("Observation Get ==> {}".format(self.observation))
-    #     rospy.logdebug("End Getting Observation\n")
-    #
-    #     return self.observation
-    #
-    # def _take_action(self, action):
-    #     """
-    #     Set linear and angular speed for logger to execute.
-    #     Args:
-    #         action: np.array([v_lin, v_ang]).
-    #     """
-    #     rospy.logdebug("\nStart Taking Action")
-    #     cmd_vel = Twist()
-    #     cmd_vel.linear.x = action[0]
-    #     cmd_vel.angular.z = action[1]
-    #     self.cmd_vel_pub.publish(cmd_vel)
-    #     for _ in range(15): # 6.667Hz
-    #         self.cmd_vel_pub.publish(cmd_vel)
-    #         self.rate.sleep()
-    #     rospy.logdebug("Logger take action ==> {}".format(cmd_vel))
-    #     rospy.logdebug("End Taking Action\n")
-    #
-    # def _compute_reward(self):
-    #     """
-    #     Return:
-    #         reward: reward in current step
-    #     """
-    #     rospy.logdebug("\nStart Computing Reward")
-    #     if self.status == "escaped":
-    #         self.reward = 1
-    #         self.success_count += 1
-    #         self._episode_done = True
-    #         rospy.logerr("\n!!!\nLogger Escaped !\n!!!")
-    #     else:
-    #         self.reward = -0.
-    #         self._episode_done = False
-    #         rospy.loginfo("\nLogger is trapped\n!!!")
-    #     rospy.logdebug("Stepwise Reward: {}, success count : {}".format(self.reward, self.success_count))
-    #     # check if steps out of range
-    #     if self.steps > self.max_step:
-    #         self._episode_done = True
-    #         rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.steps))
-    #     rospy.logdebug("End Computing Reward\n")
-    #
-    #     return self.reward, self._episode_done
-    #
-    # def _post_information(self):
-    #     """
-    #     Return:
-    #         info: {"status"}
-    #     """
-    #     rospy.logdebug("\nStart Posting Information")
-    #     self.info["status"] = self.status
-    #     rospy.logdebug("End Posting Information\n")
-    #
-    #     return self.info
+    def _set_pose(self):
+        """
+        Set logger with a random or given pose
+        Args:
+        Returns:
+        """
+        logger_pose = ModelState()
+        logger_pose.model_name = "logger"
+        logger_pose.reference_frame = "world"
+        logger_pose.pose.position.z = 0.1
+        if sum(np.isinf(self.spawning_pool)): # inialize randomly
+            x = random.uniform(-4.5, 4.5)
+            y = random.uniform(-4.5, 4.5)
+            quat = tf.transformations.quaternion_from_euler(0, 0, random.uniform(-pi, pi))
+        else: # inialize accordingly
+            assert np.absolute(self.spawning_pool[0]) <= 4.5
+            assert np.absolute(self.spawning_pool[1]) <= 4.5
+            assert -pi<=self.spawning_pool[2]<= pi # theta within [-pi,pi]
+            x = self.spawning_pool[0].copy()
+            y = self.spawning_pool[1].copy()
+            quat = tf.transformations.quaternion_from_euler(0, 0, self.spawning_pool[2].copy())
+        logger_pose.pose.position.x = x
+        logger_pose.pose.position.y = y
+        logger_pose.pose.orientation.z = quat[2]
+        logger_pose.pose.orientation.w = quat[3]
+        self.setModelState(model_state=logger_pose)
+
+    def _take_action(self, i_act):
+        """
+        Publish cmd_vel according to an action index
+        Args:
+            action: int(scalar)
+        Returns:
+        """
+        rospy.logdebug("\nStart Taking Action")
+        cmd_vel = Twist()
+        cmd_vel.linear.x = self.actions[i_act][0]
+        cmd_vel.angular.z = self.actions[i_act][1]
+        self.cmd_vel_pub.publish(cmd_vel)
+        for _ in range(30): # ~20 Hz
+            self.cmd_vel_pub.publish(cmd_vel)
+            self.rate.sleep()
+        rospy.logdebug("cmd_vel: {}".format(cmd_vel))
+        rospy.logdebug("End Taking Action\n")
+
+    def _compute_reward(self):
+        """
+        Compute reward and done based on current status
+        Return:
+            reward:
+            done
+        """
+        rospy.logdebug("\nStart Computing Reward")
+        reward, done = 0, False
+        if self.status == 'escaped':
+            reward = 100
+            done = True
+            rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
+        elif self.status == 'trapped':
+            reward = -0.1
+            done = False
+            rospy.logdebug("\nLogger is trapped\n")
+        else: # collision
+            reward = -1.
+            done = True
+            rospy.logdebug("\nLogger had a collision\n")
+        rospy.logdebug("reward: {}, done: {}".format(reward, done))
+        # check if steps out of range
+        if self.step_counter >= self.max_steps:
+            done = True
+            rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.step_counter))
+        rospy.logdebug("End Computing Reward\n")
+
+        return reward, done
 
     def _model_states_callback(self, data):
         self.model_states = data
 
-    def _get_model_states(self):
-        return self.model_states
+if __name__ == "__main__":
+    num_episodes = 8
+    num_steps = 64
+
+    env = SoloEscapeDiscreteEnv()
+    for ep in range(num_episodes):
+        obs = env.reset()
+        rospy.logdebug("obs: {}".format(obs))
+        for st in range(num_steps):
+            act = random.randint(env.action_space[0])
+            obs, rew, done, info = env.step(act)
+            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, rew, done, info))
