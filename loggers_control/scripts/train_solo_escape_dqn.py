@@ -11,28 +11,27 @@ import os
 import numpy as np
 from numpy import random
 from numpy import pi
+import time
 from datetime import datetime
 import matplotlib.pyplot as plt
 import rospy
 
-
-
 from envs.solo_escape_discrete_env import SoloEscapeDiscreteEnv
 from agents.dqn import DQNAgent
 
-import pdb
 
 if __name__ == "__main__":
     env=SoloEscapeDiscreteEnv()
     agent = DQNAgent(env=env, name='dqn_logger')
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     model_dir = sys.path[0]+"/saved_models/solo_escape/dqn/"+date_time
-    num_episodes = 1000
+    num_episodes = 4000
     num_steps = env.max_steps
     num_samples = 1 # sample k times to train q-net
     episodic_returns, sedimentary_returns = [], []
     step_counter = 0
     success_counter = 0
+    start_time = time.time()
     for ep in range(num_episodes):
         done = False
         rewards = []
@@ -54,13 +53,13 @@ if __name__ == "__main__":
             if info == "escaped":
                 success_counter += 1
             # log step
-            rospy.loginfo("\n-\nepisode: {}, step: {}, epsilon: {} \nstate: {} \naction: {} \nnext_state: {} \nreward: {} \ndone: {} \ninfo: {} \nsucceed: {}\n-\n".format(ep+1, st+1, agent.epsilon, obs, act, next_obs, rew, done, info,success_counter))
+            rospy.logdebug("\n-\nepisode: {}, step: {}, epsilon: {} \nstate: {} \naction: {} \nnext_state: {} \nreward: {} \ndone: {} \ninfo: {} \nsucceed: {}\n-\n".format(ep+1, st+1, agent.epsilon, obs, act, next_obs, rew, done, info,success_counter))
             obs = next_obs.copy()
             if done:
                 # summarize episode
                 episodic_returns.append(sum(rewards))
                 sedimentary_returns.append(sum(episodic_returns)/(ep+1))
-                rospy.loginfo("\n================================================================\nepisode: {} \nsteps: {} \nepisodic return: {} \naveraged return: {} \nsucceed: {}\n================================================================n".format(ep+1, st+1, episodic_returns[-1], sedimentary_returns[-1], success_counter))
+                rospy.loginfo("\n================================================================\nEpisode: {} \nSteps: {} \nEpsilon: {} \nEpisodicReturn: {} \nAveragedReturn: {} \nEndState: {} \nTotalSuccess: {} \nTimeElapsed: {} \n================================================================n".format(ep+1, st+1, agent.epsilon, episodic_returns[-1], sedimentary_returns[-1], info, success_counter, time.time()-start_time))
                 break
 
     # plot averaged returns
