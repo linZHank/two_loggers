@@ -33,8 +33,4 @@
     <color rgba="1.0 1.0 1.0 1.0"/>
   </material>
 
-  <material name="uc_red">
-    <color rgba="${224/255} ${1/255} ${34/255} 1.0"/>
-  </material>
-  
 </robot>

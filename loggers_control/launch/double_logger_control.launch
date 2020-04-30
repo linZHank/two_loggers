@@ -8,7 +8,7 @@
     <arg name="debug" default="false"/>
 
     <!-- ros_control logger launch file -->
-    <include file="$(find loggers_gazebo)/launch/solo_logger_world.launch">
+    <include file="$(find loggers_gazebo)/launch/double_logger_world.launch">
         <arg name="narrow" value="$(arg narrow)" />
         <arg name="debug" value="$(arg debug)" />
         <arg name="gui" value="$(arg gui)" />
@@ -19,7 +19,7 @@
 
     <!-- convert joint states to TF transforms for rviz, etc -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
-        <remap from="/joint_states" to="/logger/joint_states" />
+        <!-- <remap from="/joint_states" to="/logger_0/joint_states" /> -->
     </node>
 
 </launch>

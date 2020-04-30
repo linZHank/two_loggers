@@ -48,7 +48,7 @@
       <geometry>
         <cylinder length="${L_LOG}" radius="${R_LOG}"/>
       </geometry>
-p      <material name="red"/>
+      <material name="red"/>
     </visual>
     <collision>
       <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
