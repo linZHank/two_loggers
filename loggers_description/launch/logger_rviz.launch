@@ -2,7 +2,7 @@
 
     <arg name="robot_namespace" default="/"/>
 
-    <param name="robot_description" command="$(find xacro)/xacro '$(find loggers_description)/urdf/logger_base.urdf.xacro' robot_namespace:=$(arg robot_namespace)" />
+    <param name="robot_description" command="$(find xacro)/xacro '$(find loggers_description)/urdf/logger_bare.urdf.xacro' robot_namespace:=$(arg robot_namespace)" />
 
     <!-- send fake joint values -->
     <node name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui"/>
