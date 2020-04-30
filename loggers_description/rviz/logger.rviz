@@ -71,7 +71,22 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        chassis:
+        hat:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        logger-chassis:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -86,7 +101,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: chassis
+    Fixed Frame: logger-chassis
     Frame Rate: 30
   Name: root
   Tools:
@@ -125,10 +140,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5953981876373291
+      Pitch: 0.4453983008861542
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 5.953588008880615
+      Yaw: 5.91859245300293
     Saved: ~
 Window Geometry:
   Displays:

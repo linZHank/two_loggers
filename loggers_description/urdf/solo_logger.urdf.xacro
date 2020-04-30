@@ -6,22 +6,22 @@
     <xacro:include filename="$(find loggers_description)/urdf/logger.urdf.xacro" />
 
     <!-- Instantiate logger_base_macro once (has no parameters atm) -->
-    <xacro:logger_macro />
+    <xacro:logger_macro model_name="logger"/>
     <!-- differential_drive_controller plugin -->
     <gazebo>
         <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
             <legacyMode>false</legacyMode>
             <alwaysOn>true</alwaysOn>
             <updateRate>100</updateRate>
-            <leftJoint>chassis-left_wheel</leftJoint>
-            <rightJoint>chassis-right_wheel</rightJoint>
+            <leftJoint>logger-chassis2left_wheel</leftJoint>
+            <rightJoint>logger-chassis2right_wheel</rightJoint>
             <wheelSeparation>0.25</wheelSeparation>
             <wheelDiameter>0.18</wheelDiameter>
             <wheelTorque>1</wheelTorque>
             <commandTopic>cmd_vel</commandTopic>
             <odometryTopic>odom</odometryTopic>
             <odometryFrame>odom</odometryFrame>
-            <robotBaseFrame>chassis</robotBaseFrame>
+            <robotBaseFrame>logger-chassis</robotBaseFrame>
         </plugin>
     </gazebo>
 
