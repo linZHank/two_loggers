@@ -193,7 +193,7 @@
     </gazebo>
 
     <!-- differential_drive_controller plugin -->
-    <gazebo>
+    <!-- <gazebo>
         <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
             <legacyMode>false</legacyMode>
             <alwaysOn>true</alwaysOn>
@@ -203,13 +203,12 @@
             <wheelSeparation>0.25</wheelSeparation>
             <wheelDiameter>0.18</wheelDiameter>
             <wheelTorque>1</wheelTorque>
-            <!--wheelAcceleration>${wheel_accel}</wheelAcceleration-->
             <commandTopic>cmd_vel_0</commandTopic>
             <odometryTopic>odom</odometryTopic>
             <odometryFrame>odom</odometryFrame>
             <robotBaseFrame>chassis</robotBaseFrame>
         </plugin>
-    </gazebo>
+    </gazebo> -->
 
     </xacro:macro>
 </robot>

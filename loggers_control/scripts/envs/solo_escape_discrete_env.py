@@ -50,7 +50,7 @@ class SoloEscapeDiscreteEnv(object):
         self.set_model_state_proxy = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
         self.get_model_state_proxy = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
         # topic publisher
-        self.cmd_vel_pub = rospy.Publisher("/cmd_vel_0", Twist, queue_size=1)
+        self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
         # subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback) # model states are under monitoring
 
