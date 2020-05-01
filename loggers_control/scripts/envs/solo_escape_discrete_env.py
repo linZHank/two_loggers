@@ -113,7 +113,6 @@ class SoloEscapeDiscreteEnv(object):
         # get obs
         obs = self._get_observation()
         # reset params
-        self.status = 'trapped'
         self.step_counter = 0
         rospy.logerr("\nEnvironment Reset!!!\n")
 
@@ -128,25 +127,6 @@ class SoloEscapeDiscreteEnv(object):
         rospy.logdebug("\nStart Environment Step")
         self._take_action(action)
         obs = self._get_observation()
-        # update status
-        if obs[0] > 4.7:
-            self.status = "east"
-        elif obs[0] < -4.7:
-            self.status = "west"
-        elif obs[1] > 4.7:
-            self.status = "north"
-        elif -6 <= obs[1] <= -4.7:
-            if np.absolute(obs[0]) > self.exit_width/2.:
-                self.status = "south"
-            else:
-                if np.absolute(obs[0]) > (self.exit_width/2-0.25-0.005): # robot_radius=0.25
-                    self.status = 'door' # stuck at door
-                else:
-                    self.status = "trapped" # tunneling through door
-        elif obs[1] < -6.25:
-            self.status = "escaped"
-        else:
-            self.status = "trapped"
         # compute reward and done
         self.step_counter += 1 # make sure inc step counter before compute reward
         reward, done = self._compute_reward()
@@ -206,6 +186,25 @@ class SoloEscapeDiscreteEnv(object):
         obs[3] = logger_twist.linear.y
         obs[4] = quat[2]
         obs[5] = logger_twist.angular.z
+        # update status
+        if obs[0] > 4.7:
+            self.status = "east"
+        elif obs[0] < -4.7:
+            self.status = "west"
+        elif obs[1] > 4.7:
+            self.status = "north"
+        elif -6<=obs[1]<=-4.7:
+            if np.absolute(obs[0]) > self.exit_width/2.:
+                self.status = "south"
+            else:
+                if np.absolute(obs[0]) > (self.exit_width/2.-0.255): # robot_radius=0.25
+                    self.status = 'door' # stuck at door
+                else:
+                    self.status = "trapped" # tunneling through door
+        elif obs[1] < -6.25:
+            self.status = "escaped"
+        else:
+            self.status = "trapped"
 
         return obs
 
@@ -220,7 +219,6 @@ class SoloEscapeDiscreteEnv(object):
         cmd_vel = Twist()
         cmd_vel.linear.x = self.actions[i_act][0]
         cmd_vel.angular.z = self.actions[i_act][1]
-        self.cmd_vel_pub.publish(cmd_vel)
         for _ in range(30): # ~20 Hz
             self.cmd_vel_pub.publish(cmd_vel)
             self.rate.sleep()

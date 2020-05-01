@@ -31,14 +31,14 @@ class DoubleEscapeDiscreteEnv(object):
         self.max_steps = 999
         self.step_counter = 0
         self.observation_space = (18,) # x, y, x_d, y_d, th, th_d
-        self.action_space = (10,)
+        self.action_space = (5,2)
         self.actions0 = np.array([[2,1], [2,-1], [-2,1], [-2,-1], [0,0]])
         self.actions1 = self.actions0.copy()
         # robot properties
         self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
         self.link_states = ModelStates()
-        self.status = 'deactivated'
+        self.status = ['deactivated']*2
         self.world_name = rospy.get_param('/world_name')
         self.exit_width = rospy.get_param('/exit_width')
         # services
@@ -49,8 +49,8 @@ class DoubleEscapeDiscreteEnv(object):
         self.set_model_state_proxy = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
         self.get_model_state_proxy = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
         # topic publisher
-        self.cmdvel0_pub = rospy.Publisher("/cmd_vel0", Twist, queue_size=1)
-        self.cmdvel1_pub = rospy.Publisher("/cmd_vel1", Twist, queue_size=1)
+        self.cmd_vel0_pub = rospy.Publisher("/cmd_vel0", Twist, queue_size=1)
+        self.cmd_vel1_pub = rospy.Publisher("/cmd_vel1", Twist, queue_size=1)
         # topic subscriber
         rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self._link_states_callback)
@@ -110,8 +110,8 @@ class DoubleEscapeDiscreteEnv(object):
         # zero cmd_vels
         zero_cmd_vel = Twist()
         for _ in range(15): # zero cmd_vel for about 0.025 sec. Important! Or wrong obs
-            self.cmdvel0_pub.publish(zero_cmd_vel)
-            self.cmdvel1_pub.publish(zero_cmd_vel)
+            self.cmd_vel0_pub.publish(zero_cmd_vel)
+            self.cmd_vel1_pub.publish(zero_cmd_vel)
             self.rate.sleep()
         # set init pose
         self.pausePhysics()
@@ -119,29 +119,29 @@ class DoubleEscapeDiscreteEnv(object):
         self._set_pose()
         self.unpausePhysics()
         for _ in range(15): # zero cmd_vel for another 0.025 sec. Important! Or wrong obs
-            self.cmdvel0_pub.publish(zero_cmd_vel)
-            self.cmdvel1_pub.publish(zero_cmd_vel)
+            self.cmd_vel0_pub.publish(zero_cmd_vel)
+            self.cmd_vel1_pub.publish(zero_cmd_vel)
             self.rate.sleep()
         # get obs
         obs = self._get_observation()
         # reset params
-        self.status = 'trapped'
         self.step_counter = 0
         rospy.logerr("\nEnvironment Reset!!!\n")
 
         return obs
 
-    def step(self, action_0, action_1):
+    def step(self, action0, action1):
         """
-        Manipulate logger_0 with action_0, logger_1 with action_1
+        Manipulate logger0 with action0, logger1 with action1
         obs, rew, done, info = env.step(action_0, action_1)
         """
         rospy.logdebug("\nStart Environment Step")
-        self._take_action(action_0, action_1)
+        self._take_action(action0, action1)
         obs = self._get_observation()
+        # update status
         reward, done = self._compute_reward()
-        info = self._post_information()
-        self.steps += 1
+        info = self.status
+        self.step_counter += 1
         rospy.logdebug("End Environment Step\n")
 
         return obs, reward, done, info
@@ -210,8 +210,98 @@ class DoubleEscapeDiscreteEnv(object):
         log_obs = extract_link_obs(id_log)
         logger1_obs = extract_link_obs(id_logger1)
         obs = np.concatenate((logger0_obs,log_obs,logger1_obs))
+        # compute logger0's status
+        if obs[0] > 4.7:
+            self.status[0] = 'east'
+        elif obs[0] < -4.7:
+            self.status[0] = 'west'
+        elif obs[1] > 4.7:
+            self.status[0] = 'north'
+        elif -6<=obs[1]<-4.7:
+            if np.absolute(obs[0])>self.exit_width/2.:
+                self.status[0] = 'south'
+            else:
+                if np.absolute(obs[0])>(self.exit_width/2.-0.255): # robot_radius=0.25
+                    self.status[0] = 'door' # stuck at door
+                else:
+                    self.status[0] = 'trapped' # through door
+        elif obs[1] < -6.25:
+            self.status[0] = 'escaped'
+        else:
+            self.status[0] = 'trapped'
+        # compute logger1's status
+        if obs[-6] > 4.7:
+            self.status[1] = 'east'
+        elif obs[-6] < -4.7:
+            self.status[1] = 'west'
+        elif obs[-5] > 4.7:
+            self.status[1] = 'north'
+        elif -6<=obs[-5]<-4.7:
+            if np.absolute(obs[-6])>self.exit_width/2.:
+                self.status[1] = 'south'
+            else:
+                if np.absolute(obs[-6])>(self.exit_width/2.-0.255): # robot_radius=0.25
+                    self.status[1] = 'door' # stuck at door
+                else:
+                    self.status[1] = 'trapped' # through door
+        elif obs[-5] < -6.25:
+            self.status[1] = 'escaped'
+        else:
+            self.status[1] = 'trapped'
 
         return obs
+
+    def _take_action(self, i_act0, i_act1):
+        """
+        Publish cmd_vel according to an action index
+        Args:
+            action: int(scalar)
+        Returns:
+        """
+        rospy.logdebug("\nStart Taking Action")
+        cmd_vel0 = Twist()
+        cmd_vel0.linear.x = self.actions0[i_act0][0]
+        cmd_vel0.angular.z = self.actions0[i_act0][1]
+        cmd_vel1 = Twist()
+        cmd_vel1.linear.x = self.actions0[i_act1][0]
+        cmd_vel1.angular.z = self.actions0[i_act1][1]
+        for _ in range(30): # ~20 Hz
+            self.cmd_vel0_pub.publish(cmd_vel0)
+            self.cmd_vel1_pub.publish(cmd_vel1)
+            self.rate.sleep()
+        rospy.logdebug("cmd_vel0: {} \ncmd_vel1: {}".format(cmd_vel0, cmd_vel1))
+        rospy.logdebug("End Taking Action\n")
+
+    def _compute_reward(self):
+        """
+        Compute reward and done based on current status
+        Return:
+            reward
+            done
+        """
+        rospy.logdebug("\nStart Computing Reward")
+        reward, done = 0, False
+        if all(self.status) == 'escaped':
+            reward = 400.
+            done = True
+            rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
+        elif all(self.status) == 'trapped':
+            reward = -0.1
+            done = False
+            rospy.logdebug("\nLogger is trapped\n")
+        else: # collision
+            reward = -100.
+            done = True
+            rospy.logdebug("\nLogger had a collision\n")
+        rospy.logdebug("reward: {}, done: {}".format(reward, done))
+        # check if steps out of range
+        if self.step_counter >= self.max_steps:
+            done = True
+            rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.step_counter))
+        rospy.logdebug("End Computing Reward\n")
+
+        return reward, done
+
 
     # def _set_init(self, init_pose):
     #     """
@@ -421,7 +511,8 @@ if __name__ == "__main__":
     for ep in range(num_episodes):
         obs = env.reset()
         rospy.logdebug("obs: {}".format(obs))
-        # for st in range(num_steps):
-        #     act = random.randint(env.action_space[0])
-        #     obs, rew, done, info = env.step(act)
-        #     rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, rew, done, info))
+        for st in range(num_steps):
+            act0 = random.randint(env.action_space[0])
+            act1 = random.randint(env.action_space[0])
+            obs, rew, done, info = env.step(act0, act1)
+            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, rew, done, info))

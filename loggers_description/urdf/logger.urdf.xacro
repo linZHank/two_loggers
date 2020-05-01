@@ -42,8 +42,8 @@
             </collision>
         </link>
         <gazebo reference="${model_name}-chassis">
-            <mu1>0.2</mu1>
-            <mu2>0.2</mu2>
+            <mu1>0.5</mu1>
+            <mu2>0.5</mu2>
             <material>Gazebo/White</material>
         </gazebo>
         <!-- kdl does not support a root link with an inertia, create a dummy link only contains inertia of base_link -->
