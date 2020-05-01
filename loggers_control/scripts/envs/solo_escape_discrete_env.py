@@ -66,12 +66,12 @@ class SoloEscapeDiscreteEnv(object):
         except rospy.ServiceException as e:
             rospy.logerr("/gazebo/unpause_physics service call failed")
 
-    def resetSimulation(self):
-        rospy.wait_for_service("/gazebo/reset_simulation")
-        try:
-            self.reset_simulation_proxy()
-        except rospy.ServiceException as e:
-            rospy.logerr("/gazebo/reset_simulation service call failed")
+    # def resetSimulation(self):
+    #     rospy.wait_for_service("/gazebo/reset_simulation")
+    #     try:
+    #         self.reset_simulation_proxy()
+    #     except rospy.ServiceException as e:
+    #         rospy.logerr("/gazebo/reset_simulation service call failed")
 
     def resetWorld(self):
         rospy.wait_for_service("/gazebo/reset_world")
@@ -155,33 +155,6 @@ class SoloEscapeDiscreteEnv(object):
 
         return obs, reward, done, info
 
-    def _get_observation(self):
-        """
-        Get observation of looger's state
-        Args:
-        Returns:
-            obs: array([x,y,xdot,ydot,theta,thetadot])
-        """
-        obs = np.zeros(self.observation_space[0])
-        id_logger = self.model_states.name.index("logger")
-        logger_pose = self.model_states.pose[id_logger]
-        logger_twist = self.model_states.twist[id_logger]
-        quat = [
-            logger_pose.orientation.x,
-            logger_pose.orientation.y,
-            logger_pose.orientation.z,
-            logger_pose.orientation.w
-        ]
-        euler = tf.transformations.euler_from_quaternion(quat)
-        obs[0] = logger_pose.position.x
-        obs[1] = logger_pose.position.y
-        obs[2] = logger_twist.linear.x
-        obs[3] = logger_twist.linear.y
-        obs[4] = quat[2]
-        obs[5] = logger_twist.angular.z
-
-        return obs
-
     def _set_pose(self):
         """
         Set logger with a random or given pose
@@ -208,6 +181,33 @@ class SoloEscapeDiscreteEnv(object):
         logger_pose.pose.orientation.z = quat[2]
         logger_pose.pose.orientation.w = quat[3]
         self.setModelState(model_state=logger_pose)
+
+    def _get_observation(self):
+        """
+        Get observation of double_logger's state
+        Args:
+        Returns:
+            obs: array([x,y,xdot,ydot,theta,thetadot])
+        """
+        obs = np.zeros(self.observation_space[0])
+        id_logger = self.model_states.name.index("logger")
+        logger_pose = self.model_states.pose[id_logger]
+        logger_twist = self.model_states.twist[id_logger]
+        quat = [
+            logger_pose.orientation.x,
+            logger_pose.orientation.y,
+            logger_pose.orientation.z,
+            logger_pose.orientation.w
+        ]
+        euler = tf.transformations.euler_from_quaternion(quat)
+        obs[0] = logger_pose.position.x
+        obs[1] = logger_pose.position.y
+        obs[2] = logger_twist.linear.x
+        obs[3] = logger_twist.linear.y
+        obs[4] = quat[2]
+        obs[5] = logger_twist.angular.z
+
+        return obs
 
     def _take_action(self, i_act):
         """
