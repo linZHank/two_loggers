@@ -22,23 +22,21 @@ from geometry_msgs.msg import Pose, Twist
 
 class SoloEscapeDiscreteEnv(object):
     """
-    SoloEscape Class
+    SoloEscapeDiscrete Env Class
     """
     def __init__(self):
         rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.INFO)
         # env properties
-        self.name = 'solo_escape'
+        self.name = 'solo_escape_discrete'
         self.rate = rospy.Rate(1000) # gazebo world is running at 1000 Hz
         self.max_steps = 999
         self.step_counter = 0
         self.observation_space = (6,) # x, y, x_d, y_d, th, th_d
-        self.action_space = (5,) # cmd_vel: [-1,-1], [-1,1], [1,-1], [1,1], [0,0]
+        self.action_space = (5,)
         self.actions = np.array([[2,1], [2,-1], [-2,1], [-2,-1], [0,0]])
         # robot properties
         self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
-        # self.pose = Pose()
-        # self.twist = Twist()
         self.status = 'deactivated'
         self.world_name = rospy.get_param('/world_name')
         self.exit_width = rospy.get_param('/exit_width')
