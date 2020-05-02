@@ -31,7 +31,7 @@ class DoubleEscapeDiscreteEnv(object):
         self.max_steps = 999
         self.step_counter = 0
         self.observation_space = (18,) # x, y, x_d, y_d, th, th_d
-        self.action_space = (5,2)
+        self.action_space = (25,)
         self.actions0 = np.array([[2,1], [2,-1], [-2,1], [-2,-1], [0,0]])
         self.actions1 = self.actions0.copy()
         # robot properties
@@ -291,20 +291,21 @@ class DoubleEscapeDiscreteEnv(object):
 
         return obs
 
-    def _take_action(self, i_act0, i_act1):
+    def _take_action(self, i_act):
         """
         Publish cmd_vel according to an action index
         Args:
-            action: int(scalar)
+            i_act: int(scalar)
         Returns:
         """
+        assert isinstance(i_act, int)
         rospy.logdebug("\nStart Taking Action")
         cmd_vel0 = Twist()
-        cmd_vel0.linear.x = self.actions0[i_act0][0]
-        cmd_vel0.angular.z = self.actions0[i_act0][1]
+        cmd_vel0.linear.x = self.actions0[int(i_act/self.actions0.shape[0])][0]
+        cmd_vel0.angular.z = self.actions0[int(i_act/self.actions0.shape[0])][1]
         cmd_vel1 = Twist()
-        cmd_vel1.linear.x = self.actions0[i_act1][0]
-        cmd_vel1.angular.z = self.actions0[i_act1][1]
+        cmd_vel1.linear.x = self.actions1[i_act%self.actions1.shape[0]][0]
+        cmd_vel1.angular.z = self.actions1[i_act%self.actions1.shape[0]][1]
         for _ in range(30): # ~20 Hz
             self.cmd_vel0_pub.publish(cmd_vel0)
             self.cmd_vel1_pub.publish(cmd_vel1)
@@ -361,9 +362,8 @@ if __name__ == "__main__":
         obs = env.reset()
         rospy.logdebug("obs: {}".format(obs))
         for st in range(num_steps):
-            act0 = random.randint(env.action_space[0])
-            act1 = random.randint(env.action_space[0])
-            obs, rew, done, info = env.step(act0, act1)
+            act = random.randint(env.action_space[0])
+            obs, rew, done, info = env.step(act)
             rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, rew, done, info))
             if done:
                 break
