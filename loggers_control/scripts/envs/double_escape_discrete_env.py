@@ -31,9 +31,10 @@ class DoubleEscapeDiscreteEnv(object):
         self.max_steps = 999
         self.step_counter = 0
         self.observation_space = (18,) # x, y, x_d, y_d, th, th_d
-        self.action_space = (25,)
-        self.actions0 = np.array([[2,1], [2,-1], [-2,1], [-2,-1], [0,0]])
-        self.actions1 = self.actions0.copy()
+        self.action_space = (5,)
+        # self.actions0 = np.array([[2,1], [2,-1], [-2,1], [-2,-1], [0,0]])
+        # self.actions1 = self.actions0.copy()
+        self.actions = np.array([[2,1], [2,-1], [-2,1], [-2,-1], [0,0]])
         # robot properties
         self.spawning_pool = np.array([np.inf]*5)
         self.model_states = ModelStates()
@@ -291,21 +292,21 @@ class DoubleEscapeDiscreteEnv(object):
 
         return obs
 
-    def _take_action(self, i_act):
+    def _take_action(self, i_acts):
         """
         Publish cmd_vel according to an action index
         Args:
             i_act: int(scalar)
         Returns:
         """
-        assert isinstance(i_act, int)
+        assert isinstance(i_acts, list)
         rospy.logdebug("\nStart Taking Action")
         cmd_vel0 = Twist()
-        cmd_vel0.linear.x = self.actions0[int(i_act/self.actions0.shape[0])][0]
-        cmd_vel0.angular.z = self.actions0[int(i_act/self.actions0.shape[0])][1]
+        cmd_vel0.linear.x = self.actions[i_acts[0]][0]
+        cmd_vel0.angular.z = self.actions[i_acts[0]][1]
         cmd_vel1 = Twist()
-        cmd_vel1.linear.x = self.actions1[i_act%self.actions1.shape[0]][0]
-        cmd_vel1.angular.z = self.actions1[i_act%self.actions1.shape[0]][1]
+        cmd_vel1.linear.x = self.actions[i_acts[1]][0]
+        cmd_vel1.angular.z = self.actions[i_acts[1]][1]
         for _ in range(30): # ~20 Hz
             self.cmd_vel0_pub.publish(cmd_vel0)
             self.cmd_vel1_pub.publish(cmd_vel1)
