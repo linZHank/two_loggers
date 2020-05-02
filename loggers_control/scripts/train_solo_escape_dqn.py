@@ -25,7 +25,7 @@ if __name__ == "__main__":
     agent = DQNAgent(env=env, name='dqn_logger')
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     model_dir = sys.path[0]+"/saved_models/solo_escape/dqn/"+date_time
-    num_episodes = 4000
+    num_episodes = 8000
     num_steps = env.max_steps
     num_samples = 1 # sample k times to train q-net
     episodic_returns, sedimentary_returns = [], []
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         rewards = []
         # reset env and get state from it
         obs = env.reset()
-        agent.linear_epsilon_decay(episode=ep, decay_period=int(num_episodes/10))
+        agent.linear_epsilon_decay(episode=ep, decay_period=512)
         for st in range(num_steps):
             # take actions, no action will take if deactivated
             act = agent.epsilon_greedy(obs)
