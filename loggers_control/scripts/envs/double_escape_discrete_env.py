@@ -132,13 +132,13 @@ class DoubleEscapeDiscreteEnv(object):
 
         return obs
 
-    def step(self, action0, action1):
+    def step(self, action):
         """
         Manipulate logger0 with action0, logger1 with action1
         obs, rew, done, info = env.step(action_0, action_1)
         """
         rospy.logdebug("\nStart Environment Step")
-        self._take_action(action0, action1)
+        self._take_action(action)
         obs = self._get_observation()
         # update status
         reward, done = self._compute_reward()
