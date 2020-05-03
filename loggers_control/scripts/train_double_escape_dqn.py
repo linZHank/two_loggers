@@ -26,10 +26,9 @@ if __name__ == "__main__":
     agent1 = DQNAgent(env=env, name='dqn_logger1', layer_sizes=[128,128], warmup_episodes=10)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     num_episodes = 100
-    num_steps = env.max_steps
+    num_steps = 100 #env.max_steps
     num_samples0, num_samples1 = 1, 1 # sample k times to train q-net
-    episodic_returns0, episodic_returns1 = [], []
-    sedimentary_returns0, sedimentary_returns1 = [], []
+    episodic_returns, sedimentary_returns = [], []
     step_counter = 0
     success_counter = 0
     start_time = time.time()
@@ -38,18 +37,21 @@ if __name__ == "__main__":
         rewards = []
         # reset env and get state from it
         obs = env.reset()
+        if 'blown' in env.status:
+            obs = env.reset()
+            continue
         agent0.linear_epsilon_decay(episode=ep, decay_period=12)
         agent0.linear_epsilon_decay(episode=ep, decay_period=12)
         for st in range(num_steps):
             # take actions, no action will take if deactivated
             act0 = agent0.epsilon_greedy(obs)
             act1 = agent1.epsilon_greedy(obs)
-            act = int(act0*5+act1)
+            act = [act0, act1]
             # step env
             next_obs, rew, done, info = env.step(act)
             # store transitions and train
-            agent0.replay_memory.store([obs.copy(), act, rew, done, next_obs])
-            agent1.replay_memory.store([obs.copy(), act, rew, done, next_obs])
+            agent0.replay_memory.store([obs.copy(), act0, rew, done, next_obs])
+            agent1.replay_memory.store([obs.copy(), act1, rew, done, next_obs])
             # train agent0
             if ep >= agent0.warmup_episodes:
                 for _ in range(num_samples0):
