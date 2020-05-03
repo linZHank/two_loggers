@@ -39,16 +39,16 @@ class Memory:
         return list(zip(*batch))
 
 class DQNAgent:
-    def __init__(self, env, name, layer_sizes=[64,64], update_epoch=8000, learning_rate=0.0007, batch_size=8192, gamma =0.99, init_eps=1., final_eps=.1, warmup_episodes=100):
+    def __init__(self, env, name, dim_state=6, num_actions=4, layer_sizes=[64,64], update_epoch=8000, learning_rate=0.001, batch_size=8192, gamma =0.99, init_eps=1., final_eps=.1, warmup_episodes=100):
         # fixed
         self.name = name
         self.env = env
         self.date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        self.model_dir = os.path.join(sys.path[0], 'saved_models/dqn', env.name, self.date_time, str(name))
+        self.model_dir = os.path.join(sys.path[0], 'saved_models', env.name, 'dqn', self.date_time, str(name))
         self.save_frequency = 100000
         # hyper-parameters
-        self.dim_state = env.observation_space[0]
-        self.action_space = env.action_space # [f_x,f_y]
+        self.dim_state = dim_state
+        self.num_actions = num_actions
         self.memory_cap = int(env.max_steps*100)
         self.layer_sizes = layer_sizes
         self.update_epoch = update_epoch
@@ -67,7 +67,7 @@ class DQNAgent:
         x = tf.keras.layers.Dense(self.layer_sizes[0], activation='relu')(inputs)
         for i in range(1,len(self.layer_sizes)):
             x = tf.keras.layers.Dense(self.layer_sizes[i], activation='relu')(x)
-        outputs = tf.keras.layers.Dense(self.action_space[0])(x)
+        outputs = tf.keras.layers.Dense(self.num_actions)(x)
         self.qnet_active = tf.keras.Model(inputs=inputs, outputs=outputs, name='qnet_model')
         self.qnet_active.summary()
         # clone active Q-net to create stable Q-net
@@ -90,7 +90,7 @@ class DQNAgent:
         if np.random.rand() > self.epsilon:
             action = np.argmax(self.qnet_active(state.reshape(1,-1)))
         else:
-            action = np.random.randint(self.action_space[0])
+            action = np.random.randint(self.num_actions)
             rospy.logdebug("{} Take a random action!".format(self.name))
 
         return action
@@ -129,8 +129,8 @@ class DQNAgent:
         (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
         # open a GradientTape to record the operations run during the forward pass
         with tf.GradientTape() as tape:
-            pred_q = tf.math.reduce_sum(self.qnet_active(batch_states) * tf.one_hot(batch_actions, self.action_space[0]), axis=-1)
-            target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_sum(self.qnet_stable(batch_next_states)*tf.one_hot(tf.math.argmax(self.qnet_active(batch_next_states),axis=1), self.action_space[0]),axis=1) # double DQN trick
+            pred_q = tf.math.reduce_sum(self.qnet_active(batch_states) * tf.one_hot(batch_actions, self.num_actions), axis=-1)
+            target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_sum(self.qnet_stable(batch_next_states)*tf.one_hot(tf.math.argmax(self.qnet_active(batch_next_states),axis=1), self.num_actions),axis=1) # double DQN trick
             # compute loss value
             loss_value = self.loss_fn(y_true=target_q, y_pred=pred_q)
         # use the gradient tape to automatically retrieve the gradients of the trainable variables with respect to the loss.
@@ -185,7 +185,7 @@ class DQNAgent:
     def save_params(self):
         hyper_params = dict(
             dim_state = self.dim_state,
-            action_space = self.action_space[0],
+            num_actions = self.num_actions,
             memory_cap = self.memory_cap,
             layer_sizes = self.layer_sizes,
             update_epoch = self.update_epoch,

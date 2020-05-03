@@ -31,10 +31,10 @@ class DoubleEscapeDiscreteEnv(object):
         self.max_steps = 999
         self.step_counter = 0
         self.observation_space = (18,) # x, y, x_d, y_d, th, th_d
-        self.action_space = (5,)
-        # self.actions0 = np.array([[2,1], [2,-1], [-2,1], [-2,-1], [0,0]])
-        # self.actions1 = self.actions0.copy()
-        self.actions = np.array([[2,1], [2,-1], [-2,1], [-2,-1], [0,0]])
+        self.action_space = (4,)
+        self.actions0 = np.array([[2,1], [2,-1], [-2,1], [-2,-1]])
+        self.actions1 = self.actions0.copy()
+        # self.actions = np.array([[2,1], [2,-1], [-2,1], [-2,-1])
         # robot properties
         self.spawning_pool = np.array([np.inf]*5)
         self.model_states = ModelStates()
@@ -296,17 +296,17 @@ class DoubleEscapeDiscreteEnv(object):
         """
         Publish cmd_vel according to an action index
         Args:
-            i_act: int(scalar)
+            i_act: array([ia0, ia1])
         Returns:
         """
-        assert isinstance(i_acts, list)
+        assert i_acts.shape==(2,)
         rospy.logdebug("\nStart Taking Action")
         cmd_vel0 = Twist()
-        cmd_vel0.linear.x = self.actions[i_acts[0]][0]
-        cmd_vel0.angular.z = self.actions[i_acts[0]][1]
+        cmd_vel0.linear.x = self.actions0[i_acts[0]][0]
+        cmd_vel0.angular.z = self.actions0[i_acts[0]][1]
         cmd_vel1 = Twist()
-        cmd_vel1.linear.x = self.actions[i_acts[1]][0]
-        cmd_vel1.angular.z = self.actions[i_acts[1]][1]
+        cmd_vel1.linear.x = self.actions1[i_acts[1]][0]
+        cmd_vel1.angular.z = self.actions1[i_acts[1]][1]
         for _ in range(30): # ~20 Hz
             self.cmd_vel0_pub.publish(cmd_vel0)
             self.cmd_vel1_pub.publish(cmd_vel1)
@@ -332,7 +332,7 @@ class DoubleEscapeDiscreteEnv(object):
             done = False
             rospy.logdebug("\nLogger is trapped\n")
         elif 'blown' in self.status:
-            reward = -0.1
+            reward = -1 # not necessary
             done = True
         else: # collision
             reward = -100.
@@ -355,15 +355,20 @@ class DoubleEscapeDiscreteEnv(object):
 
 
 if __name__ == "__main__":
-    num_episodes = 16
-    num_steps = 64
+    num_episodes = 160
+    num_steps = 640
 
     env = DoubleEscapeDiscreteEnv()
     for ep in range(num_episodes):
         obs = env.reset()
         rospy.logdebug("obs: {}".format(obs))
+        if 'blown' in env.status:
+            obs = env.reset()
+            continue
         for st in range(num_steps):
-            act = random.randint(env.action_space[0])
+            act0 = random.randint(env.action_space[0])
+            act1 = random.randint(env.action_space[0])
+            act = np.array([act0,act1])
             obs, rew, done, info = env.step(act)
             rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, rew, done, info))
             if done:

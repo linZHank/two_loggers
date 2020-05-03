@@ -23,7 +23,7 @@ from agents.dqn import DQNAgent
 if __name__ == "__main__":
     env=SoloEscapeDiscreteEnv()
     agent = DQNAgent(env=env, name='dqn_logger_eval')
-    model_path = os.path.join(sys.path[0], 'saved_models/dqn/solo_escape/2020-04-29-23-41/dqn_logger/models/562363.h5')
+    model_path = os.path.join(sys.path[0], 'saved_models/dqn/solo_escape_discrete/2020-05-01-22-29/dqn_logger/models/1000000.h5')
     agent.load_model(model_path=model_path)
     agent.epsilon = 0.01
     num_episodes = 10
@@ -58,6 +58,6 @@ if __name__ == "__main__":
 
     # plot averaged returns
     fig, ax = plt.subplots(figsize=(8, 6))
-    fig.suptitle('Averaged Returns')
-    ax.plot(sedimentary_returns)
+    fig.suptitle('Returns')
+    ax.plot(episodic_returns)
     plt.show()
