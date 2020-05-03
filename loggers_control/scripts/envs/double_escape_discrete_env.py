@@ -24,7 +24,7 @@ class DoubleEscapeDiscreteEnv(object):
     DoubleEscapeDiscrete Env Class
     """
     def __init__(self):
-        rospy.init_node("double_escape_discrete_env", anonymous=True, log_level=rospy.DEBUG)
+        rospy.init_node("double_escape_discrete_env", anonymous=True, log_level=rospy.INFO)
         # env properties
         self.name = 'double_escape_discrete'
         self.rate = rospy.Rate(1000)
