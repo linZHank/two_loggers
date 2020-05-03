@@ -32,8 +32,8 @@ class SoloEscapeDiscreteEnv(object):
         self.max_steps = 999
         self.step_counter = 0
         self.observation_space = (6,) # x, y, x_d, y_d, th, th_d
-        self.action_space = (5,)
-        self.actions = np.array([[2,1], [2,-1], [-2,1], [-2,-1], [0,0]])
+        self.action_space = (4,)
+        self.actions = np.array([[2,1], [2,-1], [-2,1], [-2,-1]])
         # robot properties
         self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
@@ -215,6 +215,7 @@ class SoloEscapeDiscreteEnv(object):
             action: int(scalar)
         Returns:
         """
+        assert 0<=i_act<=self.action_space[0]
         rospy.logdebug("\nStart Taking Action")
         cmd_vel = Twist()
         cmd_vel.linear.x = self.actions[i_act][0]

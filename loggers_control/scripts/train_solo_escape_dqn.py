@@ -19,13 +19,32 @@ import rospy
 from envs.solo_escape_discrete_env import SoloEscapeDiscreteEnv
 from agents.dqn import DQNAgent
 
+import tensorflow as tf
+# restrict GPU and memory growth
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        # Visible devices must be set before GPUs have been initialized
+        print(e)
+    # Restrict TensorFlow to only use the first GPU
+    try:
+        tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
+        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+    except RuntimeError as e:
+        # Visible devices must be set before GPUs have been initialized
+        print(e)
+
 
 if __name__ == "__main__":
     env=SoloEscapeDiscreteEnv()
-    agent = DQNAgent(env=env, name='dqn_logger')
+    agent = DQNAgent(env=env, name='logger', warmup_episodes=100)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    model_dir = sys.path[0]+"/saved_models/solo_escape/dqn/"+date_time
-    num_episodes = 8000
+    num_episodes = 10000
     num_steps = env.max_steps
     num_samples = 1 # sample k times to train q-net
     episodic_returns, sedimentary_returns = [], []
@@ -37,7 +56,7 @@ if __name__ == "__main__":
         rewards = []
         # reset env and get state from it
         obs = env.reset()
-        agent.linear_epsilon_decay(episode=ep, decay_period=512)
+        agent.linear_epsilon_decay(episode=ep, decay_period=300)
         for st in range(num_steps):
             # take actions, no action will take if deactivated
             act = agent.epsilon_greedy(obs)
@@ -62,13 +81,13 @@ if __name__ == "__main__":
                 rospy.loginfo("\n================================================================\nEpisode: {} \nSteps: {} \nEpsilon: {} \nEpisodicReturn: {} \nAveragedReturn: {} \nEndState: {} \nTotalSuccess: {} \nTimeElapsed: {} \n================================================================n".format(ep+1, st+1, agent.epsilon, episodic_returns[-1], sedimentary_returns[-1], info, success_counter, time.time()-start_time))
                 break
 
-    # plot averaged returns
-    fig, ax = plt.subplots(figsize=(8, 6))
-    fig.suptitle('Averaged Returns')
-    ax.plot(sedimentary_returns)
-    plt.show()
     # save model
     agent.save_model()
     agent.save_params()
     # save returns
     np.save(os.path.join(agent.model_dir, 'ep_returns.npy'), episodic_returns)
+    # plot averaged returns
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.suptitle('Averaged Returns')
+    ax.plot(sedimentary_returns)
+    plt.show()
