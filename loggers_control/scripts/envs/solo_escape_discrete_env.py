@@ -33,7 +33,7 @@ class SoloEscapeDiscreteEnv(object):
         self.step_counter = 0
         self.observation_space = (6,) # x, y, x_d, y_d, th, th_d
         self.action_space = (4,)
-        self.actions = np.array([[2,1], [2,-1], [-2,1], [-2,-1]])
+        self.actions = np.array([[1,.7], [1,-.7], [-1,.7], [-1,-.7]])
         # robot properties
         self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
