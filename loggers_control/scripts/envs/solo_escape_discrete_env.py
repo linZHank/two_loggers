@@ -33,7 +33,7 @@ class SoloEscapeDiscreteEnv(object):
         self.step_counter = 0
         self.observation_space = (6,) # x, y, x_d, y_d, th, th_d
         self.action_space = (4,)
-        self.actions = np.array([[1,.7], [1,-.7], [-1,.7], [-1,-.7]])
+        self.actions = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
         # robot properties
         self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
@@ -260,14 +260,15 @@ class SoloEscapeDiscreteEnv(object):
         self.model_states = data
 
 if __name__ == "__main__":
-    num_episodes = 8
-    num_steps = 64
-
     env = SoloEscapeDiscreteEnv()
+    num_episodes = 4
+    num_steps = env.max_steps
     for ep in range(num_episodes):
         obs = env.reset()
         rospy.logdebug("obs: {}".format(obs))
         for st in range(num_steps):
             act = random.randint(env.action_space[0])
             obs, rew, done, info = env.step(act)
-            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, rew, done, info))
+            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, act: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, act, rew, done, info))
+            if done:
+                break

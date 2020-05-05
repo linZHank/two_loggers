@@ -264,7 +264,7 @@ class SoloEscapeDiscreteEnv(object):
 
 if __name__ == "__main__":
     env = SoloEscapeDiscreteEnv()
-    num_episodes = 16
+    num_episodes = 4
     num_steps = env.max_steps
     for ep in range(num_episodes):
         obs = env.reset()
@@ -273,3 +273,5 @@ if __name__ == "__main__":
             act = random.randn(env.action_space[0])
             obs, rew, done, info = env.step(act)
             rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, act: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, act, rew, done, info))
+            if done:
+                break
