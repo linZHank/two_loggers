@@ -22,10 +22,10 @@ from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
-    agent0 = DQNAgent(env=env, name='logger0', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[128,128], warmup_episodes=200)
-    agent1 = DQNAgent(env=env, name='logger1', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[128,128], warmup_episodes=200)
+    agent0 = DQNAgent(env=env, name='logger0', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[128,128], warmup_episodes=1000)
+    agent1 = DQNAgent(env=env, name='logger1', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[128,128], warmup_episodes=1000)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    num_episodes = 5000
+    num_episodes = 10000
     num_steps = env.max_steps
     num_samples0, num_samples1 = 1, 1 # sample k times to train q-net
     episodic_returns, sedimentary_returns = [], []
@@ -39,8 +39,8 @@ if __name__ == "__main__":
         if 'blown' in env.status:
             obs = env.reset()
             continue
-        agent0.linear_epsilon_decay(episode=episode_counter, decay_period=300)
-        agent1.linear_epsilon_decay(episode=episode_counter, decay_period=300)
+        agent0.linear_epsilon_decay(episode=episode_counter, decay_period=1000)
+        agent1.linear_epsilon_decay(episode=episode_counter, decay_period=1000)
         for st in range(num_steps):
             # take actions, no action will take if deactivated
             act0 = agent0.epsilon_greedy(obs)

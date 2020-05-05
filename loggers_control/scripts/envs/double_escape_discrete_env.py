@@ -327,6 +327,10 @@ class DoubleEscapeDiscreteEnv(object):
             reward = 400.
             done = True
             rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
+        elif self.status.count('trapped')==1 and self.status.count('escaped')==1:
+            reward = -0.
+            done = False
+            rospy.logdebug("\n1 in 1 out\n")
         elif self.status.count('trapped')==2:
             reward = -0.1
             done = False
