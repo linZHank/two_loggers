@@ -32,7 +32,7 @@ class DoubleEscapeDiscreteEnv(object):
         self.step_counter = 0
         self.observation_space = (18,) # x, y, x_d, y_d, th, th_d
         self.action_space = (4,)
-        self.actions0 = np.array([[1,.7], [1,-.7], [-1,0.7], [-1,-0.7]])
+        self.actions0 = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
         self.actions1 = self.actions0.copy()
         # self.actions = np.array([[2,1], [2,-1], [-2,1], [-2,-1])
         # robot properties
