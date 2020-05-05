@@ -42,7 +42,7 @@ if gpus:
 
 if __name__ == "__main__":
     env=SoloEscapeDiscreteEnv()
-    agent = DQNAgent(env=env, name='logger', warmup_episodes=100)
+    agent = DQNAgent(env=env, name='logger', warmup_episodes=500)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     num_episodes = 10000
     num_steps = env.max_steps
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         rewards = []
         # reset env and get state from it
         obs = env.reset()
-        agent.linear_epsilon_decay(episode=ep, decay_period=300)
+        agent.linear_epsilon_decay(episode=ep, decay_period=500)
         for st in range(num_steps):
             # take actions, no action will take if deactivated
             act = agent.epsilon_greedy(obs)
