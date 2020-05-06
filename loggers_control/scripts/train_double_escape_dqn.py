@@ -25,7 +25,7 @@ if __name__ == "__main__":
     agent0 = DQNAgent(env=env, name='logger0', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[128,128], warmup_episodes=1000)
     agent1 = DQNAgent(env=env, name='logger1', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[128,128], warmup_episodes=1000)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    num_episodes = 10000
+    num_episodes = 20000
     num_steps = env.max_steps
     num_samples0, num_samples1 = 1, 1 # sample k times to train q-net
     episodic_returns, sedimentary_returns = [], []
@@ -60,7 +60,7 @@ if __name__ == "__main__":
             # train agent1
             if episode_counter >= agent1.warmup_episodes:
                 for _ in range(num_samples0):
-                    agent0.train()
+                    agent1.train()
             # log step
             step_counter += 1
             rewards.append(rew)
