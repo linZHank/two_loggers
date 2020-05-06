@@ -25,15 +25,17 @@ class SoloEscapeDiscreteEnv(object):
     SoloEscapeDiscrete Env Class
     """
     def __init__(self):
-        rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.INFO)
+        rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.DEBUG)
         # env properties
         self.name = 'solo_escape_discrete'
         self.rate = rospy.Rate(1000) # gazebo world is running at 1000 Hz
         self.max_steps = 999
         self.step_counter = 0
         self.observation_space = (6,) # x, y, x_d, y_d, th, th_d
-        self.action_space = (4,)
-        self.actions = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
+        self.action_space = (2,)
+        self.action_space_high = np.array([1.5, pi/3])
+        self.action_space_low = np.array([-1.5, -pi/3])
+        self.action_scale = np.array([1.5, pi/3])
         # robot properties
         self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
@@ -123,7 +125,6 @@ class SoloEscapeDiscreteEnv(object):
         Manipulate the environment with an action
         obs, rew, done, info = env.step(action)
         """
-        assert 0 <= action <= self.action_space[0]
         rospy.logdebug("\nStart Environment Step")
         self._take_action(action)
         obs = self._get_observation()
@@ -208,18 +209,20 @@ class SoloEscapeDiscreteEnv(object):
 
         return obs
 
-    def _take_action(self, i_act):
+    def _take_action(self, act):
         """
-        Publish cmd_vel according to an action index
+        Publish cmd_vel according to an action array
         Args:
-            action: int(scalar)
+            action: array([lin.x, ang.z])
         Returns:
         """
-        assert 0<=i_act<=self.action_space[0]
+        assert act.shape==self.action_space
         rospy.logdebug("\nStart Taking Action")
+        lin_x = np.clip(act[0]*self.action_scale[0], self.action_space_low[0], self.action_space_high[0]) # -1.5 ~ 1.5
+        ang_z = np.clip(act[1]*self.action_scale[1], self.action_space_low[1], self.action_space_high[1]) # -pi/3 ~ pi/3
         cmd_vel = Twist()
-        cmd_vel.linear.x = self.actions[i_act][0]
-        cmd_vel.angular.z = self.actions[i_act][1]
+        cmd_vel.linear.x = lin_x
+        cmd_vel.angular.z = ang_z
         for _ in range(30): # ~20 Hz
             self.cmd_vel_pub.publish(cmd_vel)
             self.rate.sleep()
@@ -267,7 +270,7 @@ if __name__ == "__main__":
         obs = env.reset()
         rospy.logdebug("obs: {}".format(obs))
         for st in range(num_steps):
-            act = random.randint(env.action_space[0])
+            act = random.randn(env.action_space[0])
             obs, rew, done, info = env.step(act)
             rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, act: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, act, rew, done, info))
             if done:
