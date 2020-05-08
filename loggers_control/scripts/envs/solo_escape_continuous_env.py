@@ -185,7 +185,7 @@ class SoloEscapeDiscreteEnv(object):
         obs[1] = logger_pose.position.y
         obs[2] = logger_twist.linear.x
         obs[3] = logger_twist.linear.y
-        obs[4] = quat[2]
+        obs[4] = euler[2]
         obs[5] = logger_twist.angular.z
         # update status
         if obs[0] > 4.7:

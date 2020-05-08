@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import sys
 import os
+import math
 import numpy as np
 from numpy import pi
 from numpy import random
@@ -18,6 +19,76 @@ from gazebo_msgs.srv import SetModelState, SetLinkState, GetModelState, GetLinkS
 from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
 
+
+def generate_random_pose():
+    """
+    Special thanks to Eric Sun for sharing the code to calculate random init pose
+    generate a random rod pose in the room
+    with center at (0, 0), width 10 meters and depth 10 meters.
+    The robot has 0.25 meters as radius
+    Returns:
+        random_pose
+    """
+    def angleRange(x, y, room, L):
+        """
+        Compute rod angle based on a given robot position
+        """
+        min = 0
+        max = 0
+        dMinX = abs(x-room[0])
+        dMaxX = abs(x-room[1])
+        dMinY = abs(y-room[2])
+        dMaxY = abs(y-room[3])
+        if dMinX < L:
+            if dMinY < L:
+                min = -0.5*math.pi+math.acos(dMinY/L)
+                max = math.pi-math.acos(dMinX/L)
+            elif dMaxY < L:
+                min = -math.pi+math.acos(dMinX/L)
+                max = 0.5*math.pi-math.acos(dMaxY/L)
+            else:
+                min = -math.pi + math.acos(dMinX/L)
+                max = math.pi-math.acos(dMinX/L)
+        elif dMaxX < L:
+            if dMinY < L:
+                min = math.acos(dMaxX/L)
+                max = 1.5*math.pi-math.acos(dMinY/L)
+            elif dMaxY < L:
+                min = 0.5*math.pi+math.acos(dMaxY/L)
+                max = 2*math.pi-math.acos(dMaxX/L)
+            else:
+                min = math.acos(dMaxX/L)
+                max = 2*math.pi-math.acos(dMaxX/L)
+        else:
+            if dMinY < L:
+                min = -0.5*math.pi+math.acos(dMinY/L)
+                max = 1.5*math.pi-math.acos(dMinY/L)
+            elif dMaxY < L:
+                min = 0.5*math.pi+math.acos(dMaxY/L)
+                max = 2.5*math.pi-math.acos(dMaxY/L)
+            else:
+                min = -math.pi
+                max = math.pi
+        return min, max
+
+    random_pose = []
+    mag = 4.
+    len_rod = 2
+    room = [-mag, mag, -mag, mag] # create a room with boundary
+    # randomize robot position
+    rx = random.uniform(-mag, mag)
+    ry = random.uniform(-mag, mag)
+    # randomize rod pose
+    min_angle, max_angle = angleRange(rx, ry, room, len_rod)
+    angle = random.uniform(min_angle, max_angle)
+    x = rx + 0.5*len_rod*math.cos(angle)
+    y = ry + 0.5*len_rod*math.sin(angle)
+    # randomize robots orientation
+    th_0 = random.uniform(-math.pi, math.pi)
+    th_1 = random.uniform(-math.pi, math.pi)
+    random_pose = [x, y, angle, th_0, th_1]
+
+    return random_pose
 
 class DoubleEscapeDiscreteEnv(object):
     """
@@ -158,16 +229,17 @@ class DoubleEscapeDiscreteEnv(object):
         # logger_pose.reference_frame = "world"
         double_logger_pose.pose.position.z = 0.09
         if sum(np.isinf(self.spawning_pool)): # inialize randomly
-            x = random.uniform(-4, 4)
-            y = random.uniform(-4, 4)
-            theta = random.uniform(-pi, pi)
-            th0 = random.uniform(-pi, pi)
-            th1 = random.uniform(-pi, pi)
-            # recalc pose if not in cell
-            while np.absolute(x+2*np.cos(theta))>4.5 or np.absolute(y+2*np.sin(theta)) > 4.5:
-                x = random.uniform(-4, 4)
-                y = random.uniform(-4, 4)
-                theta = random.uniform(-pi, pi)
+            (x, y, theta, th0, th1) = generate_random_pose()
+        #     x = random.uniform(-4, 4)
+        #     y = random.uniform(-4, 4)
+        #     theta = random.uniform(-pi, pi)
+        #     th0 = random.uniform(-pi, pi)
+        #     th1 = random.uniform(-pi, pi)
+        #     # recalc pose if not in cell
+        #     while np.absolute(x+2*np.cos(theta))>4.5 or np.absolute(y+2*np.sin(theta)) > 4.5:
+        #         x = random.uniform(-4, 4)
+        #         y = random.uniform(-4, 4)
+        #         theta = random.uniform(-pi, pi)
         else: # inialize accordingly
             assert np.absolute(self.spawning_pool[0]) <= 4.5
             assert np.absolute(self.spawning_pool[1]) <= 4.5
@@ -232,7 +304,7 @@ class DoubleEscapeDiscreteEnv(object):
             link_obs[1] = pose.position.y
             link_obs[2] = twist.linear.x
             link_obs[3] = twist.linear.y
-            link_obs[4] = quat[2]
+            link_obs[4] = euler[2]
             link_obs[5] = twist.angular.z
             return link_obs
         # compute obs from link_states
@@ -367,7 +439,7 @@ if __name__ == "__main__":
         obs = env.reset()
         rospy.logdebug("obs: {}".format(obs))
         if 'blown' in env.status:
-            obs = env.reset()
+            # obs = env.reset()
             continue
         for st in range(num_steps):
             act0 = random.randint(env.action_space[0])

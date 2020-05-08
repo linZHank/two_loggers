@@ -233,7 +233,7 @@ class DoubleEscapeDiscreteEnv(object):
             link_obs[1] = pose.position.y
             link_obs[2] = twist.linear.x
             link_obs[3] = twist.linear.y
-            link_obs[4] = quat[2]
+            link_obs[4] = euler[2]
             link_obs[5] = twist.angular.z
             return link_obs
         # compute obs from link_states
