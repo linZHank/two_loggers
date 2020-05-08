@@ -44,7 +44,7 @@ if __name__ == "__main__":
     env=SoloEscapeDiscreteEnv()
     agent = DQNAgent(env=env, name='logger', warmup_episodes=500)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    num_episodes = 10000
+    num_episodes = 15000
     num_steps = env.max_steps
     num_samples = 1 # sample k times to train q-net
     episodic_returns, sedimentary_returns = [], []
