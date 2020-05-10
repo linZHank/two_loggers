@@ -31,6 +31,7 @@ if __name__ == "__main__":
     episodic_returns, sedimentary_returns = [], []
     episode_counter = 0
     step_counter = 0
+    freeze_signal = False
     success_counter = 0
     start_time = time.time()
     while episode_counter<num_episodes:
@@ -52,17 +53,19 @@ if __name__ == "__main__":
                 break
             agent0.replay_memory.store([obs.copy(), act0, rew, done, next_obs])
             agent1.replay_memory.store([obs.copy(), act1, rew, done, next_obs])
+            step_counter += 1
+            if not step_counter % 4000:
+                freeze_signal = not freeze_signal
+            rewards.append(rew)
             # train agent0
-            if episode_counter >= agent0.warmup_episodes:
+            if episode_counter >= agent0.warmup_episodes and freeze_signal:
                 for _ in range(num_samples0):
                     agent0.train()
             # train agent1
-            if episode_counter >= agent1.warmup_episodes:
+            if episode_counter >= agent1.warmup_episodes and (not freeze_signal):
                 for _ in range(num_samples1):
                     agent1.train()
             # log step
-            step_counter += 1
-            rewards.append(rew)
             if info.count('escaped')==2:
                 success_counter += 1
             rospy.logdebug("\n-\nepisode: {}, step: {}, epsilon0: {}, epsilon1: {} \nstate: {} \naction: {} \nnext_state: {} \nreward: {} \ndone: {} \ninfo: {} \nsucceed: {}\n-\n".format(episode_counter+1, st+1, agent0.epsilon, agent1.epsilon, obs, act, next_obs, rew, done, info, success_counter))
