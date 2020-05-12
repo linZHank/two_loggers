@@ -376,10 +376,10 @@ class DoubleEscapeContinuousEnv(object):
         assert acts.shape==self.action_space
         rospy.logdebug("\nStart Taking Action")
         # clip acts
-        lin_x0 = np.clip(acts[0]*self.action_scale[0], self.action_space_low[0], self.action_space_high[0]) # -1.5 ~ 1.5
-        ang_z0 = np.clip(acts[1]*self.action_scale[1], self.action_space_low[1], self.action_space_high[1]) # -pi/3 ~ pi/3
-        lin_x1 = np.clip(acts[2]*self.action_scale[2], self.action_space_low[2], self.action_space_high[2]) # -1.5 ~ 1.5
-        ang_z1 = np.clip(acts[3]*self.action_scale[3], self.action_space_low[3], self.action_space_high[3]) # -pi/3 ~ pi/3
+        lin_x0 = np.clip(acts[0], self.action_space_low[0], self.action_space_high[0]) # -1.5 ~ 1.5
+        ang_z0 = np.clip(acts[1], self.action_space_low[1], self.action_space_high[1]) # -pi/3 ~ pi/3
+        lin_x1 = np.clip(acts[2], self.action_space_low[2], self.action_space_high[2]) # -1.5 ~ 1.5
+        ang_z1 = np.clip(acts[3], self.action_space_low[3], self.action_space_high[3]) # -pi/3 ~ pi/3
         # convert acts to cmd_vels
         cmd_vel0 = Twist()
         cmd_vel0.linear.x = lin_x0
@@ -450,7 +450,7 @@ if __name__ == "__main__":
             obs = env.reset()
             continue
         for st in range(num_steps):
-            act = random.randn(env.action_space[0])
+            act = random.randn(env.action_space[0]) * env.action_scale
             obs, rew, done, info = env.step(act)
             rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, \nact: {} \nreward: {} \ndone: {} \ninfo: {}".format(ep_cntr+1, st+1, obs, act, rew, done, info))
             if done:

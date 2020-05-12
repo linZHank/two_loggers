@@ -222,8 +222,10 @@ class SoloEscapeDiscreteEnv(object):
         """
         assert act.shape==self.action_space
         rospy.logdebug("\nStart Taking Action")
-        lin_x = np.clip(act[0]*self.action_scale[0], self.action_space_low[0], self.action_space_high[0]) # -1.5 ~ 1.5
-        ang_z = np.clip(act[1]*self.action_scale[1], self.action_space_low[1], self.action_space_high[1]) # -pi/3 ~ pi/3
+        # lin_x = np.clip(act[0]*self.action_scale[0], self.action_space_low[0], self.action_space_high[0]) # -1.5 ~ 1.5
+        # ang_z = np.clip(act[1]*self.action_scale[1], self.action_space_low[1], self.action_space_high[1]) # -pi/3 ~ pi/3
+        lin_x = np.clip(act[0], self.action_space_low[0], self.action_space_high[0]) # -1.5 ~ 1.5
+        ang_z = np.clip(act[1], self.action_space_low[1], self.action_space_high[1]) # -pi/3 ~ pi/3
         cmd_vel = Twist()
         cmd_vel.linear.x = lin_x
         cmd_vel.angular.z = ang_z
@@ -274,8 +276,8 @@ if __name__ == "__main__":
         obs = env.reset()
         rospy.logdebug("obs: {}".format(obs))
         for st in range(num_steps):
-            act = random.randn(env.action_space[0])
+            act = random.randn(env.action_space[0])*env.action_space_high
             obs, rew, done, info = env.step(act)
-            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, act: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, act, rew, done, info))
+            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {} \nact: {} \nreward: {}, done: {}, info: {}".format(ep+1, st+1, obs, act, rew, done, info))
             if done:
                 break
