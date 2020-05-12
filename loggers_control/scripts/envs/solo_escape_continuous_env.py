@@ -99,6 +99,7 @@ class SoloEscapeDiscreteEnv(object):
             obs
         """
         rospy.logdebug("\nStart Environment Reset")
+        self.unpausePhysics()
         # zero cmd_vel
         zero_cmd_vel = Twist()
         for _ in range(15): # zero cmd_vel for about 0.025 sec. Important! Or wrong obs
@@ -112,6 +113,7 @@ class SoloEscapeDiscreteEnv(object):
         for _ in range(15): # zero cmd_vel for another 0.025 sec. Important! Or wrong obs
             self.cmd_vel_pub.publish(zero_cmd_vel)
             self.rate.sleep()
+        self.pausePhysics()
         # get obs
         obs = self._get_observation()
         # reset params
@@ -126,7 +128,9 @@ class SoloEscapeDiscreteEnv(object):
         obs, rew, done, info = env.step(action)
         """
         rospy.logdebug("\nStart Environment Step")
+        self.unpausePhysics()
         self._take_action(action)
+        self.pausePhysics()
         obs = self._get_observation()
         # compute reward and done
         self.step_counter += 1 # make sure inc step counter before compute reward

@@ -22,10 +22,9 @@ from geometry_msgs.msg import Pose, Twist
 
 def generate_random_pose():
     """
-    Special thanks to Eric Sun for sharing the code to calculate random init pose
-    generate a random rod pose in the room
-    with center at (0, 0), width 10 meters and depth 10 meters.
-    The robot has 0.25 meters as radius
+    Special thanks to Eric Sun for sharing the code to calculate random init pose.
+
+    generate a random rod pose in the room with center at (0, 0), width 10 meters and depth 10 meters. The robot has 0.25 meters as radius
     Returns:
         random_pose
     """
@@ -181,6 +180,7 @@ class DoubleEscapeDiscreteEnv(object):
             obs
         """
         rospy.logdebug("\nStart Environment Reset")
+        self.unpausePhysics()
         # zero cmd_vels
         zero_cmd_vel = Twist()
         for _ in range(15): # zero cmd_vel for about 0.025 sec. Important! Or wrong obs
@@ -196,6 +196,7 @@ class DoubleEscapeDiscreteEnv(object):
             self.cmd_vel0_pub.publish(zero_cmd_vel)
             self.cmd_vel1_pub.publish(zero_cmd_vel)
             self.rate.sleep()
+        self.pausePhysics()
         # get obs
         obs = self._get_observation()
         # reset params
@@ -210,7 +211,9 @@ class DoubleEscapeDiscreteEnv(object):
         obs, rew, done, info = env.step(action_0, action_1)
         """
         rospy.logdebug("\nStart Environment Step")
+        self.unpausePhysics()
         self._take_action(action)
+        self.pausePhysics()
         obs = self._get_observation()
         # update status
         reward, done = self._compute_reward()
@@ -431,21 +434,23 @@ class DoubleEscapeDiscreteEnv(object):
 
 
 if __name__ == "__main__":
-    num_episodes = 160
-    num_steps = 640
-
     env = DoubleEscapeDiscreteEnv()
-    for ep in range(num_episodes):
+    num_episodes = 4
+    num_steps = env.max_steps
+    ep_cntr = 0
+    while ep_cntr < num_episodes:
         obs = env.reset()
         rospy.logdebug("obs: {}".format(obs))
         if 'blown' in env.status:
-            # obs = env.reset()
+            obs = env.reset()
             continue
         for st in range(num_steps):
             act0 = random.randint(env.action_space[0])
             act1 = random.randint(env.action_space[0])
             act = np.array([act0,act1])
             obs, rew, done, info = env.step(act)
-            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, rew, done, info))
+            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, \nact: {} \nreward: {} \ndone: {} \ninfo: {}".format(ep_cntr+1, st+1, obs, act, rew, done, info))
             if done:
+                if st > 5:
+                    ep_cntr+=1
                 break

@@ -19,14 +19,83 @@ from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
 
 
-class DoubleEscapeDiscreteEnv(object):
+def generate_random_pose():
     """
-    DoubleEscapeDiscrete Env Class
+    Special thanks to Eric Sun for sharing the code to calculate random init pose.
+
+    generate a random rod pose in the room with center at (0, 0), width 10 meters and depth 10 meters. The robot has 0.25 meters as radius
+    Returns:
+        random_pose
+    """
+    def angleRange(x, y, room, L):
+        """
+        Compute rod angle based on a given robot position
+        """
+        min = 0
+        max = 0
+        dMinX = abs(x-room[0])
+        dMaxX = abs(x-room[1])
+        dMinY = abs(y-room[2])
+        dMaxY = abs(y-room[3])
+        if dMinX < L:
+            if dMinY < L:
+                min = -0.5*math.pi+math.acos(dMinY/L)
+                max = math.pi-math.acos(dMinX/L)
+            elif dMaxY < L:
+                min = -math.pi+math.acos(dMinX/L)
+                max = 0.5*math.pi-math.acos(dMaxY/L)
+            else:
+                min = -math.pi + math.acos(dMinX/L)
+                max = math.pi-math.acos(dMinX/L)
+        elif dMaxX < L:
+            if dMinY < L:
+                min = math.acos(dMaxX/L)
+                max = 1.5*math.pi-math.acos(dMinY/L)
+            elif dMaxY < L:
+                min = 0.5*math.pi+math.acos(dMaxY/L)
+                max = 2*math.pi-math.acos(dMaxX/L)
+            else:
+                min = math.acos(dMaxX/L)
+                max = 2*math.pi-math.acos(dMaxX/L)
+        else:
+            if dMinY < L:
+                min = -0.5*math.pi+math.acos(dMinY/L)
+                max = 1.5*math.pi-math.acos(dMinY/L)
+            elif dMaxY < L:
+                min = 0.5*math.pi+math.acos(dMaxY/L)
+                max = 2.5*math.pi-math.acos(dMaxY/L)
+            else:
+                min = -math.pi
+                max = math.pi
+        return min, max
+
+    random_pose = []
+    mag = 4.
+    len_rod = 2
+    room = [-mag, mag, -mag, mag] # create a room with boundary
+    # randomize robot position
+    rx = random.uniform(-mag, mag)
+    ry = random.uniform(-mag, mag)
+    # randomize rod pose
+    min_angle, max_angle = angleRange(rx, ry, room, len_rod)
+    angle = random.uniform(min_angle, max_angle)
+    x = rx + 0.5*len_rod*math.cos(angle)
+    y = ry + 0.5*len_rod*math.sin(angle)
+    # randomize robots orientation
+    th_0 = random.uniform(-math.pi, math.pi)
+    th_1 = random.uniform(-math.pi, math.pi)
+    random_pose = [x, y, angle, th_0, th_1]
+
+    return random_pose
+
+class DoubleEscapeContinuousEnv(object):
+    """
+    DoubleEscapeContinuous Env Class
     """
     def __init__(self):
-        rospy.init_node("double_escape_discrete_env", anonymous=True, log_level=rospy.INFO)
+        rospy.init_node("double_escape_continuous_env", anonymous=True, log_level=rospy.DEBUG)
         # env properties
-        self.name = 'double_escape_discrete'
+        self.name = 'double_escape_continuous'
         self.rate = rospy.Rate(1000)
         self.max_steps = 999
         self.step_counter = 0
@@ -110,6 +179,7 @@ class DoubleEscapeDiscreteEnv(object):
             obs
         """
         rospy.logdebug("\nStart Environment Reset")
+        self.unpausePhysics()
         # zero cmd_vels
         zero_cmd_vel = Twist()
         for _ in range(15): # zero cmd_vel for about 0.025 sec. Important! Or wrong obs
@@ -125,6 +195,7 @@ class DoubleEscapeDiscreteEnv(object):
             self.cmd_vel0_pub.publish(zero_cmd_vel)
             self.cmd_vel1_pub.publish(zero_cmd_vel)
             self.rate.sleep()
+        self.pausePhysics()
         # get obs
         obs = self._get_observation()
         # reset params
@@ -139,7 +210,9 @@ class DoubleEscapeDiscreteEnv(object):
         obs, rew, done, info = env.step(action_0, action_1)
         """
         rospy.logdebug("\nStart Environment Step")
+        self.unpausePhysics()
         self._take_action(action)
+        self.pausePhysics()
         obs = self._get_observation()
         # update status
         reward, done = self._compute_reward()
@@ -366,7 +439,7 @@ class DoubleEscapeDiscreteEnv(object):
 
 
 if __name__ == "__main__":
-    env = DoubleEscapeDiscreteEnv()
+    env = DoubleEscapeContinuousEnv()
     num_episodes = 4
     num_steps = env.max_steps
     ep_cntr = 0
@@ -379,7 +452,8 @@ if __name__ == "__main__":
         for st in range(num_steps):
             act = random.randn(env.action_space[0])
             obs, rew, done, info = env.step(act)
-            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, reward: {}, done: {}, info: {}".format(ep_cntr+1, st, obs, rew, done, info))
+            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, \nact: {} \nreward: {} \ndone: {} \ninfo: {}".format(ep_cntr+1, st+1, obs, act, rew, done, info))
             if done:
-                ep_cntr+=1
+                if st > 5:
+                    ep_cntr+=1
                 break
