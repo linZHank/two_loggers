@@ -23,7 +23,7 @@ from agents.dqn import DQNAgent
 if __name__ == "__main__":
     env=SoloEscapeDiscreteEnv()
     agent = DQNAgent(env=env, name='dqn_logger_eval')
-    model_path = os.path.join(sys.path[0], 'saved_models/solo_escape_discrete/dqn/2020-05-05-16-11/logger/models/1100000.h5')
+    model_path = os.path.join(sys.path[0], 'saved_models/solo_escape_discrete/dqn/2020-05-09-00-11/logger/models/2216555.h5')
     agent.load_model(model_path=model_path)
     agent.epsilon = 0.01
     num_episodes = 10
