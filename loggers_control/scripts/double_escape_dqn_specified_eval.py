@@ -24,14 +24,15 @@ from agents.dqn import DQNAgent
 if __name__ == '__main__':
     # specify init config
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    init_config = [3.25,-4,0,pi/2,pi/2]
+    # init_config = [3.25,-4,0,pi/2,pi/2]
     # init_config = [2.5,-2.25,0.2*pi,pi/2,pi/2]
-    # init_config = [0.3875,-1.69,-0.6*pi,0,0]
+    init_config = [0.3875,-1.69,-0.6*pi,0,0]
     # init_config = [-2.487,-1.735,-0.2*pi,pi/2,pi/2]
     # init_config = [-3.225,-3.7,-19*pi/20,pi/2,pi/2]
     # instantiate env
     env = DoubleEscapeEnv()
-    obs, info = env.reset(init_config)
+    # obs, info = env.reset(init_config)
+    obs, info = env.reset()
     state_0 = double_utils.obs_to_state(obs, "lognbot_0")
     state_1 = double_utils.obs_to_state(obs, "lognbot_1")
     # load agent models
@@ -50,37 +51,42 @@ if __name__ == '__main__':
     eval_params = {'wall_bonus': False,'door_bonus':False,'time_bonus':False,'success_bonus':False,'num_steps':num_steps}
     traj_0, traj_1 = [], []
     # start evaluation
-    for st in range(num_steps):
-        traj_0.append((state_0[7:9]))
-        traj_1.append((state_1[7:9]))
-        # traj_1.append((state_1[14:16]))
-        action_index_0 = np.argmax(agent_0.qnet_active.predict(state_0.reshape(1,-1)))
-        action_0 = agent_params_0["actions"][action_index_0]
-        action_index_1 = np.argmax(agent_1.qnet_active.predict(state_1.reshape(1,-1)))
-        action_1 = agent_params_1["actions"][action_index_1]
-        obs, rew, done, info = env.step(action_0, action_1)
-        rew, done = double_utils.adjust_reward(eval_params, env)
-        next_state_0 = double_utils.obs_to_state(obs, "lognbot_0")
-        next_state_1 = double_utils.obs_to_state(obs, "lognbot_1")
-        state_0 = next_state_0
-        state_1 = next_state_1
-        # logging
-        rospy.loginfo(
-            "Step: {} \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward: {}, status: {} \nsuccess_count: {}".format(
-                st,
-                action_index_0,
-                action_0,
-                action_index_1,
-                action_1,
-                next_state_0,
-                next_state_1,
-                rew,
-                info["status"],
-                env.success_count
-            ),
-        )
-        if done:
-            break
+    while True:
+        for st in range(num_steps):
+            traj_0.append((state_0[7:9]))
+            traj_1.append((state_1[7:9]))
+            # traj_1.append((state_1[14:16]))
+            # add error
+            state_0 = state_0 + np.random.randn(state_0.shape[0])*0.1
+            state_1 = state_1 + np.random.randn(state_1.shape[0])*0.1
+            action_index_0 = np.argmax(agent_0.qnet_active.predict(state_0.reshape(1,-1)))
+            action_0 = agent_params_0["actions"][action_index_0]
+            action_index_1 = np.argmax(agent_1.qnet_active.predict(state_1.reshape(1,-1)))
+            action_1 = agent_params_1["actions"][action_index_1]
+            obs, rew, done, info = env.step(action_0, action_1)
+            rew, done = double_utils.adjust_reward(eval_params, env)
+            next_state_0 = double_utils.obs_to_state(obs, "lognbot_0")
+            next_state_1 = double_utils.obs_to_state(obs, "lognbot_1")
+            state_0 = next_state_0
+            state_1 = next_state_1
+            # logging
+            rospy.loginfo(
+                "Step: {} \naction0: {}->{}, action0: {}->{}, agent_0 state: {}, agent_1 state: {}, reward: {}, status: {} \nsuccess_count: {}".format(
+                    st,
+                    action_index_0,
+                    action_0,
+                    action_index_1,
+                    action_1,
+                    next_state_0,
+                    next_state_1,
+                    rew,
+                    info["status"],
+                    env.success_count
+                ),
+            )
+            if done:
+                env.reset()
+                break
     env.reset([0,0,0,0,0])
 
     # save and plot trajectories
