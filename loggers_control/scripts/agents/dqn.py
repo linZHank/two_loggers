@@ -45,11 +45,11 @@ class DQNAgent:
         self.env = env
         self.date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
         self.model_dir = os.path.join(sys.path[0], 'saved_models', env.name, 'dqn', self.date_time, str(name))
-        self.save_frequency = 100000
+        self.save_frequency = int(1e6)
         # hyper-parameters
         self.dim_state = dim_state
         self.num_actions = num_actions
-        self.memory_cap = int(env.max_steps*100)
+        self.memory_cap = int(1e7)
         self.layer_sizes = layer_sizes
         self.update_epoch = update_epoch
         self.learning_rate = learning_rate
