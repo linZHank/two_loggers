@@ -25,7 +25,7 @@ class SoloEscapeContinuousEnv(object):
     SoloEscapeContinuousEnv Env Class
     """
     def __init__(self):
-        rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.DEBUG)
+        rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.INFO)
         # env properties
         self.name = 'solo_escape_discrete'
         self.rate = rospy.Rate(1000) # gazebo world is running at 1000 Hz
@@ -173,7 +173,7 @@ class SoloEscapeContinuousEnv(object):
         Returns:
             obs: array([x,y,xdot,ydot,theta,thetadot])
         """
-        obs = np.zeros(self.observation_space[0])
+        obs = np.zeros(self.observation_space_shape[0])
         id_logger = self.model_states.name.index("logger")
         logger_pose = self.model_states.pose[id_logger]
         logger_twist = self.model_states.twist[id_logger]
@@ -219,7 +219,7 @@ class SoloEscapeContinuousEnv(object):
             action: array([lin.x, ang.z])
         Returns:
         """
-        assert act.shape==self.action_space
+        assert act.shape==self.action_space_shape
         rospy.logdebug("\nStart Taking Action")
         lin_x = np.clip(act[0], self.action_space_low[0], self.action_space_high[0]) # -1.5 ~ 1.5
         ang_z = np.clip(act[1], self.action_space_low[1], self.action_space_high[1]) # -pi/3 ~ pi/3
@@ -255,7 +255,7 @@ class SoloEscapeContinuousEnv(object):
             rospy.logdebug("\nLogger had a collision\n")
         rospy.logdebug("reward: {}, done: {}".format(reward, done))
         # check if steps out of range
-        if self.step_counter >= self.max_steps:
+        if self.step_counter >= self.max_episode_steps:
             done = True
             rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.step_counter))
         rospy.logdebug("End Computing Reward\n")
@@ -268,12 +268,12 @@ class SoloEscapeContinuousEnv(object):
 if __name__ == "__main__":
     env = SoloEscapeDiscreteEnv()
     num_episodes = 4
-    num_steps = env.max_steps
+    num_steps = env.max_episode_steps
     for ep in range(num_episodes):
         obs = env.reset()
         rospy.logdebug("obs: {}".format(obs))
         for st in range(num_steps):
-            act = random.randn(env.action_space[0])*env.action_space_high
+            act = random.randn(env.action_space_shape[0])*env.action_space_high
             obs, rew, done, info = env.step(act)
             rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {} \nact: {} \nreward: {}, done: {}, info: {}".format(ep+1, st+1, obs, act, rew, done, info))
             if done:

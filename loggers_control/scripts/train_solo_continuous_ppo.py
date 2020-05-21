@@ -71,7 +71,7 @@ class Actor(tf.Module):
 
 class MLPCategoricalActor(Actor):
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
-        super().__init__()
+        super(MLPCategoricalActor, self).__init__()
         self.logits_net = mlp([obs_dim] + list(hidden_sizes) + [act_dim], activation)
 
     def _distribution(self, obs):
@@ -83,7 +83,7 @@ class MLPCategoricalActor(Actor):
 
 class MLPGaussianActor(Actor):
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
-        super().__init__()
+        super(MLPGaussianActor, self).__init__()
         log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
         self.log_std = tf.Variable(log_std)
         self.mu_net = mlp([obs_dim] + list(hidden_sizes) + [act_dim], activation)
@@ -98,7 +98,7 @@ class MLPGaussianActor(Actor):
 
 class MLPCritic(tf.Module):
     def __init__(self, obs_dim, hidden_sizes, activation):
-        super().__init__()
+        super(MLPCritic, self).__init__()
         self.v_net = mlp([obs_dim] + list(hidden_sizes) + [1], activation)
 
     # @tf.function
@@ -110,7 +110,7 @@ class MLPActorCritic(tf.Module):
     The core of PPO is actor-critic
     """
     def __init__(self, obs_dim, act_dim, mode='continuous', hidden_sizes=(64,64), activation='tanh'):
-        super().__init__()
+        super(MLPActorCritic, self).__init__()
         if mode=='continuous':
             self.actor = MLPGaussianActor(obs_dim=obs_dim, act_dim=act_dim, hidden_sizes=hidden_sizes, activation=activation)
         if mode=='discrete':
@@ -250,7 +250,7 @@ if __name__ == "__main__":
     # instantiate env
     env=SoloEscapeContinuousEnv()
     # paramas
-    steps_per_epoch=4000
+    steps_per_epoch=8000
     epochs=1000
     gamma=0.99
     clip_ratio=0.2
@@ -271,8 +271,10 @@ if __name__ == "__main__":
     actor_optimizer = tf.keras.optimizers.Adam(learning_rate=3e-4)
     critic_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Prepare for interaction with environment
-    model_dir = os.path.join(sys.path[0], 'saved_models', env.name, 'ppo', self.date_time, 'models')
+    date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
+    model_dir = os.path.join(sys.path[0], 'saved_models', env.name, 'ppo', date_time, 'models')
     start_time = time.time()
+    success_counter = 0
     obs, ep_ret, ep_len = env.reset(), 0, 0
     episodes, total_steps = 0, 0
     stepwise_rewards, episodic_returns, averaged_returns = [], [], []
@@ -280,7 +282,7 @@ if __name__ == "__main__":
     for ep in range(epochs):
         for st in range(steps_per_epoch):
             act, val, logp = ac.step(obs.reshape(1,-1))
-            next_obs, rew, done, _ = env.step(act)
+            next_obs, rew, done, info = env.step(act)
             ep_ret += rew
             ep_len += 1
             stepwise_rewards.append(rew)
@@ -293,7 +295,7 @@ if __name__ == "__main__":
             epoch_ended = (st==steps_per_epoch-1)
             if terminal or epoch_ended:
                 if epoch_ended and not(terminal):
-                    print('Warning: trajectory cut off by epoch at {} steps.'.format(ep_len), flush=True)
+                    print('Warning: trajectory cut off by epoch at {} steps.'.format(ep_len))
                 if timeout or epoch_ended:
                     _, val, _ = ac.step(obs.reshape(1,-1))
                 else:
@@ -303,11 +305,13 @@ if __name__ == "__main__":
                     episodes += 1
                     episodic_returns.append(ep_ret)
                     averaged_returns.append(sum(episodic_returns)/episodes)
-                    print("\nTotalSteps: {} \nEpisode: {}, Step: {}, EpReturn: {}, EpLength: {}".format(total_steps, episodes, st+1, ep_ret, ep_len))
+                    if info == "escaped":
+                        success_counter += 1
+                    print("\nTotalSteps: {} \nEpisode: {}, Step: {}, EpReturn: {}, EpLength: {}, Success: {} ".format(total_steps, episodes, st+1, ep_ret, ep_len, success_counter))
                 obs, ep_ret, ep_len = env.reset(), 0, 0
         # update actor-critic
         loss_pi, pi_info, loss_v = update(buffer)
-        print("\n================================================================\nEpoch: {} \nStep: {} \nAveReturn: {} \nLossPi: {} \nLossV: {} \nKLDivergence: {} \n Entropy: {} \nTimeElapsed: {}\n================================================================\n".format(ep+1, st+1, averaged_returns[-1], loss_pi, loss_v, pi_info['kl'], pi_info['ent'], time.time()-start_time))
+        print("\n================================================================\nEpoch: {} \nTotalSteps: {} \nAveReturn: {} \nSuccess: {} \nLossPi: {} \nLossV: {} \nKLDivergence: {} \n Entropy: {} \nTimeElapsed: {}\n================================================================\n".format(ep+1, total_steps, averaged_returns[-1], success_counter, loss_pi, loss_v, pi_info['kl'], pi_info['ent'], time.time()-start_time))
         # save model
         if not ep%save_freq or (ep==epochs-1):
             model_path = os.path.join(model_dir, str(ep))
