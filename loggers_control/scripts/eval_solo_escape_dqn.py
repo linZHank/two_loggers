@@ -1,8 +1,6 @@
 #! /usr/bin/env python
 """
-An implementation of Deep Q-network (DQN) for solo_escape_task
-DQN is a Model free, off policy, reinforcement learning algorithm (https://deepmind.com/research/dqn/)
-Author: LinZHanK (linzhank@gmail.com)
+Evaluate trained DQN model on solo_escape task
 """
 from __future__ import absolute_import, division, print_function
 

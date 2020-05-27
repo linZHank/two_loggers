@@ -22,7 +22,7 @@ from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
-    agent = DQNAgent(env=env, name='double_logger', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[256,256], warmup_episodes=500)
+    agent = DQNAgent(env=env, name='double_logger', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=3e-4, warmup_episodes=500)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     num_episodes = 20000
     num_steps = env.max_steps
