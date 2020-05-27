@@ -25,9 +25,9 @@ class SoloEscapeContinuousEnv(object):
     SoloEscapeContinuousEnv Env Class
     """
     def __init__(self):
-        rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.INFO)
+        rospy.init_node("solo_escape_continuous_env", anonymous=True, log_level=rospy.INFO)
         # env properties
-        self.name = 'solo_escape_discrete'
+        self.name = 'solo_escape_continuos'
         self.rate = rospy.Rate(1000) # gazebo world is running at 1000 Hz
         self.max_episode_steps = 999
         self.step_counter = 0

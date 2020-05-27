@@ -147,7 +147,7 @@ def compute_actor_gradients(data):
         ratio = tf.math.exp(logp - logp_old)
         clip_adv = tf.math.multiply(tf.clip_by_value(ratio, 1-clip_ratio, 1+clip_ratio), adv)
         ent = tf.math.reduce_sum(pi.entropy(), axis=-1)
-        objective = tf.math.minimum(tf.math.multiply(ratio, adv), clip_adv) - .01*ent
+        objective = tf.math.minimum(tf.math.multiply(ratio, adv), clip_adv) + .01*ent
         loss_pi = -tf.math.reduce_mean(objective)
         # useful info
         approx_kl = tf.math.reduce_mean(logp_old - logp, axis=-1)
@@ -250,8 +250,8 @@ if __name__ == "__main__":
     # instantiate env
     env=SoloEscapeContinuousEnv()
     # paramas
-    steps_per_epoch=8000
-    epochs=1000
+    steps_per_epoch=80000
+    epochs=200
     gamma=0.99
     clip_ratio=0.2
     pi_lr=3e-4
@@ -320,58 +320,6 @@ if __name__ == "__main__":
             tf.saved_model.save(ac, model_path)
 ################################################################
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    episodic_returns, sedimentary_returns = [], []
-    step_counter = 0
-    success_counter = 0
-    start_time = time.time()
-    for ep in range(num_episodes):
-        done = False
-        rewards = []
-        # reset env and get state from it
-        obs = env.reset()
-        agent.linear_epsilon_decay(episode=ep, decay_period=500)
-        for st in range(num_steps):
-            # take actions, no action will take if deactivated
-            act = agent.epsilon_greedy(obs)
-            # step env
-            next_obs, rew, done, info = env.step(act)
-            # store transitions and train
-            agent.replay_memory.store([obs.copy(), act, rew, done, next_obs])
-            if ep >= agent.warmup_episodes:
-                for _ in range(num_samples):
-                    agent.train()
-                step_counter += 1
-            rewards.append(rew)
-            if info == "escaped":
-                success_counter += 1
-            # log step
-            rospy.logdebug("\n-\nepisode: {}, step: {}, epsilon: {} \nstate: {} \naction: {} \nnext_state: {} \nreward: {} \ndone: {} \ninfo: {} \nsucceed: {}\n-\n".format(ep+1, st+1, agent.epsilon, obs, act, next_obs, rew, done, info,success_counter))
-            obs = next_obs.copy()
-            if done:
-                # summarize episode
-                episodic_returns.append(sum(rewards))
-                sedimentary_returns.append(sum(episodic_returns)/(ep+1))
-                rospy.loginfo("\n================================================================\nEpisode: {} \nSteps: {} \nEpsilon: {} \nEpisodicReturn: {} \nAveragedReturn: {} \nEndState: {} \nTotalSuccess: {} \nTimeElapsed: {} \n================================================================n".format(ep+1, st+1, agent.epsilon, episodic_returns[-1], sedimentary_returns[-1], info, success_counter, time.time()-start_time))
-                break
-
-    # save model
-    agent.save_model()
-    agent.save_params()
-    # save returns
-    np.save(os.path.join(agent.model_dir, 'ep_returns.npy'), episodic_returns)
     # plot averaged returns
     fig, ax = plt.subplots(figsize=(8, 6))
     fig.suptitle('Averaged Returns')
