@@ -36,32 +36,35 @@ if __name__ == "__main__":
     while episode_counter<num_episodes:
         # reset env and get state from it
         obs, rewards, done = env.reset(), [], False
-        # next 3 lines generate state based on
-        state_0 = obs.copy()
-        state_1 = obs.copy()
-        state_1[:6] = state_1[-6:]
+        # state_0 = obs.copy()
+        # state_1 = obs.copy()
+        # state_1[:6] = state_1[-6:]
         if 'blown' in env.status:
             continue
         agent.linear_epsilon_decay(episode=episode_counter, decay_period=2000)
         for st in range(num_steps):
+            # next 3 lines generate state for each robot based on env obs
+            state0 = obs.copy()
+            state1 = obs.copy()
+            state1[:6] = state1[-6:]
             # take actions, no action will take if deactivated
-            act0 = agent.epsilon_greedy(state_0)
-            act1 = agent.epsilon_greedy(state_1)
+            act0 = agent.epsilon_greedy(state0)
+            act1 = agent.epsilon_greedy(state1)
             act = np.array([act0, act1])
             # step env
             next_obs, rew, done, info = env.step(act)
-            next_state_0 = next_obs.copy()
-            next_state_1 = next_obs.copy()
-            next_state_1[:6] = next_state_1[-6:]
+            next_state0 = next_obs.copy()
+            next_state1 = next_obs.copy()
+            next_state1[:6] = next_state1[-6:]
             # store transitions and train
             if 'blown' in info:
                 break
-            agent.replay_memory.store([state_0, act0, rew, done, next_obs])
-            agent.replay_memory.store([state_1, act1, rew, done, next_obs])
+            agent.replay_memory.store([state0, act0, rew, done, next_state0])
+            agent.replay_memory.store([state1, act1, rew, done, next_state1])
             obs = next_obs.copy()
-            state_0 = obs.copy()
-            state_1 = obs.copy()
-            state_1[:6] = state_1[-6:]
+            # state_0 = obs.copy()
+            # state_1 = obs.copy()
+            # state_1[:6] = state_1[-6:]
             step_counter += 1
             rewards.append(rew)
             # train agent
