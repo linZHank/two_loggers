@@ -250,7 +250,7 @@ if __name__ == "__main__":
     # instantiate env
     env=SoloEscapeContinuousEnv()
     # paramas
-    steps_per_epoch=80000
+    steps_per_epoch=40000
     epochs=200
     gamma=0.99
     clip_ratio=0.2
