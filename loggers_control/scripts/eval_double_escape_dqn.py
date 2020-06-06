@@ -21,12 +21,11 @@ from agents.dqn import DQNAgent
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
     agent = DQNAgent(env=env, name='double_logger_eval')
-    model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-20-18-48/double_logger/models/5231500.h5')
+    model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/5093500.h5')
     agent.load_model(model_path=model_path)
     agent.epsilon = 0.001
-    num_episodes = 100
+    num_episodes = 1000
     num_steps = env.max_steps
-    train_every = 100 # sample k times to train q-net
     episodic_returns = []
     episode_counter = 0
     step_counter = 0
