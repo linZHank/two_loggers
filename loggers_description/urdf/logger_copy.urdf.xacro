@@ -1,0 +1,194 @@
+<?xml version="1.0" ?>
+
+<robot xmlns:xacro="https://www.ros.org/wiki/xacro" >
+
+    <!-- Constants for robot dimensions -->
+    <xacro:property name="PI" value="3.1415926535897931"/>
+    <!-- properties of link_hat -->
+    <xacro:property name="R_HAT" value="0.02"/>
+    <xacro:property name="L_HAT" value="0.1"/>
+    <xacro:property name="M_HAT" value="0.5"/>
+    <!-- properties of link_chassis -->
+    <xacro:property name="R_CHASSIS" value="0.25"/>
+    <xacro:property name="L_CHASSIS" value="0.1"/>
+    <xacro:property name="M_CHASSIS" value="2"/>
+    <!-- properties of link_caster -->
+    <xacro:property name="R_CASTER" value="0.04"/>
+    <xacro:property name="M_CASTER" value="0.1"/>
+    <!-- properties of link_wheel -->
+    <xacro:property name="R_WHEEL" value="0.09"/>
+    <xacro:property name="L_WHEEL" value="0.04"/>
+    <xacro:property name="M_WHEEL" value="0.5"/>
+    <!-- Import Rviz colors -->
+    <!-- <xacro:include filename="$(find loggers_description)/urdf/materials.xacro" /> -->
+
+    <!-- building the robot in following-->
+    <xacro:macro name="logger_copy_macro" params="model_name parent *origin">
+        <joint name="${parent}2${model_name}-hat" type="revolute">
+            <xacro:insert_block name="origin" />
+            <parent link="${parent}"/>
+            <child link="${model_name}-hat"/>
+            <limit lower="0" upper="0" effort="0" velocity="0"/>
+            <axis xyz="0 0 1"/>
+        </joint>
+
+        <link name="${model_name}-hat">
+            <visual>
+                <origin rpy="0 0 0" xyz="0 0 ${-L_HAT/2}"/>
+                <geometry>
+                    <cylinder length="${L_HAT}" radius="${R_HAT}"/>
+                </geometry>
+                <material name="red"/>
+            </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 ${-L_HAT/2}"/>
+                <geometry>
+                    <cylinder length="${L_HAT}" radius="${R_HAT}"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="${M_HAT}"/>
+                <origin rpy="0 0 0" xyz="0 0 ${-L_HAT/2}"/>
+                <inertia ixx="${1/12*M_HAT*(3*R_HAT*R_HAT+L_HAT*L_HAT)}" ixy="0" ixz="0" iyy="${1/12*M_HAT*(3*R_HAT*R_HAT+L_HAT*L_HAT)}" iyz="0" izz="${1/2*M_HAT*R_HAT*R_HAT}"/>
+            </inertial>
+        </link>
+        <gazebo reference="${model_name}-hat">
+            <mu1>0</mu1>
+            <mu2>0</mu2>
+            <material>Gazebo/Red</material>
+        </gazebo>
+
+        <joint name="${model_name}-hat2chassis" type="continuous">
+            <origin rpy="0 0 0" xyz="0.0 0 ${-L_HAT+-L_CHASSIS/2}"/>
+            <parent link="${model_name}-hat" />
+            <child link="${model_name}-chassis"/>
+            <axis rpy="0 0 0" xyz="0 0 1"/>
+        </joint>
+
+        <link name="${model_name}-chassis">
+            <visual>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <cylinder length="${L_CHASSIS}" radius="${R_CHASSIS}"/>
+                </geometry>
+                <material name="black"/>
+            </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <cylinder length="${L_CHASSIS}" radius="${R_CHASSIS}"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="${M_CHASSIS}"/>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <inertia ixx="${1/12*M_CHASSIS*(3*R_CHASSIS*R_CHASSIS+L_CHASSIS*L_CHASSIS)}" ixy="0" ixz="0" iyy="${1/12*M_CHASSIS*(3*R_CHASSIS*R_CHASSIS+L_CHASSIS*L_CHASSIS)}" iyz="0" izz="${1/2*M_CHASSIS*R_CHASSIS*R_CHASSIS}"/>
+            </inertial>
+        </link>
+        <gazebo reference="${model_name}-chassis">
+            <mu1>0.5</mu1>
+            <mu2>0.5</mu2>
+            <material>Gazebo/Black</material>
+        </gazebo>
+
+
+        <joint name="${model_name}-chassis2caster" type="fixed">
+            <origin rpy="0 0 0" xyz="${R_CHASSIS/2} 0 ${-L_CHASSIS/2}"/>
+            <parent link="${model_name}-chassis"/>
+            <child link="${model_name}-caster"/>
+        </joint>
+
+        <link name="${model_name}-caster">
+            <visual>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <sphere radius="${R_CASTER}"/>
+                </geometry>
+                <material name="grey"/>
+            </visual>
+            <collision>
+                <origin rpy=" 0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <sphere radius="${R_CASTER}"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="${M_CASTER}"/>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <inertia ixx="${2/5*M_CASTER*R_CASTER*R_CASTER}" ixy="0" ixz="0" iyy="${2/5*M_CASTER*R_CASTER*R_CASTER}" iyz="0" izz="${2/5*M_CASTER*R_CASTER*R_CASTER}"/>
+            </inertial>
+        </link>
+        <gazebo reference="${model_name}-caster">
+            <mu1>0.0</mu1>
+            <mu2>0.0</mu2>
+            <material>Gazebo/Grey</material>
+        </gazebo>
+
+        <joint name="${model_name}-chassis2left_wheel" type="continuous">
+            <origin rpy="0 0 0" xyz="${-R_CHASSIS/2} ${-R_CHASSIS/2} 0"/>
+            <parent link="${model_name}-chassis"/>
+            <child link="${model_name}-left_wheel" />
+            <axis rpy="0 0 0" xyz="0 1 0"/>
+        </joint>
+
+        <link name="${model_name}-left_wheel">
+            <visual>
+                <origin rpy="${PI/2} 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <cylinder length="${L_WHEEL}" radius="${R_WHEEL}"/>
+                </geometry>
+                <material name="orange"/>
+            </visual>
+            <collision>
+                <origin rpy="${PI/2} 0 0" xyz="0 0 0" />
+                <geometry>
+                    <cylinder length="${L_WHEEL}" radius="${R_WHEEL}"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="${M_WHEEL}"/>
+                <origin rpy="${PI/2} 0 0" xyz="0 0 0"/>
+                <inertia ixx="${1/12*M_WHEEL*(3*R_WHEEL*R_WHEEL+L_WHEEL*L_WHEEL)}" ixy="0" ixz="0" iyy="${1/12*M_WHEEL*(3*R_WHEEL*R_WHEEL+L_WHEEL*L_WHEEL)}" iyz="0" izz="${1/2*M_WHEEL*R_WHEEL*R_WHEEL}"/>
+            </inertial>
+        </link>
+        <gazebo reference="${model_name}-left_wheel">
+            <mu1>0.99</mu1>
+            <mu2>0.99</mu2>
+            <material>Gazebo/Wood</material>
+        </gazebo>
+
+        <joint name="${model_name}-chassis2right_wheel" type="continuous">
+            <origin rpy="0 0 0" xyz="${-R_CHASSIS/2} ${R_CHASSIS/2} 0"/>
+            <parent link="${model_name}-chassis"/>
+            <child link="${model_name}-right_wheel" />
+            <axis rpy="0 0 0" xyz="0 1 0"/>
+        </joint>
+
+        <link name="${model_name}-right_wheel">
+            <collision>
+                <origin rpy="${PI/2} 0 0" xyz="0 0 0" />
+                <geometry>
+                    <cylinder length="${L_WHEEL}" radius="${R_WHEEL}"/>
+                </geometry>
+            </collision>
+            <visual>
+                <origin rpy="${PI/2} 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <cylinder length="${L_WHEEL}" radius="${R_WHEEL}"/>
+                </geometry>
+                <material name="orange"/>
+            </visual>
+            <inertial>
+                <mass value="${M_WHEEL}"/>
+                <origin rpy="${PI/2} 0 0" xyz="0 0 0"/>
+                <inertia ixx="${1/12*M_WHEEL*(3*R_WHEEL*R_WHEEL+L_WHEEL*L_WHEEL)}" ixy="0" ixz="0" iyy="${1/12*M_WHEEL*(3*R_WHEEL*R_WHEEL+L_WHEEL*L_WHEEL)}" iyz="0" izz="${1/2*M_WHEEL*R_WHEEL*R_WHEEL}"/>
+            </inertial>
+        </link>
+        <gazebo reference="${model_name}-right_wheel">
+            <mu1>0.99</mu1>
+            <mu2>0.99</mu2>
+            <material>Gazebo/Wood</material>
+        </gazebo>
+
+    </xacro:macro>
+</robot>

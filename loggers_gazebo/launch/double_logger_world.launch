@@ -1,0 +1,34 @@
+<launch>
+
+    <!-- these are the arguments you can pass this launch file, for example paused:=true -->
+    <arg name="narrow" default="false"/>
+    <arg unless="$(arg narrow)" name="sim_world_name" value="wall_exit"/>
+    <arg if="$(arg narrow)" name="sim_world_name" value="wall_narrow_exit"/>
+    <arg name="paused" default="false"/>
+    <arg name="use_sim_time" default="true"/>
+    <arg name="gui" default="true"/>
+    <arg name="headless" default="false"/>
+    <arg name="debug" default="false"/>
+
+    <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find loggers_gazebo)/worlds/$(arg sim_world_name).world"/>
+        <arg name="debug" value="$(arg debug)" />
+        <arg name="gui" value="$(arg gui)" />
+        <arg name="paused" value="$(arg paused)"/>
+        <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+        <arg name="headless" value="$(arg headless)"/>
+    </include>
+
+    <!-- Load the URDF into the ROS Parameter Server -->
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find loggers_description)/urdf/double_logger.urdf.xacro'" />
+    <!-- ros params for RL envs -->
+    <param name="world_name" type="str" value="$(arg sim_world_name)" />
+    <param name="exit_width" type="double" value="2.0" unless="$(arg narrow)" />
+    <param name="exit_width" type="double" value="1.0" if="$(arg narrow)" />
+
+    <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
+    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+    args="-urdf -x -1 -z 0.1 -Y 1.57 -model double_logger -param robot_description"/>
+
+</launch>

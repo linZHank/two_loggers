@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+
+<robot name="double_logger" xmlns:xacro="https://www.ros.org/wiki/xacro" >
+    <!-- properties of link_log -->
+    <xacro:property name="R_LOG" value="0.02"/>
+    <xacro:property name="L_LOG" value="2"/>
+    <xacro:property name="M_LOG" value="0.04"/>
+
+    <!-- Included URDF Files -->
+    <xacro:include filename="$(find loggers_description)/urdf/logger.urdf.xacro" />
+    <xacro:include filename="$(find loggers_description)/urdf/logger_copy.urdf.xacro" />
+
+    <!-- Instantiate logger_base_macro once (has no parameters atm) -->
+    <xacro:logger_macro model_name="logger0"/>
+    <!-- differential_drive_controller plugin for logger0-->
+    <gazebo>
+        <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+            <legacyMode>false</legacyMode>
+            <alwaysOn>true</alwaysOn>
+            <updateRate>100</updateRate>
+            <leftJoint>logger0-chassis2left_wheel</leftJoint>
+            <rightJoint>logger0-chassis2right_wheel</rightJoint>
+            <wheelSeparation>0.25</wheelSeparation>
+            <wheelDiameter>0.18</wheelDiameter>
+            <wheelTorque>1</wheelTorque>
+            <commandTopic>cmd_vel0</commandTopic>
+            <odometryTopic>odom0</odometryTopic>
+            <odometryFrame>odom0</odometryFrame>
+            <robotBaseFrame>logger0-chassis</robotBaseFrame>
+        </plugin>
+    </gazebo>
+
+    <joint name="logger0-hat2log" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 ${L_HAT/2}"/>
+        <limit effort="0" lower="0" upper="0" velocity="0"/>
+        <parent link="logger0-hat"/>
+        <child link="log" />
+        <axis rpy="0 0 0" xyz="0 0 1"/>
+    </joint>
+
+    <link name="log">
+        <visual>
+            <origin rpy="${PI/2} 0 0" xyz="0 ${-L_LOG/2} 0"/>
+            <geometry>
+                <cylinder length="${L_LOG}" radius="${R_LOG}"/>
+        </geometry>
+        <material name="orange"/>
+        </visual>
+        <collision>
+            <origin rpy="${PI/2} 0 0" xyz="0 ${-L_LOG/2} 0"/>
+            <geometry>
+                <cylinder length="${L_LOG}" radius="${R_LOG}"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="${M_LOG}"/>
+            <origin rpy="${PI/2} 0 0" xyz="0 ${-L_LOG/2} 0"/>
+            <inertia ixx="${1/12*M_LOG*(3*R_LOG*R_LOG+L_LOG*L_LOG)}" ixy="0" ixz="0" iyy="${1/12*M_LOG*(3*R_LOG*R_LOG+L_LOG*L_LOG)}" iyz="0" izz="${1/2*M_LOG*R_LOG*R_LOG}"/>
+        </inertial>
+    </link>
+    <gazebo reference="log">
+        <mu1>0</mu1>
+        <mu2>0</mu2>
+        <material>Gazebo/Wood</material>
+    </gazebo>
+
+    <!-- Instantiate logger_base_macro once (has no parameters atm) -->
+    <xacro:logger_copy_macro model_name="logger1" parent="log">
+        <origin rpy="0 0 0" xyz="0 ${-L_LOG} 0"/>
+    </xacro:logger_copy_macro>
+    <!-- differential_drive_controller plugin for logger1 -->
+    <gazebo>
+        <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+            <legacyMode>false</legacyMode>
+            <alwaysOn>true</alwaysOn>
+            <updateRate>100</updateRate>
+            <leftJoint>logger1-chassis2left_wheel</leftJoint>
+            <rightJoint>logger1-chassis2right_wheel</rightJoint>
+            <wheelSeparation>0.25</wheelSeparation>
+            <wheelDiameter>0.18</wheelDiameter>
+            <wheelTorque>1</wheelTorque>
+            <commandTopic>cmd_vel1</commandTopic>
+            <odometryTopic>odom1</odometryTopic>
+            <odometryFrame>odom1</odometryFrame>
+            <robotBaseFrame>logger1-chassis</robotBaseFrame>
+        </plugin>
+    </gazebo>
+
+</robot>
