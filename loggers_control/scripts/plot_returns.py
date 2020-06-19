@@ -12,8 +12,8 @@ import numpy as np
 from numpy import pi
 import matplotlib.pyplot as plt
 
-ret_path_0 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2019-12-31-17-43/agent_0/ep_returns.npy"
-ret_path_1 = os.path.dirname(sys.path[0])+"/saved_models/double_escape/dqn/2020-01-19-13-12/agent_0/ep_returns.npy"
+ret_path_0 = sys.path[0]+"/saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/ep_returns.npy"
+ret_path_1 = sys.path[0]+"/saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger0/ep_returns.npy"
 
 ret_0 = np.load(ret_path_0)
 ret_1 = np.load(ret_path_1)
@@ -39,10 +39,10 @@ for i,r in enumerate(ret_1):
 
 fig, ax = plt.subplots()
 x = np.arange(len(ret_0))+1
-ax.plot(x, ave_ret_0, 'r--', label='full state')
-ax.plot(x, ave_ret_1, 'b', label='essential state')
-ax.set_xlim(-100,16000)
-ax.set_ylim(-1,3)
+ax.plot(x, ave_ret_0, 'r', label='Integrated Training')
+ax.plot(x, ave_ret_1, 'b--', label='Distributed Training')
+ax.set_xlim(0,30000)
+ax.set_ylim(-200,400)
 ax.set(xlabel='Episode', ylabel='Averaged Returns')
 ax.grid()
 ax.legend(loc='upper left')
