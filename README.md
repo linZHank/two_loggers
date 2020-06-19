@@ -32,32 +32,9 @@ source /opt/ros/kinetic/setup.bash
 source /home/linzhank/ros_ws/devel/setup.bash
 ```
 ## Quick Start
-- Launch single logger environment
-``` console
-roslaunch loggers_control single_logger_control.launch
-```
-
-- Launch two loggers environment
-``` console
-roslaunch loggers_control two_loggers_control.launch
-```
-
-- Test single logger environment
+- Evaluate **DQN** agent in double escape environment
 ```console
-rosrun loggers_control single_logger_test.py`
+roslaunch loggers_control double_logger_control.launch
+rosrun loggers_control eval_double_1_dqn.py
 ```
 
-- Train a **DQN** agent in single logger environment
-```console
-rosrun loggers_control solo_escape_vpg_train.py
-```
-> Trained models are stored at `this_repo/loggers_control/saved_models`
-
-- Evaluate **DQN** agent in single logger environment
-```console
-rosrun loggers_control solo_escape_vpg_eval.py
-```
-
-# Demo
-## Solo Escape with VPG
-[![IMAGE ALT TEXT HERE](http://i3.ytimg.com/vi/xqkG5bBXyY8/hqdefault.jpg)](https://youtu.be/xqkG5bBXyY8)
