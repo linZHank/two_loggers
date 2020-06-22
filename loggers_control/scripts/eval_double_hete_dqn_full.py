@@ -39,8 +39,8 @@ if __name__ == "__main__":
         # reset env and get state from it
         obs, rewards, done = env.reset(), [], False
         # next 3 lines generate state based on
-        state_0 = obs.copy() + 0.2*random.randn(obs.shape[0])
-        state_1 = obs.copy() + 0.2*random.randn(obs.shape[0])
+        state_0 = obs.copy() + 0.5*random.randn(obs.shape[0])
+        state_1 = obs.copy() + 0.5*random.randn(obs.shape[0])
         state_1[:6] = state_1[-6:]
         if 'blown' in env.status:
             continue
@@ -54,8 +54,8 @@ if __name__ == "__main__":
             if 'blown' in info:
                 break
             obs = next_obs.copy()
-            state_0 = obs.copy() + 0.2*random.randn(obs.shape[0])
-            state_1 = obs.copy() + 0.2*random.randn(obs.shape[0])
+            state_0 = obs.copy() + 0.5*random.randn(obs.shape[0])
+            state_1 = obs.copy() + 0.5*random.randn(obs.shape[0])
             state_1[:6] = state_1[-6:]
             step_counter += 1
             rewards.append(rew)

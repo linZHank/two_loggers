@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-Sample a trajectory with specified DQN model and initial conditions.
+Sample trajectories with DQN model, full observations
 """
 from __future__ import absolute_import, division, print_function
 
