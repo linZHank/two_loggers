@@ -43,11 +43,9 @@ if __name__ == "__main__":
         for st in range(num_steps):
             # take actions, no action will take if deactivated
             act = agent.epsilon_greedy(obs)
-            print(act)
             act0 = int(act/env.action_space[0])
             act1 = act%env.action_space[0]
             action = np.array([act0, act1])
-            print(action)
             # step env
             next_obs, rew, done, info = env.step(action)
             # store transitions and train
