@@ -26,8 +26,8 @@ if __name__ == "__main__":
     model_path_1 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger1/models/5839800.h5')
     agent0.load_model(model_path=model_path_0)
     agent1.load_model(model_path=model_path_1)
-    agent0.epsilon = 0.001
-    agent1.epsilon = 0.001
+    agent0.epsilon = 0.
+    agent1.epsilon = 0.
     num_episodes = 1000
     num_steps = env.max_steps
     episodic_returns = []
@@ -39,8 +39,8 @@ if __name__ == "__main__":
         # reset env and get state from it
         obs, rewards, done = env.reset(), [], False
         # next 3 lines generate state based on
-        state_0 = obs.copy() + 0.5*random.randn(obs.shape[0])
-        state_1 = obs.copy() + 0.5*random.randn(obs.shape[0])
+        state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
+        state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
         state_1[:6] = state_1[-6:]
         if 'blown' in env.status:
             continue
@@ -54,8 +54,8 @@ if __name__ == "__main__":
             if 'blown' in info:
                 break
             obs = next_obs.copy()
-            state_0 = obs.copy() + 0.5*random.randn(obs.shape[0])
-            state_1 = obs.copy() + 0.5*random.randn(obs.shape[0])
+            state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
+            state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
             state_1[:6] = state_1[-6:]
             step_counter += 1
             rewards.append(rew)

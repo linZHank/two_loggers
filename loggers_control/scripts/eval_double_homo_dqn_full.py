@@ -23,7 +23,7 @@ if __name__ == "__main__":
     agent = DQNAgent(env=env, name='double_logger_eval')
     model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/5093500.h5')
     agent.load_model(model_path=model_path)
-    agent.epsilon = 0.001
+    agent.epsilon = 0.
     num_episodes = 1000
     num_steps = env.max_steps
     episodic_returns = []
@@ -35,8 +35,8 @@ if __name__ == "__main__":
         # reset env and get state from it
         obs, rewards, done = env.reset(), [], False
         # next 3 lines generate state, comment out noise if not wanted
-        state_0 = obs.copy() + 0.5*random.randn(obs.shape[0])
-        state_1 = obs.copy() + 0.5*random.randn(obs.shape[0])
+        state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
+        state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
         state_1[:6] = state_1[-6:]
         if 'blown' in env.status:
             continue
@@ -50,8 +50,8 @@ if __name__ == "__main__":
             if 'blown' in info:
                 break
             obs = next_obs.copy()
-            state_0 = obs.copy() + 0.5*random.randn(obs.shape[0])
-            state_1 = obs.copy() + 0.5*random.randn(obs.shape[0])
+            state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
+            state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
             state_1[:6] = state_1[-6:]
             step_counter += 1
             rewards.append(rew)
