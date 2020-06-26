@@ -23,7 +23,7 @@ from agents.dqn import DQNAgent
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
     agent = DQNAgent(env=env, name='cent_dqn_full', dim_state=env.observation_space[0],
-                     num_actions=env.action_space[0]**2, layer_sizes=[256,256], learning_rate=2e-4, warmup_episodes=500)
+                     num_actions=env.action_space[0]**2, layer_sizes=[256,256], learning_rate=1e-4, warmup_episodes=500)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     num_episodes = 30000
     num_steps = env.max_steps
@@ -43,11 +43,9 @@ if __name__ == "__main__":
         for st in range(num_steps):
             # take actions, no action will take if deactivated
             act = agent.epsilon_greedy(obs)
-            print(act)
             act0 = int(act/env.action_space[0])
             act1 = act%env.action_space[0]
             action = np.array([act0, act1])
-            print(action)
             # step env
             next_obs, rew, done, info = env.step(action)
             # store transitions and train
