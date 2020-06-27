@@ -59,42 +59,4 @@ if __name__ == "__main__":
     double_logger_pose.pose.orientation.z = quat[2]
     double_logger_pose.pose.orientation.w = quat[3]
     env.setModelState(model_state=double_logger_pose)
-    env.unpausePhysics()
-    # Make sure double_logger not moving
-    for _ in range(10): 
-        env.cmd_vel0_pub.publish(Twist())
-        env.cmd_vel1_pub.publish(Twist())
-        env.rate.sleep()
-    # Identify indices of robot0 and robot1 in link_states
-    i0 = env.link_states.name.index("double_logger::logger0-chassis")
-    i1 = env.link_states.name.index("double_logger::logger1-chassis")
-    ori0 = env.link_states.pose[i0].orientation
-    ori1 = env.link_states.pose[i1].orientation
-    yaw0 = _extract_yaw(ori0)
-    yaw1 = _extract_yaw(ori1)
-    spin_cmd_vel = Twist()
-    spin_cmd_vel.angular.z = pi/4
-    while np.absolute(yaw0-th0) >= pi/10:
-        env.cmd_vel1_pub.publish(Twist())
-        env.cmd_vel0_pub.publish(spin_cmd_vel)
-        ori0 = env.link_states.pose[i0].orientation 
-        yaw0 = _extract_yaw(ori0)
-        env.rate.sleep()
-    print("robot 0 orientation set")
-    env.cmd_vel0_pub.publish(Twist())
-    while np.absolute(yaw1-th1) >= pi/10:
-        env.cmd_vel0_pub.publish(Twist())
-        env.cmd_vel1_pub.publish(spin_cmd_vel)
-        ori1 = env.link_states.pose[i1].orientation 
-        yaw1 = _extract_yaw(ori1)
-        env.rate.sleep()
-    print("robot 1 orientation set")
-    env.cmd_vel1_pub.publish(Twist())
-    # Set double_logger pose again
-    env.pausePhysics()
-    env.setModelState(model_state=double_logger_pose)
-    # for _ in range(10): 
-    #     env.cmd_vel0_pub.publish(Twist())
-    #     env.cmd_vel1_pub.publish(Twist())
-    #     env.rate.sleep()
 
