@@ -12,6 +12,29 @@ from datetime import datetime
 import pickle
 import tensorflow as tf
 import rospy
+################################################################
+"""
+Can safely ignore this block
+"""
+# restrict GPU and memory growth
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        # Visible devices must be set before GPUs have been initialized
+        print(e)
+    # Restrict TensorFlow to only use the first GPU
+    try:
+        tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
+        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+    except RuntimeError as e:
+        # Visible devices must be set before GPUs have been initialized
+        print(e)
+################################################################
 
 
 class Memory:
@@ -140,7 +163,7 @@ class DQNAgent:
         # update metrics
         self.mse_metric(target_q, pred_q)
         # display metrics
-        rospy.loginfo("{} mse: {}".format(self.name, self.mse_metric.result()))
+        rospy.loginfo("{} mse: {}".format(self.name, loss_value))
         # reset training metrics
         self.mse_metric.reset_states()
         # update qnet_stable
