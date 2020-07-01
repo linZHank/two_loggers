@@ -29,9 +29,10 @@ if __name__ == "__main__":
     agent.epsilon = 0.
     num_steps = env.max_steps
     traj = []
+    acts = []
     traj_path = os.path.join(sys.path[0], 'saved_trajectories', datetime.now().strftime("%Y-%m-%d-%H-%M"), 'traj.npy')
     # Set double_logger to specified pose
-    init_pose = np.array([-4,3,pi/4]) # modify this to any pose as needed: [x, y, theta]
+    init_pose = np.array([-2,4,-pi/4]) # modify this to any pose as needed: [x, y, theta]
     env.pausePhysics()
     env.resetWorld()
     double_logger_pose = ModelState()
@@ -64,6 +65,7 @@ if __name__ == "__main__":
         act0 = agent.epsilon_greedy(state_0)
         act1 = agent.epsilon_greedy(state_1)
         act = np.array([act0, act1])
+        acts.append(act)
         # step env
         next_obs, rew, done, info = env.step(act)
         if 'blown' in info:
@@ -77,6 +79,8 @@ if __name__ == "__main__":
     # save traj
     traj.append(obs)
     traj = np.squeeze(np.array([traj]))
+    acts = np.squeeze(np.array([acts]))
     if not os.path.exists(os.path.dirname(traj_path)):
         os.makedirs(os.path.dirname(traj_path))
     np.save(traj_path, traj)
+    np.save(os.path.join(os.path.dirname(traj_path), 'acts.npy'), acts)
