@@ -7,9 +7,9 @@ import matplotlib.patches as mpatches
 import tensorflow as tf
 
 # load trajectory
-traj_path = os.path.join(sys.path[0], 'saved_trajectories', '2020-07-01-00-48', 'traj.npy')
-traj = np.load(traj_path)
-acts = np.load(os.path.join(os.path.dirname(traj_path), 'acts.npy'))
+traj_dir = os.path.join(sys.path[0], 'saved_trajectories', '2020-07-01-00-48')
+traj = np.load(os.path.join(traj_dir, 'traj.npy'))
+acts = np.load(os.path.join(traj_dir, 'acts.npy'))
 # load models
 model_path_0 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/1000000.h5')
 model_path_1 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/3000000.h5')
@@ -38,18 +38,18 @@ patches.append(se_wall)
 ax0.plot(traj[:,0], traj[:,1], linestyle='--', color='grey')
 ax0.plot(traj[:,-6], traj[:,-5], linestyle='--', color='black')
 # plot instances
+# ax0.plot((traj[0,0], traj[0,-6]), (traj[0,1], traj[0,-5]), linewidth=4, color='orangered', alpha=0.7)
+# r0 = mpatches.Circle(xy=traj[0,:2], radius=.25, fill=False, ec='k', alpha=0.7)
+# r1 = mpatches.Circle(xy=traj[0,-6:-4], radius=.25, fc='k', alpha=0.7)
+# patches.append(r0)
+# patches.append(r1)
 ax0.plot((traj[0,0], traj[0,-6]), (traj[0,1], traj[0,-5]), linewidth=4, color='orangered', alpha=0.7)
-r0 = mpatches.Circle(xy=traj[0,:2], radius=.25, fill=False, ec='k', alpha=0.7)
-r1 = mpatches.Circle(xy=traj[0,-6:-4], radius=.25, fc='k', alpha=0.7)
-patches.append(r0)
-patches.append(r1)
-for i in range(1,9):
-    ax0.plot((traj[int(len(traj)*i/9),0], traj[int(len(traj)*i/9),-6]), (traj[int(len(traj)*i/9),1],traj[int(len(traj)*i/9),-5]), linewidth=4, color='orangered', alpha=0.7)
-    patches.append(mpatches.Circle(xy=traj[int(len(traj)*i/9),:2], radius=.25, fill=False, ec='k', alpha=0.7))
-    patches.append(mpatches.Circle(xy=traj[int(len(traj)*i/9),-6:-4], radius=.25, fc='k', alpha=0.7))
-ax0.plot((traj[-1,0], traj[-1,-6]), (traj[-1,1], traj[-1,-5]), linewidth=4, color='orangered', alpha=0.7)
-patches.append(mpatches.Circle(xy=traj[-1,:2], radius=.25, fill=False, ec='k', alpha=0.7))
-patches.append(mpatches.Circle(xy=traj[-1,-6:-4], radius=.25, fc='k', alpha=0.7))
+patches.append(mpatches.Circle(xy=traj[0,:2], radius=.25, fill=False, ec='k', alpha=0.7))
+patches.append(mpatches.Circle(xy=traj[0,-6:-4], radius=.25, fc='k', alpha=0.7))
+for i in range(1, 11):
+    ax0.plot((traj[len(traj)*i/10-1,0], traj[len(traj)*i/10-1,-6]), (traj[len(traj)*i/10-1,1],traj[len(traj)*i/10-1,-5]), linewidth=4, color='orangered', alpha=0.7)
+    patches.append(mpatches.Circle(xy=traj[len(traj)*i/10-1,:2], radius=.25, fill=False, ec='k', alpha=0.7))
+    patches.append(mpatches.Circle(xy=traj[len(traj)*i/10-1,-6:-4], radius=.25, fc='k', alpha=0.7))
 
 # plot qvals
 qvals_0 = np.zeros((3, traj.shape[0]-1))
@@ -63,21 +63,55 @@ for i in range(3):
         qvals_0[i,j] = np.squeeze(dqn(np.expand_dims(traj_0[j], axis=0)))[acts[j,0]]
         qvals_1[i,j] = np.squeeze(dqn(np.expand_dims(traj_1[j], axis=0)))[acts[j,1]]
         # qvals_1[i,j] = np.max(dqn(np.expand_dims(traj_1[j], axis=0)))
-    ax_q[i].plot(np.arange(j+1), qvals_0[i], color='grey')
-    ax_q[i].plot(np.arange(j+1), qvals_1[i], color='k')
+    ax_q[i].plot(np.arange(j+1), qvals_0[i], color=[.7,.7,.7], label='robot 0')
+    ax_q[i].plot(np.arange(j+1), qvals_1[i], color='k', label='robot 1')
 # set traj axis
 patches_collection = PatchCollection(patches, match_original=True)
 ax0.add_collection(patches_collection)
+ax0.text(traj[0,0], traj[0,1], 'robot 0', fontsize='large', withdash=True,
+         dashdirection=1,
+         dashlength=30,
+         rotation=0,
+         dashrotation=0,
+         dashpush=20)
+ax0.text(traj[0,-6], traj[0,-5], 'robot 1', fontsize='large', withdash=True,
+         dashdirection=1,
+         dashlength=30,
+         rotation=0,
+         dashrotation=90,
+         dashpush=20)
 ax0.axis([-6,6,-9,6])
-ax0.set_xticks(np.arange(-6,6))
-ax0.set_yticks(np.arange(-9,6))
+ax0.set_xticks(np.arange(-6,7))
+ax0.set_yticks(np.arange(-9,7))
+ax0.set_xlabel('X')
+ax0.set_ylabel('Y')
 ax0.grid(color='grey', linestyle=':', linewidth=0.5)
 # set qval axes
 ax_q[0].margins(x=0, y=0.05)
+ax_q[0].set_ylim(0,500)
+ax_q[0].set_xticks(len(traj)*np.arange(11)/10, minor=False)
+ax_q[0].xaxis.grid(True, which='major')
+ax_q[0].yaxis.grid(True, linestyle=(0, (5,10)))
+ax_q[0].set_ylabel('Q-values', fontsize='large')
+ax_q[0].legend(loc='upper left', fontsize='x-large')
+ax_q[0].text(150,20, 'Model version: 1e7', fontsize=14, color='r')
 plt.setp(ax_q[0].get_xticklabels(), visible=False)
 ax_q[1].margins(x=0, y=0.05)
+ax_q[1].set_ylim(0,500)
+ax_q[1].set_xticks(len(traj)*np.arange(11)/10, minor=False)
+ax_q[1].xaxis.grid(True, which='major')
+ax_q[1].yaxis.grid(True, linestyle=(0, (5,10)))
+ax_q[1].set_ylabel('Q-values', fontsize='large')
+ax_q[1].text(150,20, 'Model version: 3e7', fontsize=14, color='r')
 plt.setp(ax_q[1].get_xticklabels(), visible=False)
 ax_q[2].margins(x=0, y=0.05)
+ax_q[2].set_ylim(0,500)
+ax_q[2].set_xticks(len(traj)*np.arange(11)/10, minor=False)
+ax_q[2].xaxis.grid(True, which='major')
+ax_q[2].yaxis.grid(True, linestyle=(0, (5,10)))
+ax_q[2].set_ylabel('Q-values', fontsize='large')
+ax_q[2].set_xlabel('Time Step', fontsize='large')
+ax_q[2].text(150,20, 'Model version: final', fontsize=14, color='r')
 plt.setp(ax_q[2].get_xticklabels())
 plt.tight_layout()
 plt.show()
