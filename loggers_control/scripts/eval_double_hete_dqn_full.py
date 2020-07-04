@@ -22,8 +22,8 @@ if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
     agent0 = DQNAgent(env=env, name='logger0_eval')
     agent1 = DQNAgent(env=env, name='logger1_eval')
-    model_path_0 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger0/models/5839800.h5')
-    model_path_1 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger1/models/5839800.h5')
+    model_path_0 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger0/models/1000000.h5')
+    model_path_1 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger1/models/1000000.h5')
     agent0.load_model(model_path=model_path_0)
     agent1.load_model(model_path=model_path_1)
     agent0.epsilon = 0.
