@@ -23,10 +23,14 @@ from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
-    agent = DQNAgent(env=env, name='double_logger_sample')
-    model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/5093500.h5')
-    agent.load_model(model_path=model_path)
-    agent.epsilon = 0.
+    agent0 = DQNAgent(env=env, name='sample_dqn_logger0')
+    agent1 = DQNAgent(env=env, name='sample_dqn_logger0')
+    model_path_0 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger0/models/5839800.h5')
+    model_path_1 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger1/models/5839800.h5')
+    agent0.load_model(model_path=model_path_0)
+    agent1.load_model(model_path=model_path_1)
+    agent0.epsilon = 0.
+    agent1.epsilon = 0.
     num_steps = env.max_steps
     traj = []
     acts = []
@@ -62,8 +66,8 @@ if __name__ == "__main__":
     state_1[:6] = state_1[-6:]
     for st in range(num_steps):
         traj.append(obs)
-        act0 = agent.epsilon_greedy(state_0)
-        act1 = agent.epsilon_greedy(state_1)
+        act0 = agent0.epsilon_greedy(state_0)
+        act1 = agent1.epsilon_greedy(state_1)
         act = np.array([act0, act1])
         acts.append(act)
         # step env
@@ -71,8 +75,8 @@ if __name__ == "__main__":
         if 'blown' in info:
             break
         obs = next_obs.copy()
-        state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
-        state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
+        state_0 = obs.copy() 
+        state_1 = obs.copy() 
         state_1[:6] = state_1[-6:]
         if done:
             break

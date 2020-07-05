@@ -40,7 +40,7 @@ for i,r in enumerate(ret_1):
 fig, ax = plt.subplots()
 x = np.arange(len(ret_0))+1
 ax.plot(x, ave_ret_0, 'r', label='Homogeneous DQN Training')
-ax.plot(x, ave_ret_1, 'b--', label='Heterogeneous DQN Training')
+ax.plot(x, ave_ret_1, 'b', label='Heterogeneous DQN Training')
 ax.set_xlim(0,30000)
 ax.set_ylim(-200,400)
 ax.set(xlabel='Episode', ylabel='Averaged Returns')
