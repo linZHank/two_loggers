@@ -12,38 +12,54 @@ import numpy as np
 from numpy import pi
 import matplotlib.pyplot as plt
 
-ret_path_0 = sys.path[0]+"/saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/ep_returns.npy"
-ret_path_1 = sys.path[0]+"/saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger0/ep_returns.npy"
+homo_path = sys.path[0]+"/saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/ep_returns.npy"
+hete_path = sys.path[0]+"/saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger0/ep_returns.npy"
+cent_path = sys.path[0]+"/saved_models/double_escape_discrete/cent_dqn_full/2020-06-25-21-25/cent_dqn_full/ep_returns.npy"
 
-ret_0 = np.load(ret_path_0)
-ret_1 = np.load(ret_path_1)
+ret_homo = np.load(homo_path)
+ret_hete = np.load(hete_path)
+ret_cent = np.load(cent_path)
 
-acc_ret_0 = []
-ave_ret_0 = []
-acc_0 = ret_0[0]
-ave_0 = acc_0
-for i,r in enumerate(ret_0):
-    acc_0 += r
-    ave_0 = acc_0/(i+1)
-    acc_ret_0.append(acc_0)
-    ave_ret_0.append(ave_0)
-acc_ret_1 = []
-ave_ret_1 = []
-acc_1 = ret_1[0]
-ave_1 = acc_1
-for i,r in enumerate(ret_1):
-    acc_1 += r
-    ave_1 = acc_1/(i+1)
-    acc_ret_1.append(acc_1)
-    ave_ret_1.append(ave_1)
+acc_ret_homo = []
+ave_ret_homo = []
+acc_homo = ret_homo[0]
+ave_homo = acc_homo
+acc_ret_hete = ret_hete[0]
+ave_ret_hete = acc_ret_homo
+acc_ret_cent = ret_homo[0]
+ave_ret_cent = acc_ret_homo
+for i,r in enumerate(ret_homo):
+    acc_homo += r
+    ave_homo = acc_homo/(i+1)
+    acc_ret_homo.append(acc_homo)
+    ave_ret_homo.append(ave_homo)
+acc_ret_hete = []
+ave_ret_hete = []
+acc_hete = ret_hete[0]
+ave_hete = acc_hete
+for i,r in enumerate(ret_hete):
+    acc_hete += r
+    ave_hete = acc_hete/(i+1)
+    acc_ret_hete.append(acc_hete)
+    ave_ret_hete.append(ave_hete)
+acc_ret_cent = []
+ave_ret_cent = []
+acc_cent = ret_cent[0]
+ave_cent = acc_cent
+for i,r in enumerate(ret_cent):
+    acc_cent += r
+    ave_cent = acc_cent/(i+1)
+    acc_ret_cent.append(acc_cent)
+    ave_ret_cent.append(ave_cent)
 
 fig, ax = plt.subplots()
-x = np.arange(len(ret_0))+1
-ax.plot(x, ave_ret_0, 'r', label='Homogeneous DQN Training')
-ax.plot(x, ave_ret_1, 'b', label='Heterogeneous DQN Training')
+x = np.arange(len(ret_homo))+1
+ax.plot(x, ave_ret_homo, 'lightcoral', label='Homogeneous')
+ax.plot(x, ave_ret_hete, 'dodgerblue', label='Heterogeneous')
+ax.plot(x, ave_ret_cent, 'lightgreen', label='Centralized')
 ax.set_xlim(0,30000)
 ax.set_ylim(-200,400)
-ax.set(xlabel='Episode', ylabel='Averaged Returns')
+ax.set(xlabel='Episode', ylabel='Averaged Total Reward')
 ax.grid()
 ax.legend(loc='upper left')
 
