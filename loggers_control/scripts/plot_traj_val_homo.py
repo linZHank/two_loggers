@@ -7,7 +7,7 @@ import matplotlib.patches as mpatches
 import tensorflow as tf
 
 # load trajectory
-traj_dir = os.path.join(sys.path[0], 'saved_trajectories', '2020-07-04-00-11')
+traj_dir = os.path.join(sys.path[0], 'saved_trajectories/2020-07-08-14-26/')
 traj = np.load(os.path.join(traj_dir, 'traj.npy'))
 acts = np.load(os.path.join(traj_dir, 'acts.npy'))
 # load models
@@ -111,3 +111,4 @@ ax_q[2].text(170,20, 'Model version: final', fontsize=14, color='r')
 plt.setp(ax_q[2].get_xticklabels())
 plt.tight_layout()
 plt.show()
+

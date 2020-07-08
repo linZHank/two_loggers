@@ -1,0 +1,1 @@
+/home/palebluedotian0/ros_ws/src/two_loggers/loggers_control/scripts/saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/1000000.h5

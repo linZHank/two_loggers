@@ -32,7 +32,7 @@ if __name__ == "__main__":
     acts = []
     traj_path = os.path.join(sys.path[0], 'saved_trajectories', datetime.now().strftime("%Y-%m-%d-%H-%M"), 'traj.npy')
     # Set double_logger to specified pose
-    init_pose = np.array([-4.5,3.5,2*pi/3]) # modify this to any pose as needed: [x, y, theta]
+    init_pose = np.array([-1,4.5,pi/2]) # modify this to any pose as needed: [x, y, theta]
     env.pausePhysics()
     env.resetWorld()
     double_logger_pose = ModelState()
@@ -57,10 +57,11 @@ if __name__ == "__main__":
     # sampling trajectory
     obs = env._get_observation()
     # obs = env.reset()
-    state_0 = obs.copy()
-    state_1 = obs.copy()
-    state_1[:6] = state_1[-6:]
+    start_time = time.time()
     for st in range(num_steps):
+        state_0 = obs.copy()
+        state_1 = obs.copy()
+        state_1[:6] = state_1[-6:]
         traj.append(obs)
         act0 = agent.epsilon_greedy(state_0)
         act1 = agent.epsilon_greedy(state_1)
@@ -71,11 +72,9 @@ if __name__ == "__main__":
         if 'blown' in info:
             break
         obs = next_obs.copy()
-        state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
-        state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
-        state_1[:6] = state_1[-6:]
         if done:
             break
+    time_elapsed = time.time() - start_time
     # save traj
     traj.append(obs)
     traj = np.squeeze(np.array([traj]))
@@ -84,3 +83,21 @@ if __name__ == "__main__":
         os.makedirs(os.path.dirname(traj_path))
     np.save(traj_path, traj)
     np.save(os.path.join(os.path.dirname(traj_path), 'acts.npy'), acts)
+
+    # Compute velocity diff
+    diff_vel = np.zeros(traj.shape[0])
+    for i,s in enumerate(traj):
+        v0 = traj[i,2:4]
+        v1 = traj[i,-4:-2]
+        rod = traj[i,-6:-4] - traj[i,0:2]
+        proj_v0 = np.dot(v0, rod)/np.linalg.norm(rod)
+        proj_v1 = np.dot(v1, rod)/np.linalg.norm(rod)
+        diff_vel[i] = np.linalg.norm(proj_v0-proj_v1)
+    mean_diff_vel = np.mean(diff_vel)
+    np.save(os.path.join(os.path.dirname(traj_path), 'diff_vel.npy'), diff_vel)
+    with open(os.path.join(os.path.dirname(traj_path), 'mean_diff_vel.txt'), 'w') as f:
+        f.write("{}".format(mean_diff_vel))
+    with open(os.path.join(os.path.dirname(traj_path), 'time_elapsed.txt'), 'w') as f:
+        f.write("{}".format(time_elapsed))
+    with open(os.path.join(os.path.dirname(traj_path), 'model_path.txt'), 'w') as f:
+        f.write(model_path)
