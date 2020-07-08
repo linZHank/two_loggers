@@ -24,7 +24,7 @@ if __name__ == "__main__":
                      num_actions=env.action_space[0]**2)
     model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/cent_dqn_full/2020-06-25-21-25/cent_dqn_full/models/8033600.h5')
     agent.load_model(model_path=model_path)
-    agent.epsilon = 0.
+    agent.epsilon = 0.2
     num_episodes = 1000
     num_steps = env.max_steps
     episodic_returns = []
@@ -39,8 +39,9 @@ if __name__ == "__main__":
         if 'blown' in env.status:
             continue
         for st in range(num_steps):
+            state = obs.copy() # + 0.5*random.rand(obs.shape[0])
             # take actions, no action will take if deactivated
-            act = agent.epsilon_greedy(obs)
+            act = agent.epsilon_greedy(state)
             act0 = int(act/env.action_space[0])
             act1 = act%env.action_space[0]
             action = np.array([act0, act1])
