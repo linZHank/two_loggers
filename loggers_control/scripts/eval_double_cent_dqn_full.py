@@ -24,7 +24,7 @@ if __name__ == "__main__":
                      num_actions=env.action_space[0]**2)
     model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/cent_dqn_full/2020-06-25-21-25/cent_dqn_full/models/8033600.h5')
     agent.load_model(model_path=model_path)
-    agent.epsilon = 0.2
+    agent.epsilon = 0.5
     num_episodes = 1000
     num_steps = env.max_steps
     episodic_returns = []
