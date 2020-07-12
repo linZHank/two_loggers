@@ -107,13 +107,13 @@ class PPOBuffer:
 if __name__=='__main__':
     # instantiate env
     env = SoloEscapeContinuousEnv()
-    agent = PPOAgent(name='ppo_train', target_kl=0.05)
+    agent = PPOAgent(name='ppo_train', target_kl=0.2)
     model_path = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, 'models')
     # parameter
-    num_episodes = 10000
+    num_episodes = 5000
     num_steps = env.max_episode_steps
-    buffer_size = int(5e5)
-    update_every = 500
+    buffer_size = int(3e5)
+    update_every = 250
     # variables
     step_counter = 0
     episode_counter = 0
