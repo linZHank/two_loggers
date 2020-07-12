@@ -32,7 +32,16 @@ if __name__ == "__main__":
     acts = []
     traj_path = os.path.join(sys.path[0], 'saved_trajectories', datetime.now().strftime("%Y-%m-%d-%H-%M"), 'traj.npy')
     # Set double_logger to specified pose
-    init_pose = np.array([-1,4.5,pi/2]) # modify this to any pose as needed: [x, y, theta]
+    # init_pose = np.array([0,0,0]) # modify this to any pose as needed: [x, y, theta]
+    # init_pose = np.array([-4.5,3,3*pi/4])
+    # init_pose = np.array([2.5,4.5,pi/4]) 
+    # init_pose = np.array([-1,4.5,pi/2]) 
+    # init_pose = np.array([-4.5,-1,pi]) 
+    # init_pose = np.array([4.5,1,0]) # modify this to any pose as needed: [x, y, theta]
+    # init_pose = np.array([-1,0,pi/2]) 
+    # init_pose = np.array([-3,-4.5,-3*pi/4]) 
+    # init_pose = np.array([4.5,-2.5,-pi/4]) 
+    init_pose = np.array([-1,-4,pi/2]) # modify this to any pose as needed: [x, y, theta]
     env.pausePhysics()
     env.resetWorld()
     double_logger_pose = ModelState()
