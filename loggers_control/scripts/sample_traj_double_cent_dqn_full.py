@@ -23,8 +23,9 @@ from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
-    agent = DQNAgent(env=env, name='double_logger_sample')
-    model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/5093500.h5')
+    agent = DQNAgent(env=env, name='double_logger_sample', dim_state=env.observation_space[0],
+                     num_actions=env.action_space[0]**2)
+    model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/cent_dqn_full/2020-06-25-21-25/cent_dqn_full/models/8033600.h5')
     agent.load_model(model_path=model_path)
     agent.epsilon = 0.
     num_steps = env.max_steps
@@ -37,11 +38,11 @@ if __name__ == "__main__":
     # init_pose = np.array([2.5,4.5,pi/4]) 
     # init_pose = np.array([-1,4.5,pi/2]) 
     # init_pose = np.array([-4.5,-1,pi]) 
-    # init_pose = np.array([4.5,1,0]) # modify this to any pose as needed: [x, y, theta]
+    # init_pose = np.array([4.5,1,0]) 
     # init_pose = np.array([-1,0,pi/2]) 
     # init_pose = np.array([-3,-4.5,-3*pi/4]) 
-    init_pose = np.array([4.5,-2.5,-pi/4]) 
-    # init_pose = np.array([-1,-4,pi/2]) # modify this to any pose as needed: [x, y, theta]
+    # init_pose = np.array([4.5,-2.5,-pi/4]) 
+    init_pose = np.array([-1,-4,pi/2]) # modify this to any pose as needed: [x, y, theta]
     env.pausePhysics()
     env.resetWorld()
     double_logger_pose = ModelState()
@@ -68,16 +69,15 @@ if __name__ == "__main__":
     # obs = env.reset()
     start_time = time.time()
     for st in range(num_steps):
-        state_0 = obs.copy()
-        state_1 = obs.copy()
-        state_1[:6] = state_1[-6:]
+        state = obs.copy()
         traj.append(obs)
-        act0 = agent.epsilon_greedy(state_0)
-        act1 = agent.epsilon_greedy(state_1)
-        act = np.array([act0, act1])
-        acts.append(act)
+        act = agent.epsilon_greedy(state)
+        act0 = int(act/env.action_space[0])
+        act1 = act%env.action_space[0]
+        action = np.array([act0, act1])
+        acts.append(action)
         # step env
-        next_obs, rew, done, info = env.step(act)
+        next_obs, rew, done, info = env.step(action)
         if 'blown' in info:
             break
         obs = next_obs.copy()

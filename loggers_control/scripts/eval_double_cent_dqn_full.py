@@ -33,7 +33,6 @@ if __name__ == "__main__":
     success_counter = 0
     while episode_counter<num_episodes:
         start_time = time.time()
-        qvals_diff = []
         # reset env and get state from it
         obs, rewards, done = env.reset(), [], False
         if 'blown' in env.status:
@@ -44,7 +43,6 @@ if __name__ == "__main__":
             act = agent.epsilon_greedy(state)
             act0 = int(act/env.action_space[0])
             act1 = act%env.action_space[0]
-            action = np.array([act0, act1])
             action = np.array([act0, act1])
             # step env
             next_obs, rew, done, info = env.step(action)

@@ -7,7 +7,7 @@ import matplotlib.patches as mpatches
 import tensorflow as tf
 
 # load trajectory
-traj_dir = os.path.join(sys.path[0], 'saved_trajectories', '2020-07-04-00-55')
+traj_dir = os.path.join(sys.path[0], 'saved_trajectories', '2020-07-11-23-12')
 traj = np.load(os.path.join(traj_dir, 'traj.npy'))
 acts = np.load(os.path.join(traj_dir, 'acts.npy'))
 # load models
