@@ -7,7 +7,7 @@ import matplotlib.patches as mpatches
 import tensorflow as tf
 
 # load trajectory
-traj_dir = os.path.join(sys.path[0], 'saved_trajectories/homo_7/')
+traj_dir = os.path.join(sys.path[0], 'saved_trajectories/homo_0/')
 traj = np.load(os.path.join(traj_dir, 'traj.npy'))
 acts = np.load(os.path.join(traj_dir, 'acts.npy'))
 # load models
@@ -49,7 +49,8 @@ for i in range(1, 11):
 
 # plot qvals
 qvals_0 = np.zeros((3, traj.shape[0]-1))
-qvals_1 = np.zeros((3, traj.shape[0]-1))
+qvals_1 = np.zeros_like(qvals_0)
+qvals_diff = np.zeros_like(qvals_0)
 traj_0 = traj.copy()
 traj_1 = traj.copy()
 traj_1[:,:6] = traj_1[:,-6:]
@@ -58,9 +59,11 @@ for i in range(3):
     for j in range(qvals_0.shape[1]):
         qvals_0[i,j] = np.squeeze(dqn(np.expand_dims(traj_0[j], axis=0)))[acts[j,0]]
         qvals_1[i,j] = np.squeeze(dqn(np.expand_dims(traj_1[j], axis=0)))[acts[j,1]]
+        qvals_diff[i,j] = np.absolute(qvals_0[i,j] - qvals_1[i,j])
         # qvals_1[i,j] = np.max(dqn(np.expand_dims(traj_1[j], axis=0)))
     ax_q[i].plot(np.arange(j+1), qvals_0[i], color=[.7,.7,.7], label='robot 1')
     ax_q[i].plot(np.arange(j+1), qvals_1[i], color='k', label='robot 2')
+qvals_mae = np.mean(qvals_diff, axis=-1)
 # set traj axis
 patches_collection = PatchCollection(patches, match_original=True)
 ax0.add_collection(patches_collection)
@@ -90,7 +93,8 @@ ax_q[0].xaxis.grid(True, which='major')
 ax_q[0].yaxis.grid(True, linestyle=(0, (5,10)))
 ax_q[0].set_ylabel('Q-values', fontsize='large')
 ax_q[0].legend(loc='upper left', fontsize='x-large')
-ax_q[0].text(170,20, 'Model version: 1e6', fontsize=14, color='r')
+ax_q[0].text(190,50, r'Model version: $10^6$', fontsize=14, color='r')
+ax_q[0].text(190,20, r'$\Delta Q = ${:.2f}'.format(qvals_mae[0]), fontsize=14, color='r')
 plt.setp(ax_q[0].get_xticklabels(), visible=False)
 ax_q[1].margins(x=0, y=0.05)
 ax_q[1].set_ylim(0,500)
@@ -98,7 +102,8 @@ ax_q[1].set_xticks(len(traj)*np.arange(11)/10, minor=False)
 ax_q[1].xaxis.grid(True, which='major')
 ax_q[1].yaxis.grid(True, linestyle=(0, (5,10)))
 ax_q[1].set_ylabel('Q-values', fontsize='large')
-ax_q[1].text(170,20, 'Model version: 3e6', fontsize=14, color='r')
+ax_q[1].text(190,50, r'Model version: $3\times10^6$', fontsize=14, color='r')
+ax_q[1].text(190,20, r'$\Delta Q = ${:.2f}'.format(qvals_mae[1]), fontsize=14, color='r')
 plt.setp(ax_q[1].get_xticklabels(), visible=False)
 ax_q[2].margins(x=0, y=0.05)
 ax_q[2].set_ylim(0,500)
@@ -107,7 +112,8 @@ ax_q[2].xaxis.grid(True, which='major')
 ax_q[2].yaxis.grid(True, linestyle=(0, (5,10)))
 ax_q[2].set_ylabel('Q-values', fontsize='large')
 ax_q[2].set_xlabel('Time Step', fontsize='large')
-ax_q[2].text(170,20, 'Model version: final', fontsize=14, color='r')
+ax_q[2].text(190,50, r'Model version: final', fontsize=14, color='r')
+ax_q[2].text(190,20, r'$\Delta Q = ${:.2f}'.format(qvals_mae[2]), fontsize=14, color='r')
 plt.setp(ax_q[2].get_xticklabels())
 plt.tight_layout()
 plt.show()
