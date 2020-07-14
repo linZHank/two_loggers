@@ -38,26 +38,30 @@ qvals_1 = np.zeros_like(qvals_0)
 qvals_diff = np.zeros_like(qvals_0)
 dqn = tf.keras.models.load_model(model_path)
 acts = np.load(os.path.join(os.path.dirname(traj_path), 'acts.npy'))
+traj_0 = traj.copy()
+traj_1 = traj.copy()
+traj_1[:,:6] = traj_0[:,-6:]
+# traj_1[:,-6:] = traj_0[:,:6] # ONLY COMMENT OUT WHEN MODEL FROM 2020-05-29-17-33!!!
 for i in range(qvals_0.shape[0]):
-    qvals_0[i] = np.squeeze(dqn(np.expand_dims(traj[i], axis=0)))[acts[i,0]]
-    qvals_1[i] = np.squeeze(dqn(np.expand_dims(traj[i], axis=0)))[acts[i,1]]
+    qvals_0[i] = np.squeeze(dqn(np.expand_dims(traj_0[i], axis=0)))[acts[i,0]]
+    qvals_1[i] = np.squeeze(dqn(np.expand_dims(traj_1[i], axis=0)))[acts[i,1]]
     qvals_diff[i] = np.absolute(qvals_0[i] - qvals_1[i])
 qvals_mae = np.mean(qvals_diff, axis=-1)
-# canceled vel
-vel_cancel = np.zeros(traj.shape[0])
-for i,s in enumerate(traj):
-    v0_vec = traj[i,2:4]
-    v1_vec = traj[i,-4:-2]
-    rod_vec = traj[i,-6:-4] - traj[i,0:2]
-    proj_v0 = np.dot(v0_vec, rod_vec)/np.linalg.norm(rod_vec)
-    proj_v1 = np.dot(v1_vec, rod_vec)/np.linalg.norm(rod_vec)
-    unit_proj_v0 = proj_v0/np.linalg.norm(proj_v0)
-    unit_proj_v1 = proj_v1/np.linalg.norm(proj_v1)
-    angle = np.arccos(np.dot(unit_proj_v0, unit_proj_v1))
+# canceled acc
+acc_cancel = np.zeros(traj_diff.shape[0])
+for i in range(traj_diff.shape[0]):
+    a0_vec = traj_diff[i,2:4]
+    a1_vec = traj_diff[i,-4:-2]
+    rod_vec = traj[i+1,-6:-4] - traj[i+1,0:2]
+    proj_a0 = np.dot(a0_vec, rod_vec)/np.linalg.norm(rod_vec)
+    proj_a1 = np.dot(a1_vec, rod_vec)/np.linalg.norm(rod_vec)
+    unit_proj_a0 = proj_a0/np.linalg.norm(proj_a0)
+    unit_proj_a1 = proj_a1/np.linalg.norm(proj_a1)
+    angle = np.arccos(np.dot(unit_proj_a0, unit_proj_a1))
+    print("angle: {}".format(angle))
     if np.isclose(angle, np.pi):
-        print("traj {} opposit vel".format(i))
-        vel_cancel[i] = np.min([np.linalg.norm(proj_v0), np.linalg.norm(proj_v1)])
-mean_vel_cancel = np.mean(vel_cancel)
+        acc_cancel[i] = np.min([np.linalg.norm(proj_a0), np.linalg.norm(proj_a1)])
+mean_acc_cancel = np.mean(acc_cancel)
 # elapsed time
 time = len(traj_diff)
 # save stats
@@ -67,8 +71,8 @@ with open(os.path.join(os.path.dirname(traj_path), 'kinetic_energy.txt'), 'w') a
     f.write("{}".format(ke))
 with open(os.path.join(os.path.dirname(traj_path), 'delta_q.txt'), 'w') as f:
     f.write("{}".format(qvals_mae))
-with open(os.path.join(os.path.dirname(traj_path), 'canceled_velocity.txt'), 'w') as f:
-    f.write("{}".format(mean_vel_cancel))
+with open(os.path.join(os.path.dirname(traj_path), 'canceled_acc.txt'), 'w') as f:
+    f.write("{}".format(mean_acc_cancel))
 with open(os.path.join(os.path.dirname(traj_path), 'time_elapsed.txt'), 'w') as f:
     f.write("{}".format(time))
 
