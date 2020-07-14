@@ -22,10 +22,10 @@ from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
-    agent0 = DQNAgent(env=env, name='hete_dqn_full_0', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=1e-4, warmup_episodes=500)
-    agent1 = DQNAgent(env=env, name='hete_dqn_full_1', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=1e-4, warmup_episodes=500)
+    agent0 = DQNAgent(env=env, name='hete_dqn_full_0', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=3e-4, warmup_episodes=500)
+    agent1 = DQNAgent(env=env, name='hete_dqn_full_1', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=3e-4, warmup_episodes=500)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    num_episodes = 30000
+    num_episodes = 20000
     num_steps = env.max_steps
     train_every = 100 # sample k times to train q-net
     episodic_returns, sedimentary_returns = [], []
@@ -37,18 +37,16 @@ if __name__ == "__main__":
     while episode_counter<num_episodes:
         # reset env and get state from it
         obs, rewards, done = env.reset(), [], False
-        # state0 = obs.copy()
-        # state1 = obs.copy()
-        # state1[:6] = state1[-6:]
         if 'blown' in env.status:
             continue
-        agent0.linear_epsilon_decay(episode=episode_counter, decay_period=2000)
-        agent1.linear_epsilon_decay(episode=episode_counter, decay_period=2000)
+        agent0.linear_epsilon_decay(episode=episode_counter, decay_period=1500)
+        agent1.linear_epsilon_decay(episode=episode_counter, decay_period=1500)
         for st in range(num_steps):
             # next 3 lines generate state for each robot based on env obs
             state0 = obs.copy()
             state1 = obs.copy()
-            state1[:6] = state1[-6:]
+            state1[:6] = state0[-6:]
+            state1[-6:] = state0[:6]
             # take actions, no action will take if deactivated
             act0 = agent0.epsilon_greedy(state0)
             act1 = agent1.epsilon_greedy(state1)
@@ -57,7 +55,8 @@ if __name__ == "__main__":
             next_obs, rew, done, info = env.step(act)
             next_state0 = next_obs.copy()
             next_state1 = next_obs.copy()
-            next_state1[:6] = next_state1[-6:]
+            next_state1[:6] = next_state0[-6:]
+            next_state1[-6:] = next_state0[:6]
             # store transitions and train
             if 'blown' in info:
                 break

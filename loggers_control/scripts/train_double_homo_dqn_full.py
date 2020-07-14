@@ -22,9 +22,9 @@ from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
-    agent = DQNAgent(env=env, name='homo_dqn_full', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=2e-4, warmup_episodes=500)
+    agent = DQNAgent(env=env, name='homo_dqn_full', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=3e-4, warmup_episodes=500)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    num_episodes = 30000
+    num_episodes = 20000
     num_steps = env.max_steps
     train_every = 100 # sample k times to train q-net
     episodic_returns, sedimentary_returns = [], []
@@ -41,12 +41,13 @@ if __name__ == "__main__":
         # state_1[:6] = state_1[-6:]
         if 'blown' in env.status:
             continue
-        agent.linear_epsilon_decay(episode=episode_counter, decay_period=2000)
+        agent.linear_epsilon_decay(episode=episode_counter, decay_period=1500)
         for st in range(num_steps):
             # next 3 lines generate state for each robot based on env obs
             state0 = obs.copy()
             state1 = obs.copy()
-            state1[:6] = state1[-6:]
+            state1[:6] = state0[-6:]
+            state1[-6:] = state0[:6]
             # take actions, no action will take if deactivated
             act0 = agent.epsilon_greedy(state0)
             act1 = agent.epsilon_greedy(state1)
@@ -55,16 +56,14 @@ if __name__ == "__main__":
             next_obs, rew, done, info = env.step(act)
             next_state0 = next_obs.copy()
             next_state1 = next_obs.copy()
-            next_state1[:6] = next_state1[-6:]
+            next_state1[:6] = next_state0[-6:]
+            next_state1[-6:] = next_state0[:6]
             # store transitions and train
             if 'blown' in info:
                 break
             agent.replay_memory.store([state0, act0, rew, done, next_state0])
             agent.replay_memory.store([state1, act1, rew, done, next_state1])
-            obs = next_obs.copy()
-            # state_0 = obs.copy()
-            # state_1 = obs.copy()
-            # state_1[:6] = state_1[-6:]
+            obs = next_obs.copy() # SUPER CRITICAL!!!
             step_counter += 1
             rewards.append(rew)
             # train agent

@@ -40,13 +40,14 @@ if __name__ == "__main__":
         qvals_diff = []
         # reset env and get state from it
         obs, rewards, done = env.reset(), [], False
-        # next 3 lines generate state based on
-        state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
-        state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
-        state_1[:6] = state_1[-6:]
         if 'blown' in env.status:
             continue
         for st in range(num_steps):
+            # next 4 lines generate state, comment out noise if not wanted
+            state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
+            state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
+            state1[:6] = state0[-6:]
+            state1[-6:] = state0[:6]
             # take actions, no action will take if deactivated
             act0 = agent0.epsilon_greedy(state_0)
             act1 = agent1.epsilon_greedy(state_1)
@@ -59,9 +60,6 @@ if __name__ == "__main__":
             if 'blown' in info:
                 break
             obs = next_obs.copy()
-            state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
-            state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
-            state_1[:6] = state_1[-6:]
             step_counter += 1
             rewards.append(rew)
             # log step

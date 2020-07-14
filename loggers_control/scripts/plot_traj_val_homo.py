@@ -53,7 +53,8 @@ qvals_1 = np.zeros_like(qvals_0)
 qvals_diff = np.zeros_like(qvals_0)
 traj_0 = traj.copy()
 traj_1 = traj.copy()
-traj_1[:,:6] = traj_1[:,-6:]
+traj_1[:,:6] = traj_0[:,-6:]
+traj_1[:,-6:] = traj_0[:,:6]
 for i in range(3):
     dqn = tf.keras.models.load_model(model_paths[i])
     for j in range(qvals_0.shape[1]):

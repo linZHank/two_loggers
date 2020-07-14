@@ -11,9 +11,9 @@ traj_dir = os.path.join(sys.path[0], 'saved_trajectories', 'hete_0')
 traj = np.load(os.path.join(traj_dir, 'traj.npy'))
 acts = np.load(os.path.join(traj_dir, 'acts.npy'))
 # load models
-model_path_0 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/1000000.h5')
-model_path_1 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/3000000.h5')
-model_path_2 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/5093500.h5')
+# model_path_0 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/1000000.h5')
+# model_path_1 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/3000000.h5')
+# model_path_2 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/5093500.h5')
 model_paths_0 = [
     os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger0/models/1000000.h5'),
     os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger0/models/3000000.h5'),
@@ -62,7 +62,8 @@ qvals_1 = np.zeros_like(qvals_0)
 qvals_diff = np.zeros_like(qvals_0)
 traj_0 = traj.copy()
 traj_1 = traj.copy()
-traj_1[:,:6] = traj_1[:,-6:]
+traj_1[:,:6] = traj_0[:,-6:]
+traj_1[:,-6:] = traj_0[:,:6]
 for i in range(3):
     dqn0 = tf.keras.models.load_model(model_paths_0[i])
     dqn1 = tf.keras.models.load_model(model_paths_1[i])

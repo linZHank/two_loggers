@@ -61,24 +61,22 @@ if __name__ == "__main__":
     # sampling trajectory
     obs = env._get_observation()
     # obs = env.reset()
-    state_0 = obs.copy()
-    state_1 = obs.copy()
-    state_1[:6] = state_1[-6:]
     start_time = time.time()
     for st in range(num_steps):
+        state_0 = obs.copy()
+        state_1 = obs.copy()
+        state_1[:6] = state_0[-6:]
+        state_0[-6:] = state_0[:6]
         traj.append(obs)
         act0 = agent0.epsilon_greedy(state_0)
         act1 = agent1.epsilon_greedy(state_1)
         act = np.array([act0, act1])
         acts.append(act)
         # step env
-        next_obs, rew, done, info = env.step(act)
+        _obs, rew, done, info = env.step(act)
         if 'blown' in info:
             break
         obs = next_obs.copy()
-        state_0 = obs.copy() 
-        state_1 = obs.copy() 
-        state_1[:6] = state_1[-6:]
         if done:
             break
     time_elapsed = time.time() - start_time
@@ -91,22 +89,22 @@ if __name__ == "__main__":
     np.save(traj_path, traj)
     np.save(os.path.join(os.path.dirname(traj_path), 'acts.npy'), acts)
 
-    # Compute velocity diff
-    diff_vel = np.zeros(traj.shape[0])
-    for i,s in enumerate(traj):
-        v0 = traj[i,2:4]
-        v1 = traj[i,-4:-2]
-        rod = traj[i,-6:-4] - traj[i,0:2]
-        proj_v0 = np.dot(v0, rod)/np.linalg.norm(rod)
-        proj_v1 = np.dot(v1, rod)/np.linalg.norm(rod)
-        diff_vel[i] = np.linalg.norm(proj_v0-proj_v1)
-    mean_diff_vel = np.mean(diff_vel)
-    np.save(os.path.join(os.path.dirname(traj_path), 'diff_vel.npy'), diff_vel)
-    with open(os.path.join(os.path.dirname(traj_path), 'mean_diff_vel.txt'), 'w') as f:
-        f.write("{}".format(mean_diff_vel))
-    with open(os.path.join(os.path.dirname(traj_path), 'time_elapsed.txt'), 'w') as f:
-        f.write("{}".format(time_elapsed))
-    with open(os.path.join(os.path.dirname(traj_path), 'model_path_0.txt'), 'w') as f:
-        f.write(model_path_0)
-    with open(os.path.join(os.path.dirname(traj_path), 'model_path_1.txt'), 'w') as f:
-        f.write(model_path_1)
+#     # Compute velocity diff
+#     diff_vel = np.zeros(traj.shape[0])
+#     for i,s in enumerate(traj):
+#         v0 = traj[i,2:4]
+#         v1 = traj[i,-4:-2]
+#         rod = traj[i,-6:-4] - traj[i,0:2]
+#         proj_v0 = np.dot(v0, rod)/np.linalg.norm(rod)
+#         proj_v1 = np.dot(v1, rod)/np.linalg.norm(rod)
+#         diff_vel[i] = np.linalg.norm(proj_v0-proj_v1)
+#     mean_diff_vel = np.mean(diff_vel)
+#     np.save(os.path.join(os.path.dirname(traj_path), 'diff_vel.npy'), diff_vel)
+#     with open(os.path.join(os.path.dirname(traj_path), 'mean_diff_vel.txt'), 'w') as f:
+#         f.write("{}".format(mean_diff_vel))
+#     with open(os.path.join(os.path.dirname(traj_path), 'time_elapsed.txt'), 'w') as f:
+#         f.write("{}".format(time_elapsed))
+#     with open(os.path.join(os.path.dirname(traj_path), 'model_path_0.txt'), 'w') as f:
+#         f.write(model_path_0)
+#     with open(os.path.join(os.path.dirname(traj_path), 'model_path_1.txt'), 'w') as f:
+#         f.write(model_path_1)
