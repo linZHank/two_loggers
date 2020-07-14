@@ -36,14 +36,11 @@ if __name__ == "__main__":
     while episode_counter<num_episodes:
         # reset env and get state from it
         obs, rewards, done = env.reset(), [], False
-        # state_0 = obs.copy()
-        # state_1 = obs.copy()
-        # state_1[:6] = state_1[-6:]
         if 'blown' in env.status:
             continue
         agent.linear_epsilon_decay(episode=episode_counter, decay_period=1500)
         for st in range(num_steps):
-            # next 3 lines generate state for each robot based on env obs
+            # next 4 lines generate state for each robot based on env obs
             state0 = obs.copy()
             state1 = obs.copy()
             state1[:6] = state0[-6:]

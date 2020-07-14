@@ -42,7 +42,7 @@ if __name__ == "__main__":
         agent0.linear_epsilon_decay(episode=episode_counter, decay_period=1500)
         agent1.linear_epsilon_decay(episode=episode_counter, decay_period=1500)
         for st in range(num_steps):
-            # next 3 lines generate state for each robot based on env obs
+            # next 4 lines generate state for each robot based on env obs
             state0 = obs.copy()
             state1 = obs.copy()
             state1[:6] = state0[-6:]
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 break
             agent0.replay_memory.store([state0, act0, rew, done, next_state0])
             agent1.replay_memory.store([state1, act1, rew, done, next_state1])
-            obs = next_obs.copy()
+            obs = next_obs.copy() # SUPER CRITICAL!!!
             step_counter += 1
             rewards.append(rew)
             # train agent
