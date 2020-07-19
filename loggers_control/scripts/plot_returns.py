@@ -12,7 +12,7 @@ import numpy as np
 from numpy import pi
 import matplotlib.pyplot as plt
 
-homo_path = sys.path[0]+"/saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/ep_returns.npy"
+homo_path = sys.path[0]+"/saved_models/double_escape_discrete/homo_dqn_full/2020-07-14-19-48/ep_returns.npy"
 hete_path = sys.path[0]+"/saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger0/ep_returns.npy"
 cent_path = sys.path[0]+"/saved_models/double_escape_discrete/cent_dqn_full/2020-06-25-21-25/cent_dqn_full/ep_returns.npy"
 
@@ -55,9 +55,9 @@ for i,r in enumerate(ret_cent):
 fig, ax = plt.subplots()
 x = np.arange(len(ret_homo))+1
 ax.plot(x, ave_ret_homo, 'lightcoral', label='Homogeneous')
-ax.plot(x, ave_ret_hete, 'dodgerblue', label='Heterogeneous')
-ax.plot(x, ave_ret_cent, 'lightgreen', label='Centralized')
-ax.set_xlim(0,30000)
+# ax.plot(x, ave_ret_hete, 'dodgerblue', label='Heterogeneous')
+# ax.plot(x, ave_ret_cent, 'lightgreen', label='Centralized')
+ax.set_xlim(0,20000)
 ax.set_ylim(-200,400)
 ax.set(xlabel='Episode', ylabel='Averaged Total Reward')
 ax.grid()

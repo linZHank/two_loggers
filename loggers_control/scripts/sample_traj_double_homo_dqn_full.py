@@ -24,7 +24,7 @@ from agents.dqn import DQNAgent
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
     agent = DQNAgent(env=env, name='double_logger_sample')
-    model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/5093500.h5')
+    model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/homo_dqn_full/2020-07-14-19-48/models/4049000.h5')
     agent.load_model(model_path=model_path)
     agent.epsilon = 0.
     num_steps = env.max_steps
@@ -40,8 +40,8 @@ if __name__ == "__main__":
     # init_pose = np.array([4.5,1,0]) # modify this to any pose as needed: [x, y, theta]
     # init_pose = np.array([-1,0,pi/2]) 
     # init_pose = np.array([-3,-4.5,-3*pi/4]) 
-    init_pose = np.array([4.5,-2.5,-pi/4]) 
-    # init_pose = np.array([-1,-4,pi/2]) # modify this to any pose as needed: [x, y, theta]
+    # init_pose = np.array([4.5,-2.5,-pi/4]) 
+    init_pose = np.array([-1,-4,pi/2]) # modify this to any pose as needed: [x, y, theta]
     env.pausePhysics()
     env.resetWorld()
     double_logger_pose = ModelState()
