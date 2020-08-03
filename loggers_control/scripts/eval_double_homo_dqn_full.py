@@ -21,7 +21,7 @@ from agents.dqn import DQNAgent
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
     agent = DQNAgent(env=env, name='double_logger_eval')
-    model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-05-29-17-33/double_logger/models/5093500.h5')
+    model_path = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/homo_dqn_full/2020-07-23-15-52/models/5767500.h5')
     agent.load_model(model_path=model_path)
     agent.epsilon = 0.
     num_episodes = 1000
@@ -31,6 +31,7 @@ if __name__ == "__main__":
     step_counter = 0
     success_counter = 0
     episodic_qvals_mae = np.zeros(num_episodes)
+    lead_counter = np.zeros(2)
     while episode_counter<num_episodes:
         start_time = time.time()
         qvals_diff = []
@@ -42,8 +43,8 @@ if __name__ == "__main__":
             # next 4 lines generate state, comment out noise if not wanted
             state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
             state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
-            state1[:6] = state0[-6:]
-            state1[-6:] = state0[:6]
+            state_1[:6] = state_0[-6:]
+            state_1[-6:] = state_0[:6] # comment this line out only when model is from 2020-05-29-17-33
             # take actions, no action will take if deactivated
             act0 = agent.epsilon_greedy(state_0)
             act1 = agent.epsilon_greedy(state_1)
@@ -61,18 +62,23 @@ if __name__ == "__main__":
             # log step
             if info.count('escaped')==2:
                 success_counter += 1
+                if obs[1] < obs[-5]:
+                    lead_counter[0] += 1
+                else:
+                    lead_counter[1] += 1
             rospy.logdebug("\n-\nepisode: {}, step: {} \nstate: {} \naction: {} \nnext_state: {} \nreward: {} \ndone: {} \ninfo: {} \nsucceed: {}\n-\n".format(episode_counter+1, st+1, obs, act, next_obs, rew, done, info, success_counter))
             if done:
                 # summarize episode
                 episodic_returns.append(sum(rewards))
                 episodic_qvals_mae[episode_counter] = sum(qvals_diff)/len(qvals_diff)
                 episode_counter += 1
-                rospy.loginfo("\n================================================================\nEpisode: {} \nSteps: {} \nEpisodicReturn: {} \nEndState: {} \nTotalSuccess: {} \nQValueMAE: {} \n================================================================n".format(
+                rospy.loginfo("\n================================================================\nEpisode: {} \nSteps: {} \nEpisodicReturn: {} \nEndState: {} \nTotalSuccess: {} \nQValueMAE: {} \nLeadCount: {} \n================================================================n".format(
                     episode_counter,
                     st+1,
                     episodic_returns[-1], 
                     info, success_counter, 
-                    sum(qvals_diff)/len(qvals_diff)
+                    sum(qvals_diff)/len(qvals_diff),
+                    lead_counter
                 ))
                 break
     qvals_mae_mean = np.mean(episodic_qvals_mae)
