@@ -22,8 +22,8 @@ if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
     agent0 = DQNAgent(env=env, name='logger0_eval')
     agent1 = DQNAgent(env=env, name='logger1_eval')
-    model_path_0 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger0/models/1000000.h5')
-    model_path_1 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/dqn/2020-06-07-18-26/logger1/models/1000000.h5')
+    model_path_0 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/hete_dqn_full_0/2020-07-23-13-36/models/5134900.h5')
+    model_path_1 = os.path.join(sys.path[0], 'saved_models/double_escape_discrete/hete_dqn_full_1/2020-07-23-13-36/models/5134900.h5')
     agent0.load_model(model_path=model_path_0)
     agent1.load_model(model_path=model_path_1)
     agent0.epsilon = 0.
@@ -34,6 +34,7 @@ if __name__ == "__main__":
     episode_counter = 0
     step_counter = 0
     success_counter = 0
+    lead_counter = np.zeros(2)
     episodic_qvals_mae = np.zeros(num_episodes)
     while episode_counter<num_episodes:
         start_time = time.time()
@@ -46,8 +47,8 @@ if __name__ == "__main__":
             # next 4 lines generate state, comment out noise if not wanted
             state_0 = obs.copy() # + 0.5*random.randn(obs.shape[0])
             state_1 = obs.copy() # + 0.5*random.randn(obs.shape[0])
-            state1[:6] = state0[-6:]
-            state1[-6:] = state0[:6]
+            state_1[:6] = state_0[-6:]
+            state_1[-6:] = state_0[:6]
             # take actions, no action will take if deactivated
             act0 = agent0.epsilon_greedy(state_0)
             act1 = agent1.epsilon_greedy(state_1)
@@ -65,12 +66,16 @@ if __name__ == "__main__":
             # log step
             if info.count('escaped')==2:
                 success_counter += 1
+                if obs[1] < obs[-5]:
+                    lead_counter[0] += 1
+                else:
+                    lead_counter[1] += 1
             rospy.logdebug("\n-\nepisode: {}, step: {} \nstate: {} \naction: {} \nnext_state: {} \nreward: {} \ndone: {} \ninfo: {} \nsucceed: {}\n-\n".format(episode_counter+1, st+1, obs, act, next_obs, rew, done, info, success_counter))
             if done:
                 episodic_qvals_mae[episode_counter] = sum(qvals_diff)/len(qvals_diff)
                 episodic_returns.append(sum(rewards))
                 episode_counter += 1
-                rospy.loginfo("\n================================================================\nEpisode: {} \nSteps: {} \nEpisodicReturn: {} \nEndState: {} \nTotalSuccess: {} \nTimeConsumed: {} \n================================================================n".format(episode_counter, st+1, episodic_returns[-1], info, success_counter, sum(qvals_diff)/len(qvals_diff)))
+                rospy.loginfo("\n================================================================\nEpisode: {} \nSteps: {} \nEpisodicReturn: {} \nEndState: {} \nTotalSuccess: {} \nLeadCount: {} \nTimeConsumed: {} \n================================================================n".format(episode_counter, st+1, episodic_returns[-1], info, success_counter, lead_counter, sum(qvals_diff)/len(qvals_diff)))
                 break
     qvals_mae_mean = np.mean(episodic_qvals_mae)
     qvals_mae_std = np.std(episodic_qvals_mae)

@@ -25,7 +25,7 @@ if __name__ == "__main__":
     agent0 = DQNAgent(env=env, name='hete_dqn_full_0', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=3e-4, warmup_episodes=500)
     agent1 = DQNAgent(env=env, name='hete_dqn_full_1', dim_state=env.observation_space[0], num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=3e-4, warmup_episodes=500)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    num_episodes = 20000
+    num_episodes = 30000
     num_steps = env.max_steps
     train_every = 100 # sample k times to train q-net
     episodic_returns, sedimentary_returns = [], []

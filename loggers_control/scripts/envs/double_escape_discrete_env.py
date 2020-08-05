@@ -264,31 +264,6 @@ class DoubleEscapeDiscreteEnv(object):
         double_logger_pose.pose.orientation.z = quat[2]
         double_logger_pose.pose.orientation.w = quat[3]
         self.setModelState(model_state=double_logger_pose)
-        # # set individual loggers pose
-        # # set logger0 pose
-        # id_logger0 = self.link_states.name.index("double_logger::logger0-chassis")
-        # logger0_pose = LinkState()
-        # logger0_pose.link_name = 'double_logger::logger0-chassis'
-        # logger0_pose.pose.position.x = self.link_states.pose[id_logger0].position.x
-        # logger0_pose.pose.position.y = self.link_states.pose[id_logger0].position.y
-        # logger0_pose.pose.position.z = self.link_states.pose[id_logger0].position.z
-        # # logger0_pose.pose.orientation.x = self.link_states.pose[id_logger0].orientation.x
-        # # logger0_pose.pose.orientation.y = self.link_states.pose[id_logger0].orientation.y
-        # logger0_pose.pose.orientation.z = q0[2]
-        # logger0_pose.pose.orientation.w = q0[3]
-        # self.setLinkState(link_state=logger0_pose)
-        # # set logger0 pose
-        # id_logger1 = self.link_states.name.index("double_logger::logger1-chassis")
-        # logger1_pose = LinkState()
-        # logger1_pose.link_name = 'double_logger::logger1-chassis'
-        # logger1_pose.pose.position.x = self.link_states.pose[id_logger1].position.x
-        # logger1_pose.pose.position.y = self.link_states.pose[id_logger1].position.y
-        # logger1_pose.pose.position.z = self.link_states.pose[id_logger1].position.z
-        # # logger1_pose.pose.orientation.x = self.link_states.pose[id_logger1].orientation.x
-        # # logger1_pose.pose.orientation.y = self.link_states.pose[id_logger1].orientation.y
-        # logger1_pose.pose.orientation.z = q1[2]
-        # logger1_pose.pose.orientation.w = q1[3]
-        # self.setLinkState(link_state=logger1_pose)
 
     def _get_observation(self):
         """
