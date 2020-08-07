@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-An implementation of Deep Q-network (DQN) for solo_escape_task
+An implementation of Deep Q-network (DQN) for double_escape_task on heterogeneous robots with asynmetric observations
 DQN is a Model free, off policy, reinforcement learning algorithm (https://deepmind.com/research/dqn/)
 Author: LinZHanK (linzhank@gmail.com)
 """
@@ -22,8 +22,8 @@ from agents.dqn import DQNAgent
 
 if __name__ == "__main__":
     env=DoubleEscapeDiscreteEnv()
-    agent0 = DQNAgent(env=env, name='logger0', dim_state=12, num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=1e-4, warmup_episodes=500)
-    agent1 = DQNAgent(env=env, name='logger1', dim_state=12, num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=1e-4, warmup_episodes=500)
+    agent0 = DQNAgent(env=env, name='logger0_dqn_full', dim_state=18, num_actions=env.action_space[0], layer_sizes=[256,256], learning_rate=3e-4, warmup_episodes=500)
+    agent1 = DQNAgent(env=env, name='logger1_dqn_self', dim_state=6, num_actions=env.action_space[0], layer_sizes=[128,128], learning_rate=3e-4, warmup_episodes=500)
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     num_episodes = 30000
     num_steps = env.max_steps
@@ -39,22 +39,20 @@ if __name__ == "__main__":
         obs, rewards, done = env.reset(), [], False
         if 'blown' in env.status:
             continue
-        agent0.linear_epsilon_decay(episode=episode_counter, decay_period=2000)
-        agent1.linear_epsilon_decay(episode=episode_counter, decay_period=2000)
+        agent0.linear_epsilon_decay(episode=episode_counter, decay_period=1500)
+        agent1.linear_epsilon_decay(episode=episode_counter, decay_period=1500)
         for st in range(num_steps):
             # next 3 lines generate state for each robot based on env obs
-            state0 = obs[:-6].copy()
-            state1 = obs[6:].copy()
-            state1[:6] = state1[-6:]
+            state0 = obs.copy()
+            state1 = obs[-6:].copy()
             # take actions, no action will take if deactivated
             act0 = agent0.epsilon_greedy(state0)
             act1 = agent1.epsilon_greedy(state1)
             act = np.array([act0, act1])
             # step env
             next_obs, rew, done, info = env.step(act)
-            next_state0 = next_obs[:-6].copy()
-            next_state1 = next_obs[6:].copy()
-            next_state1[:6] = next_state1[-6:]
+            next_state0 = next_obs.copy()
+            next_state1 = next_obs[-6:].copy()
             # store transitions and train
             if 'blown' in info:
                 break
