@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Task environment of logger solo escaping: discrete action space
+Solo escape environment
 """
 
 from __future__ import absolute_import, division, print_function
@@ -20,20 +20,17 @@ from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
 
 
-class SoloEscapeDiscreteEnv(object):
-    """
-    SoloEscapeDiscrete Env Class
-    """
-    def __init__(self):
-        rospy.init_node("solo_escape_discrete_env", anonymous=True, log_level=rospy.INFO)
+class SoloEscape:
+    
+    def __init__(self, env_type='discrete'):
         # env properties
-        self.name = 'solo_escape_discrete'
-        self.rate = rospy.Rate(1000) # gazebo world is running at 1000 Hz
-        self.max_steps = 999
-        self.step_counter = 0
-        self.observation_space = (6,) # x, y, x_d, y_d, th, th_d
-        self.action_space = (4,)
-        self.actions = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
+        self.env_type = env_type
+        self.name = 'solo_escape_'+env_type
+        rospy.init_node(self.name, anonymous=True, log_level=rospy.DEBUG)
+        self.rate = rospy.Rate(1000) # gazebo world is running at 1000 hz
+        self.max_episode_steps = 1000
+        self.observation_space_shape = (6,) # x, y, x_d, y_d, th, th_d
+        self.action_reservoir = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
         # robot properties
         self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
@@ -42,7 +39,6 @@ class SoloEscapeDiscreteEnv(object):
         self.exit_width = rospy.get_param('/exit_width')
         # services
         self.reset_world_proxy = rospy.ServiceProxy('/gazebo/reset_world', Empty)
-        self.reset_simulation_proxy = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
         self.unpause_physics_proxy = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause_physics_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.set_model_state_proxy = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
@@ -66,13 +62,6 @@ class SoloEscapeDiscreteEnv(object):
         except rospy.ServiceException as e:
             rospy.logerr("/gazebo/unpause_physics service call failed")
 
-    # def resetSimulation(self):
-    #     rospy.wait_for_service("/gazebo/reset_simulation")
-    #     try:
-    #         self.reset_simulation_proxy()
-    #     except rospy.ServiceException as e:
-    #         rospy.logerr("/gazebo/reset_simulation service call failed")
-
     def resetWorld(self):
         rospy.wait_for_service("/gazebo/reset_world")
         try:
@@ -87,6 +76,7 @@ class SoloEscapeDiscreteEnv(object):
         except rospy.ServiceException as e:
             rospy.logerr("Service call failed: {}".format(e))
 
+
     def reset(self):
         """
         Reset environment
@@ -96,36 +86,25 @@ class SoloEscapeDiscreteEnv(object):
         Returns:
             obs
         """
-        rospy.logdebug("\nStart Environment Reset")
+        rospy.logerr("\nStart environment reset")
         self.unpausePhysics()
         # zero cmd_vel
-        zero_cmd_vel = Twist()
-        for _ in range(15): # zero cmd_vel for about 0.025 sec. Important! Or wrong obs
-            self.cmd_vel_pub.publish(zero_cmd_vel)
-            self.rate.sleep()
+        obs = self._set_pose()
         # set init pose
         self.pausePhysics()
-        self.resetWorld()
-        self._set_pose()
-        self.unpausePhysics()
-        for _ in range(15): # zero cmd_vel for another 0.025 sec. Important! Or wrong obs
-            self.cmd_vel_pub.publish(zero_cmd_vel)
-            self.rate.sleep()
-        self.pausePhysics()
-        # get obs
-        obs = self._get_observation()
         # reset params
-        self.step_counter = 0
-        rospy.logerr("\nEnvironment Reset!!!\n")
+        rospy.logerr("\nEnd environment reset!!!")
 
         return obs
 
-    def step(self, action):
+    def step(self, action_index):
         """
-        Manipulate the environment with an action
-        obs, rew, done, info = env.step(action)
+        obs, rew, done, info = env.step(action_index)
         """
+        assert 0<=action_index<self.action_reservoir.shape[0]
         rospy.logdebug("\nStart Environment Step")
+        self.step_counter = 0
+        action = self.action_reservoir[action_index]
         self.unpausePhysics()
         self._take_action(action)
         self.pausePhysics()
@@ -138,32 +117,51 @@ class SoloEscapeDiscreteEnv(object):
 
         return obs, reward, done, info
 
-    def _set_pose(self):
+    def _set_pose(self, pose=None):
         """
-        Set logger with a random or given pose
+        Set logger with a random or a given pose
         Args:
+            pose: array([x,y,\omega])
         Returns:
         """
+        rospy.logdebug("\nStart setting pose...")
         logger_pose = ModelState()
         logger_pose.model_name = "logger"
         logger_pose.reference_frame = "world"
         logger_pose.pose.position.z = 0.1
-        if sum(np.isinf(self.spawning_pool)): # inialize randomly
+        if pose==None: # random pose
             x = random.uniform(-4, 4)
             y = random.uniform(-4, 4)
             quat = tf.transformations.quaternion_from_euler(0, 0, random.uniform(-pi, pi))
         else: # inialize accordingly
-            assert np.absolute(self.spawning_pool[0]) <= 4.5
-            assert np.absolute(self.spawning_pool[1]) <= 4.5
-            assert -pi<=self.spawning_pool[2]<= pi # theta within [-pi,pi]
-            x = self.spawning_pool[0].copy()
-            y = self.spawning_pool[1].copy()
-            quat = tf.transformations.quaternion_from_euler(0, 0, self.spawning_pool[2].copy())
+            assert pose.shape==(3,)
+            assert pose[0] <= 4.5
+            assert pose[1] <= 4.5
+            assert -pi<=pose[2]<= pi # theta within [-pi,pi]
+            x = pose[0]
+            y = pose[1]
+            quat = tf.transformations.quaternion_from_euler(0, 0, pose[2])
+
         logger_pose.pose.position.x = x
         logger_pose.pose.position.y = y
         logger_pose.pose.orientation.z = quat[2]
         logger_pose.pose.orientation.w = quat[3]
-        self.setModelState(model_state=logger_pose)
+        # set pose until on spot
+        obs = self._get_observation()
+        zero_vel = np.zeros(2)
+        while any([
+                obs[2]>1e-3, 
+                obs[3]>1e-3, 
+                obs[-1]>1e-3,
+                np.abs(obs[0]-x)>1e-3,
+                np.abs(obs[1]-y)>1e-3
+        ]):
+            self._take_action(zero_vel)
+            self.setModelState(model_state=logger_pose)
+            obs = self._get_observation()
+        rospy.logdebug("\nEND setting pose...")
+
+        return obs
 
     def _get_observation(self):
         """
@@ -172,7 +170,7 @@ class SoloEscapeDiscreteEnv(object):
         Returns:
             obs: array([x,y,xdot,ydot,theta,thetadot])
         """
-        obs = np.zeros(self.observation_space[0])
+        obs = np.zeros(self.observation_space_shape[0])
         id_logger = self.model_states.name.index("logger")
         logger_pose = self.model_states.pose[id_logger]
         logger_twist = self.model_states.twist[id_logger]
@@ -211,23 +209,22 @@ class SoloEscapeDiscreteEnv(object):
 
         return obs
 
-    def _take_action(self, i_act):
+    def _take_action(self, action):
         """
         Publish cmd_vel according to an action index
         Args:
             action: int(scalar)
         Returns:
         """
-        assert 0<=i_act<=self.action_space[0]
-        rospy.logdebug("\nStart Taking Action")
+        rospy.logdebug("\nStart taking action")
         cmd_vel = Twist()
-        cmd_vel.linear.x = self.actions[i_act][0]
-        cmd_vel.angular.z = self.actions[i_act][1]
-        for _ in range(30): # ~20 Hz
+        cmd_vel.linear.x = action[0]
+        cmd_vel.angular.z = action[1]
+        for _ in range(50): 
             self.cmd_vel_pub.publish(cmd_vel)
             self.rate.sleep()
         rospy.logdebug("cmd_vel: {}".format(cmd_vel))
-        rospy.logdebug("End Taking Action\n")
+        rospy.logdebug("\nEnd taking action")
 
     def _compute_reward(self):
         """
@@ -239,7 +236,7 @@ class SoloEscapeDiscreteEnv(object):
         rospy.logdebug("\nStart Computing Reward")
         reward, done = 0, False
         if self.status == 'escaped':
-            reward = 300.
+            reward = 100.
             done = True
             rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
         elif self.status == 'trapped':
@@ -252,7 +249,7 @@ class SoloEscapeDiscreteEnv(object):
             rospy.logdebug("\nLogger had a collision\n")
         rospy.logdebug("reward: {}, done: {}".format(reward, done))
         # check if steps out of range
-        if self.step_counter >= self.max_steps:
+        if self.step_counter >= self.max_episode_steps:
             done = True
             rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.step_counter))
         rospy.logdebug("End Computing Reward\n")
@@ -263,15 +260,17 @@ class SoloEscapeDiscreteEnv(object):
         self.model_states = data
 
 if __name__ == "__main__":
-    env = SoloEscapeDiscreteEnv()
-    num_episodes = 4
-    num_steps = env.max_steps
-    for ep in range(num_episodes):
-        obs = env.reset()
-        rospy.logdebug("obs: {}".format(obs))
-        for st in range(num_steps):
-            act = random.randint(env.action_space[0])
-            obs, rew, done, info = env.step(act)
-            rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, act: {}, reward: {}, done: {}, info: {}".format(ep, st, obs, act, rew, done, info))
-            if done:
-                break
+    env = SoloEscape()
+    num_steps = env.max_episode_steps
+    obs = env.reset()
+    ep, st = 0, 0
+    for t in range(env.max_episode_steps):
+        a = t%2
+        o, r, d, i = env.step(a)
+        st += 1
+        rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, act: {}, reward: {}, done: {}, info: {}".format(ep+1, st, o, a, r, d, i))
+        if d:
+            ep += 1
+            st = 0
+            obs = env.reset()
+            

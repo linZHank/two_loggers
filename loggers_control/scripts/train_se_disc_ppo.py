@@ -58,7 +58,7 @@ if __name__=='__main__':
             epoch_ended = (st==steps_per_epoch-1)
             if terminal or epoch_ended:
                 if epoch_ended and not(terminal):
-                    print('Warning: trajectory cut off by epoch at {} steps.'.format(ep_len), flush=True)
+                    print('Warning: trajectory cut off by epoch at {} steps.'.format(ep_len))
                 if timeout or epoch_ended:
                     _, val, _ = agent.pi_of_a_given_s(np.expand_dims(obs, axis=0))
                 else:
