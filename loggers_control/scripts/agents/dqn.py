@@ -1,17 +1,10 @@
 #!/usr/bin/env python
+""" 
+A DQN agent class 
 """
-DQN class
-"""
-from __future__ import absolute_import, division, print_function
-
-import sys
-import os
-import numpy as np
-import random
-from datetime import datetime
-import pickle
 import tensorflow as tf
-import rospy
+import numpy as np
+
 ################################################################
 """
 Can safely ignore this block
@@ -36,194 +29,101 @@ if gpus:
         print(e)
 ################################################################
 
-
-class Memory:
+class ReplayBuffer:
     """
-    This class defines replay buffer
+    An off-policy replay buffer for DQN agent
     """
-    def __init__(self, memory_cap):
-        self.memory_cap = memory_cap
-        self.memory = []
-    def store(self, experience):
-        # pop a random experience if memory full
-        if len(self.memory) >= self.memory_cap:
-            self.memory.pop(0)
-        self.memory.append(experience)
-        rospy.logdebug("experience: {} stored to memory".format(experience))
+    def __init__(self, dim_obs, size):
+        self.obs_buf = np.zeros([size]+[dim_obs], dtype=np.float32)
+        self.nobs_buf = np.zeros_like(self.obs_buf)
+        self.act_buf = np.zeros(shape=size, dtype=np.int8)
+        self.rew_buf = np.zeros(shape=size, dtype=np.float32)
+        self.done_buf = np.zeros(shape=size, dtype=np.bool)
+        self.ptr, self.size, self.max_size = 0, 0, size
 
-    def sample_batch(self, batch_size):
-        # Select batch
-        if len(self.memory) < batch_size:
-            batch = random.sample(self.memory, len(self.memory))
-        else:
-            batch = random.sample(self.memory, batch_size)
-        rospy.logdebug("A batch of memories are sampled with size: {}".format(batch_size))
+    def store(self, obs, act, rew, done, nobs):
+        self.obs_buf[self.ptr] = obs
+        self.nobs_buf[self.ptr] = nobs
+        self.act_buf[self.ptr] = act
+        self.rew_buf[self.ptr] = rew
+        self.done_buf[self.ptr] = done
+        self.ptr = (self.ptr + 1)%self.max_size
+        self.size = min(self.size+1, self.max_size)
 
-        return list(zip(*batch))
+    def sample_batch(self, batch_size=1024):
+        ids = np.random.randint(0, self.size, size=batch_size)
+        batch = dict(
+            obs = tf.convert_to_tensor(self.obs_buf[ids], dtype=tf.float32),
+            nobs = tf.convert_to_tensor(self.nobs_buf[ids], dtype=tf.float32),
+            act = tf.convert_to_tensor(self.act_buf[ids], dtype=tf.int32),
+            rew = tf.convert_to_tensor(self.rew_buf[ids], dtype=tf.float32),
+            done = tf.convert_to_tensor(self.done_buf[ids], dtype=tf.float32),
+        )
 
-class DQNAgent:
-    def __init__(self, env, name, dim_state=6, num_actions=4, layer_sizes=[64,64], update_epoch=8000, learning_rate=0.001, batch_size=8192, gamma =0.99, init_eps=1., final_eps=.1, warmup_episodes=100):
-        # fixed
-        self.name = name
-        self.env = env
-        self.date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        self.model_dir = os.path.join(sys.path[0], 'saved_models', env.name, name, self.date_time)
-        self.save_frequency = int(1e5)
-        # hyper-parameters
-        self.dim_state = dim_state
-        self.num_actions = num_actions
-        self.memory_cap = int(1e7)
-        self.layer_sizes = layer_sizes
-        self.update_epoch = update_epoch
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
-        self.gamma = gamma
-        self.init_eps = init_eps
-        self.final_eps = final_eps
-        self.warmup_episodes = warmup_episodes
-        # variables
-        self.epsilon = 1
-        self.epoch_counter = 0
-        # Q(s,a;theta)
-        assert len(self.layer_sizes) >= 1
-        inputs = tf.keras.Input(shape=(self.dim_state,), name='state')
-        x = tf.keras.layers.Dense(self.layer_sizes[0], activation='relu')(inputs)
-        for i in range(1,len(self.layer_sizes)):
-            x = tf.keras.layers.Dense(self.layer_sizes[i], activation='relu')(x)
-        outputs = tf.keras.layers.Dense(self.num_actions)(x)
-        self.qnet_active = tf.keras.Model(inputs=inputs, outputs=outputs, name='qnet_model')
-        self.qnet_active.summary()
-        # clone active Q-net to create stable Q-net
-        self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
-        # optimizer
-        self.optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
-        # loss function
-        self.loss_fn = tf.keras.losses.MeanSquaredError()
-        # metrics
-        self.mse_metric = tf.keras.metrics.MeanSquaredError()
-        # init replay memory
-        self.replay_memory = Memory(memory_cap=self.memory_cap)
-        # self.replay_memory = deque(maxlen=self.memory_cap)
+        return batch
 
-    def epsilon_greedy(self, state):
-        """
-        If a random number(0,1) beats epsilon, return index of largest Q-value.
-        Else, return a random index
-        """
-        if np.random.rand() > self.epsilon:
-            action = np.argmax(self.qnet_active(state.reshape(1,-1)))
-        else:
-            action = np.random.randint(self.num_actions)
-            rospy.logdebug("{} Take a random action!".format(self.name))
+class Critic(tf.keras.Model):
+    
+    def __init__(self, dim_obs, num_act, activation, **kwargs):
+        super(Critic, self).__init__(name='critic', **kwargs)
+        inputs = tf.keras.Input(shape=dim_obs, name='inputs')
+        # image features
+        feature = tf.keras.layers.Dense(256, activation=activation)(inputs)
+        feature = tf.keras.layers.Dense(256, activation=activation)(feature)
+        outputs = tf.keras.layers.Dense(num_act, activation=None, name='Q_values')(feature)
+        self.q_net = tf.keras.Model(inputs=inputs, outputs=outputs)
+        
+    def call(self, obs):
+        return self.q_net(obs)
+        # return tf.squeeze(qval, axis=-1)
 
-        return action
+class DeepQNet(tf.keras.Model):
 
-    def linear_epsilon_decay(self, episode, decay_period):
-        """
-        Returns the current epsilon for the agent's epsilon-greedy policy. This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et al., 2015). The schedule is as follows:
-            Begin at 1. until warmup_steps steps have been taken; then Linearly decay epsilon from 1. to final_eps in decay_period steps; and then Use epsilon from there on.
-        Args:
-            decay_period: int
-            episode: int
-        Returns:
-        """
-        episodes_left = decay_period + self.warmup_episodes - episode
+    def __init__(self, dim_obs, num_act, activation='relu', gamma = 0.99, lr=3e-4, polyak=0.995, **kwargs):
+        super(DeepQNet, self).__init__(name='dqn', **kwargs)
+        # params
+        self.dim_obs = dim_obs
+        self.num_act = num_act
+        self.gamma = gamma # discount rate
+        self.polyak = polyak
+        self.init_eps = 1.
+        self.final_eps = .1
+        # model
+        self.q = Critic(dim_obs, num_act, activation) 
+        self.targ_q = Critic(dim_obs, num_act, activation)
+        self.optimizer = tf.keras.optimizers.Adam(lr=lr)
+        # variable
+        self.epsilon = self.init_eps
+
+    def linear_epsilon_decay(self, episode, decay_period, warmup_episodes):
+        episodes_left = decay_period + warmup_episodes - episode
         bonus = (self.init_eps - self.final_eps) * episodes_left / decay_period
         bonus = np.clip(bonus, 0., self.init_eps-self.final_eps)
         self.epsilon = self.final_eps + bonus
 
-    def exponential_epsilon_decay(self, episode, decay_rate):
-        """
-        Returns the current epsilon for the agent's epsilon-greedy policy:
-            Begin at 1. until warmup_steps steps have been taken; then exponentially decay epsilon from 1. to final_eps; and then Use epsilon from there on.
-        Args:
-            episode: int, the number of training steps completed so far.
-            decay_rate: exponential rate of epsilon decay
-        Returns:
-        """
-        if episode >= self.warmup_episodes:
-            self.epsilon *= decay_rate
-        if self.epsilon <= self.final_eps:
-            self.epsilon = self.final_eps
+    def act(self, obs):
+        if np.random.rand() > self.epsilon:
+            a = tf.argmax(self.q(obs), axis=-1)
+        else:
+            a = tf.random.uniform(shape=[1,1], maxval=self.num_act, dtype=tf.dtypes.int32)
+        return a
 
-    def train(self, auto_save=True):
-        # sample a minibatch from replay buffer
-        minibatch = self.replay_memory.sample_batch(batch_size=self.batch_size)
-        (batch_states, batch_actions, batch_rewards, batch_done_flags, batch_next_states) = [np.array(minibatch[i]) for i in range(len(minibatch))]
-        # open a GradientTape to record the operations run during the forward pass
+    def train_one_batch(self, data):
+        # update critic
         with tf.GradientTape() as tape:
-            pred_q = tf.math.reduce_sum(self.qnet_active(batch_states) * tf.one_hot(batch_actions, self.num_actions), axis=-1)
-            target_q = batch_rewards + (1. - batch_done_flags) * self.gamma * tf.math.reduce_sum(self.qnet_stable(batch_next_states)*tf.one_hot(tf.math.argmax(self.qnet_active(batch_next_states),axis=1), self.num_actions),axis=1) # double DQN trick
-            # compute loss value
-            loss_value = self.loss_fn(y_true=target_q, y_pred=pred_q)
-        # use the gradient tape to automatically retrieve the gradients of the trainable variables with respect to the loss.
-        grads = tape.gradient(loss_value, self.qnet_active.trainable_weights)
-        # run one step of gradient descent
-        self.optimizer.apply_gradients(zip(grads, self.qnet_active.trainable_weights))
-        # update metrics
-        self.mse_metric(target_q, pred_q)
-        # display metrics
-        rospy.loginfo("{} mse: {}".format(self.name, loss_value))
-        # reset training metrics
-        self.mse_metric.reset_states()
-        # update qnet_stable
-        self.epoch_counter += 1
-        if not self.epoch_counter % self.update_epoch:
-            self.qnet_stable.set_weights(self.qnet_active.get_weights())
-            rospy.logwarn("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTarget Q-net updated\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
-        if auto_save:
-            if not self.epoch_counter % self.save_frequency:
-                self.save_model()
+            tape.watch(self.q.trainable_weights)
+            pred_qval = tf.math.reduce_sum(self.q(data['obs']) * tf.one_hot(data['act'], self.num_act), axis=-1)
+            targ_qval = data['rew'] + self.gamma*(1-data['done'])*tf.math.reduce_sum(self.targ_q(data['nobs'])*tf.one_hot(tf.math.argmax(self.q(data['nobs']),axis=1), self.num_act),axis=1) # double DQN trick
+            loss_q = tf.keras.losses.MSE(y_true=targ_qval, y_pred=pred_qval)
+        grads = tape.gradient(loss_q, self.q.trainable_weights)
+        self.optimizer.apply_gradients(zip(grads, self.q.trainable_weights))
+        # Polyak average update target Q-nets
+        q_weights_update = []
+        for w_q, w_targ_q in zip(self.q.get_weights(), self.targ_q.get_weights()):
+            w_q_upd = self.polyak*w_targ_q
+            w_q_upd = w_q_upd + (1 - self.polyak)*w_q
+            q_weights_update.append(w_q_upd)
+        self.targ_q.set_weights(q_weights_update)
 
-    def save_model(self):
-        self.qnet_active.summary()
-        # create model saving directory if not exist
-        model_path = os.path.join(self.model_dir, 'models', str(self.epoch_counter)+'.h5')
-        if not os.path.exists(os.path.dirname(model_path)):
-            os.makedirs(os.path.dirname(model_path))
-        # save model
-        self.qnet_active.save(model_path)
-        # self.qnet_stable.save(os.path.join(model_dir, 'stable_model-'+str(self.epoch_counter)+'.h5'))
-        rospy.loginfo("Q_net models saved at {}".format(model_path))
+        return loss_q
 
-    def load_model(self, model_path):
-        self.qnet_active = tf.keras.models.load_model(model_path)
-        self.qnet_stable = tf.keras.models.clone_model(self.qnet_active)
-        rospy.logwarn("Q-Net models loaded")
-        self.qnet_active.summary()
-
-    def save_memory(self):
-        memory_path = os.path.join(self.model_dir, 'memory.pkl')
-        if not os.path.exists(os.path.dirname(memory_path)):
-            os.makedirs(os.path.dirname(memory_path))
-        with open(memory_path, 'wb') as f:
-            pickle.dump(self.replay_memory, f, pickle.HIGHEST_PROTOCOL)
-        rospy.loginfo("Replay memory saved at {}".format(memory_path))
-
-    def load_memory(self, memory_path):
-        with open(memory_path, 'rb') as f:
-            self.replay_memory = pickle.load(f)
-        rospy.logwarn("Replay Buffer Loaded")
-
-    def save_params(self):
-        hyper_params = dict(
-            dim_state = self.dim_state,
-            num_actions = self.num_actions,
-            memory_cap = self.memory_cap,
-            layer_sizes = self.layer_sizes,
-            update_epoch = self.update_epoch,
-            learning_rate = self.learning_rate,
-            batch_size = self.batch_size,
-            gamma = self.gamma,
-            init_eps = self.init_eps,
-            final_eps = self.final_eps,
-            warmup_episodes = self.warmup_episodes,
-            epsilon = self.epsilon,
-            epoch_counter = self.epoch_counter
-        )
-        params_path = os.path.join(self.model_dir, 'hyper_params.pkl')
-        if not os.path.exists(os.path.dirname(params_path)):
-            os.makedirs(os.path.dirname(params_path))
-        with open(params_path, 'wb') as f:
-            pickle.dump(hyper_params, f, pickle.HIGHEST_PROTOCOL)
-        rospy.loginfo("Hyper-parameters saved at {}".format(params_path))
