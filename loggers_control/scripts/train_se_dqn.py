@@ -12,7 +12,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import rospy
 
-from envs.se_dis import SoloEscape
+from envs.se import SoloEscape
 from agents.dqn import ReplayBuffer, DeepQNet
 
 
@@ -31,7 +31,7 @@ if __name__=='__main__':
     warmup_episodes = 200
     decay_period = 1000
     replay_buffer = ReplayBuffer(dim_obs=agent.dim_obs, size=int(1e6)) 
-    total_steps = int(3e6)
+    total_steps = int(5e6)
     episodic_returns = []
     sedimentary_returns = []
     episodic_steps = []

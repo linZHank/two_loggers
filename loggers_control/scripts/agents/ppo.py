@@ -111,10 +111,10 @@ class CategoricalActor(tf.keras.Model):
 
     def __init__(self, dim_obs, dim_act, **kwargs):
         super(CategoricalActor, self).__init__(name='categorical_actor', **kwargs)
-        self.logits_net = mlp(dim_inputs=dim_obs, dim_outputs=dim_act, activation='relu')
+        self.logits_net = mlp(dim_inputs=dim_obs, dim_outputs=dim_act, activation='tanh')
 
     def _distribution(self, obs):
-        logits = tf.squeeze(self.logits_net(obs))
+        logits = self.logits_net(obs)
 
         return tfd.Categorical(logits=logits)
 
@@ -125,7 +125,7 @@ class CategoricalActor(tf.keras.Model):
         pi = self._distribution(obs)
         logp_a = None
         if act is not None:
-            logp_a = self._log_prob_from_distribution(pi, act)
+            logp_a = self._log_prob_from_distribution(pi, np.squeeze(act))
 
         return pi, logp_a
 
@@ -187,7 +187,7 @@ class ProximalPolicyOptimization(tf.keras.Model):
         with tf.GradientTape() as t:
             with t.stop_recording():
                 pi = self.actor._distribution(obs) # policy distribution (Gaussian)
-                act = pi.sample()
+                act = tf.squeeze(pi.sample())
                 logp_a = self.actor._log_prob_from_distribution(pi, act)
                 val = tf.squeeze(self.critic(obs), axis=-1)
 
@@ -196,7 +196,7 @@ class ProximalPolicyOptimization(tf.keras.Model):
     def train(self, data, iter_a, iter_c):
         # update actor
         for i in range(iter_a):
-            logging.debug("Staring actor epoch: {}".format(i+1))
+            rospy.logdebug("Staring actor epoch: {}".format(i+1))
             ep_kl = tf.convert_to_tensor([]) 
             ep_ent = tf.convert_to_tensor([]) 
             with tf.GradientTape() as tape:
@@ -217,7 +217,7 @@ class ProximalPolicyOptimization(tf.keras.Model):
             # log epoch
             kl = tf.math.reduce_mean(ep_kl)
             entropy = tf.math.reduce_mean(ep_ent)
-            logging.info("Epoch :{} \nLoss: {} \nEntropy: {} \nKLDivergence: {}".format(
+            print("Epoch :{} \nLoss: {} \nEntropy: {} \nKLDivergence: {}".format(
                 i+1,
                 loss_pi,
                 entropy,
@@ -225,11 +225,11 @@ class ProximalPolicyOptimization(tf.keras.Model):
             ))
             # early cutoff due to large kl-divergence
             if kl > 1.5*self.target_kl:
-                logging.warning("Early stopping at epoch {} due to reaching max kl-divergence.".format(i+1))
+                rospy.logwarn("Early stopping at epoch {} due to reaching max kl-divergence.".format(i+1))
                 break
         # update critic
         for i in range(iter_c):
-            logging.debug("Starting critic epoch: {}".format(i))
+            rospy.logdebug("Starting critic epoch: {}".format(i))
             with tf.GradientTape() as tape:
                 tape.watch(self.critic.trainable_variables)
                 loss_v = tf.keras.losses.MSE(data['ret'], self.critic(data['obs']))
@@ -237,7 +237,7 @@ class ProximalPolicyOptimization(tf.keras.Model):
             grads_critic = tape.gradient(loss_v, self.critic.trainable_variables)
             self.critic_optimizer.apply_gradients(zip(grads_critic, self.critic.trainable_variables))
             # log epoch
-            logging.info("Epoch :{} \nLoss: {}".format(
+            print("Epoch :{} \nLoss: {}".format(
                 i+1,
                 loss_v
             ))

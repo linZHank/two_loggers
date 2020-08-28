@@ -22,14 +22,15 @@ from geometry_msgs.msg import Pose, Twist
 
 class SoloEscape:
     
-    def __init__(self, env_type='discrete'):
+    def __init__(self):
         # env properties
-        self.env_type = env_type
-        self.name = 'solo_escape_'+env_type
+        self.env_type = 'discrete'
+        self.name = 'solo_escape_discrete'
         rospy.init_node(self.name, anonymous=True, log_level=rospy.DEBUG)
         self.rate = rospy.Rate(1000) # gazebo world is running at 1000 hz
         self.max_episode_steps = 1000
         self.observation_space_shape = (6,) # x, y, x_d, y_d, th, th_d
+        self.action_space_shape = ()
         self.action_reservoir = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
         # robot properties
         self.spawning_pool = np.array([np.inf]*3)
@@ -77,23 +78,18 @@ class SoloEscape:
             rospy.logerr("Service call failed: {}".format(e))
 
 
-    def reset(self):
+    def reset(self, init_pose=None):
         """
         Reset environment
         Usage:
             obs = env.reset()
-        Args:
-        Returns:
-            obs
         """
-        rospy.logerr("\nStart environment reset")
-        self.unpausePhysics()
-        # zero cmd_vel
-        obs = self._set_pose()
-        # set init pose
-        self.pausePhysics()
-        # reset params
-        rospy.logerr("\nEnd environment reset!!!")
+        rospy.logdebug("\nStart environment reset")
+        self.step_counter = 0
+        obs = self._set_pose(init_pose)
+        self.y = obs[1]
+        self.prev_y = obs[1]
+        rospy.logerr("\nEnvironment reset!!!")
 
         return obs
 
@@ -103,16 +99,15 @@ class SoloEscape:
         """
         assert 0<=action_index<self.action_reservoir.shape[0]
         rospy.logdebug("\nStart Environment Step")
-        self.step_counter = 0
         action = self.action_reservoir[action_index]
-        self.unpausePhysics()
         self._take_action(action)
-        self.pausePhysics()
         obs = self._get_observation()
+        self.y = obs[1]
         # compute reward and done
         reward, done = self._compute_reward()
-        self.step_counter += 1 # make sure inc step counter before compute reward
+        self.prev_y = self.y.copy()
         info = self.status
+        self.step_counter += 1 # make sure inc step counter before compute reward
         rospy.logdebug("End Environment Step\n")
 
         return obs, reward, done, info
@@ -147,6 +142,7 @@ class SoloEscape:
         logger_pose.pose.orientation.z = quat[2]
         logger_pose.pose.orientation.w = quat[3]
         # set pose until on spot
+        self.unpausePhysics()
         obs = self._get_observation()
         zero_vel = np.zeros(2)
         while any([
@@ -159,6 +155,7 @@ class SoloEscape:
             self._take_action(zero_vel)
             self.setModelState(model_state=logger_pose)
             obs = self._get_observation()
+        self.pausePhysics()
         rospy.logdebug("\nEND setting pose...")
 
         return obs
@@ -220,10 +217,12 @@ class SoloEscape:
         cmd_vel = Twist()
         cmd_vel.linear.x = action[0]
         cmd_vel.angular.z = action[1]
+        self.unpausePhysics()
         for _ in range(50): 
             self.cmd_vel_pub.publish(cmd_vel)
             self.rate.sleep()
         rospy.logdebug("cmd_vel: {}".format(cmd_vel))
+        self.pausePhysics()
         rospy.logdebug("\nEnd taking action")
 
     def _compute_reward(self):
@@ -239,17 +238,18 @@ class SoloEscape:
             reward = 100.
             done = True
             rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
-        elif self.status == 'trapped':
-            reward = -0.1
-            done = False
-            rospy.logdebug("\nLogger is trapped\n")
-        else: # collision
-            reward = -100.
-            done = True
-            rospy.logdebug("\nLogger had a collision\n")
-        rospy.logdebug("reward: {}, done: {}".format(reward, done))
+        else:
+            reward =  10*(self.prev_y - self.y) - 0.1
+            if any([
+                    self.status=='north',
+                    self.status=='south',
+                    self.status=='west',
+                    self.status=='east',
+                    self.status=='door'
+            ]):
+                done = True
         # check if steps out of range
-        if self.step_counter >= self.max_episode_steps:
+        if self.step_counter>=self.max_episode_steps-1:
             done = True
             rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.step_counter))
         rospy.logdebug("End Computing Reward\n")

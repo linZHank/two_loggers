@@ -5,14 +5,12 @@ from __future__ import absolute_import, division, print_function
 import sys
 import os
 import numpy as np
-from numpy import random
-from numpy import pi
 import time
 from datetime import datetime
 import matplotlib.pyplot as plt
 import rospy
 
-from envs.se_dis import SoloEscape
+from envs.se import SoloEscape
 from agents.ppo import PPOBuffer, ProximalPolicyOptimization
 
 
@@ -23,18 +21,18 @@ if __name__=='__main__':
         dim_obs=env.observation_space_shape[0],
         dim_act=env.action_reservoir.shape[0]
     )
-    replay_buffer = PPOBuffer(dim_obs=env.observation_space_shape[0], dim_act=env.action_reservoir.shape[0], size=5000, gamma=0.99, lam=0.97)
+    replay_buffer = PPOBuffer(dim_obs=env.observation_space_shape[0], dim_act=1, size=5000, gamma=0.99, lam=0.97)
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
     # paramas
     steps_per_epoch = replay_buffer.max_size
-    epochs = 600
-    iters_a = 100
-    iters_c = 100
+    epochs = 400
+    iter_a = 100
+    iter_c = 100
     max_ep_len=1000
-    save_freq=50
+    save_freq=20
     # Prepare for interaction with environment
     obs, ep_ret, ep_len = env.reset(), 0, 0
-    episode_counter, step_counter = 0, 0
+    episode_counter, step_counter, success_counter = 0, 0, 0
     stepwise_rewards, episodic_returns, sedimentary_returns = [], [], []
     episodic_steps = []
     start_time = time.time()
@@ -69,15 +67,15 @@ if __name__=='__main__':
                     episodic_returns.append(ep_ret)
                     sedimentary_returns.append(sum(episodic_returns)/episode_counter)
                     episodic_steps.append(step_counter)
+                    if info == 'escaped':
+                        success_counter += 1
                     rospy.loginfo(
-                        "\n----\nTotalSteps: {} \nEpisode: {}, EpReturn: {}, EpLength: {}\n----\n".format(step_counter, episode_counter, ep_ret, ep_len)
+                        "\n----\nTotalSteps: {} Episode: {}, EpReturn: {}, EpLength: {}, Succeeded: {}\n----\n".format(step_counter, episode_counter, ep_ret, ep_len, success_counter)
                     )
                 obs, ep_ret, ep_len = env.reset(), 0, 0
         # update actor-critic
         loss_pi, loss_v, loss_info = agent.train(replay_buffer.get(), iter_a, iter_c)
-        rospy.loginfo(
-            "\n====\nEpoch: {} \nStep: {} \nAveReturn: {} \nLossPi: {} \nLossV: {} \nKLDivergence: {} \nEntropy: {} \nTimeElapsed: {}\n====\n".format(episode_counter, step_counter, sedimentary_returns[-1], loss_pi, loss_v, loss_info['kl'], loss_info['ent'], time.time()-start_time)
-        )
+        rospy.loginfo("\n====\nEpoch: {} \nStep: {} \nAveReturn: {} \nSucceeded: {} \nLossPi: {} \nLossV: {} \nKLDivergence: {} \nEntropy: {} \nTimeElapsed: {}\n====\n".format(episode_counter, step_counter, sedimentary_returns[-1], success_counter, loss_pi, loss_v, loss_info['kl'], loss_info['ent'], time.time()-start_time))
         # Save model
         if not ep%save_freq or (ep==epochs-1):
             # save logits_net
@@ -90,24 +88,12 @@ if __name__=='__main__':
             if not os.path.exists(os.path.dirname(val_net_path)):
                 os.makedirs(os.path.dirname(val_net_path))
             agent.critic.val_net.save(val_net_path)
-
-    # Save returns 
-    np.save(os.path.join(model_dir, 'episodic_returns.npy'), episodic_returns)
-    np.save(os.path.join(model_dir, 'sedimentary_returns.npy'), sedimentary_returns)
-    np.save(os.path.join(model_dir, 'episodic_steps.npy'), episodic_steps)
-    with open(os.path.join(model_dir, 'training_time.txt'), 'w') as f:
-        f.write("{}".format(time.time()-start_time))
-
-    # Test
-    input("Press ENTER to test agent...")
-    for ep in range(10):
-        o, d = env.reset(), False
-        for st in range(env.max_episode_steps):
-            a, _, _ = agent.pi_of_a_given_s(np.expand_dims(o, axis=0))
-            o2, rew, done, info = env.step(a)
-            o = o2.copy()
-            if d:
-                break 
+            # Save returns 
+            np.save(os.path.join(model_dir, 'episodic_returns.npy'), episodic_returns)
+            np.save(os.path.join(model_dir, 'sedimentary_returns.npy'), sedimentary_returns)
+            np.save(os.path.join(model_dir, 'episodic_steps.npy'), episodic_steps)
+            with open(os.path.join(model_dir, 'training_time.txt'), 'w') as f:
+                f.write("{}".format(time.time()-start_time))
 
     # plot returns
     fig, ax = plt.subplots(figsize=(8, 6))
