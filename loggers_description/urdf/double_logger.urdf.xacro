@@ -23,7 +23,7 @@
             <wheelSeparation>0.25</wheelSeparation>
             <wheelDiameter>0.18</wheelDiameter>
             <wheelTorque>1</wheelTorque>
-            <commandTopic>cmd_vel0</commandTopic>
+            <commandTopic>logger0/cmd_vel</commandTopic>
             <odometryTopic>odom0</odometryTopic>
             <odometryFrame>odom0</odometryFrame>
             <robotBaseFrame>logger0-chassis</robotBaseFrame>
@@ -79,7 +79,7 @@
             <wheelSeparation>0.25</wheelSeparation>
             <wheelDiameter>0.18</wheelDiameter>
             <wheelTorque>1</wheelTorque>
-            <commandTopic>cmd_vel1</commandTopic>
+            <commandTopic>logger1/cmd_vel</commandTopic>
             <odometryTopic>odom1</odometryTopic>
             <odometryFrame>odom1</odometryFrame>
             <robotBaseFrame>logger1-chassis</robotBaseFrame>
