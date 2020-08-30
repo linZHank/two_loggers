@@ -240,13 +240,10 @@ class SoloEscape:
             rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
         else:
             reward =  10*(self.prev_y - self.y) - 0.1
-            if any([
-                    self.status=='north',
-                    self.status=='south',
-                    self.status=='west',
-                    self.status=='east',
-                    self.status=='door'
-            ]):
+            if self.status == 'trapped':
+                reward = 10*(self.prev_y - self.y) - 0.1
+            else:
+                reward = -100.
                 done = True
         # check if steps out of range
         if self.step_counter>=self.max_episode_steps-1:
