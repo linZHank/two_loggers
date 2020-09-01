@@ -17,8 +17,8 @@ if __name__=='__main__':
         dim_obs=env.observation_space_shape[0],
         dim_act=env.action_reservoir.shape[0]
     )
-    logits_net_path = './saved_models/solo_escape_discrete/ppo/2020-08-28-18-52/logits_net/399'
-    val_net_path = './saved_models/solo_escape_discrete/ppo/2020-08-28-18-52/val_net/399'
+    logits_net_path = './saved_models/solo_escape_discrete/ppo/2020-08-30-18-41/logits_net/399'
+    val_net_path = './saved_models/solo_escape_discrete/ppo/2020-08-30-18-41/val_net/399'
     # load models
     agent.actor.logits_net = tf.keras.models.load_model(logits_net_path)
     agent.critic.val_net = tf.keras.models.load_model(val_net_path)
