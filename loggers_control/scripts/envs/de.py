@@ -46,8 +46,6 @@ class DoubleEscape:
         self.pause_physics_proxy = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.set_model_state_proxy = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
         self.get_model_state_proxy = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-        # self.set_link_state_proxy = rospy.ServiceProxy('/gazebo/set_link_state', SetLinkState)
-        # self.get_link_state_proxy = rospy.ServiceProxy('/gazebo/get_link_state', GetLinkState)
         # topic publisher
         self.cmd_vel0_pub = rospy.Publisher("/logger0/cmd_vel", Twist, queue_size=1)
         self.cmd_vel1_pub = rospy.Publisher("/logger1/cmd_vel", Twist, queue_size=1)
@@ -306,10 +304,10 @@ class DoubleEscape:
                     'door' in self.status,
                     'blown' in self.status
             ]):
+                reward = -100.
                 done = True
         # check if steps out of range
         if self.step_counter>=self.max_episode_steps-1:
-            done = True
             rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.step_counter))
         rospy.logdebug("End Computing Reward\n")
 

@@ -247,7 +247,6 @@ class SoloEscape:
                 done = True
         # check if steps out of range
         if self.step_counter>=self.max_episode_steps-1:
-            done = True
             rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.step_counter))
         rospy.logdebug("End Computing Reward\n")
 
