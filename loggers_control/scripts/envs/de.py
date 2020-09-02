@@ -32,9 +32,7 @@ class DoubleEscape:
         self.observation_space_shape = (3,6) # {r1, r2, s}: x, y, x_d, y_d, th, th_d 
         self.action_space_shape = ()
         self.action_reservoir = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
-        # self.actions = np.array([[2,1], [2,-1], [-2,1], [-2,-1])
         # robot properties
-        self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
         # self.link_states = ModelStates()
         self.status = ['deactivated']*2

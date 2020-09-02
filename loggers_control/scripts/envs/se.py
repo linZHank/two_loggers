@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Solo escape environment
+Solo escape environment with discrete action space
 """
 
 from __future__ import absolute_import, division, print_function
@@ -10,13 +10,12 @@ import os
 import numpy as np
 from numpy import pi
 from numpy import random
-import time
 
 import rospy
 import tf
 from std_srvs.srv import Empty
 from gazebo_msgs.srv import SetModelState, GetModelState
-from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
+from gazebo_msgs.msg import ModelState, ModelStates
 from geometry_msgs.msg import Pose, Twist
 
 
@@ -33,7 +32,6 @@ class SoloEscape:
         self.action_space_shape = ()
         self.action_reservoir = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
         # robot properties
-        self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
         self.status = 'deactivated'
         self.world_name = rospy.get_param('/world_name')
