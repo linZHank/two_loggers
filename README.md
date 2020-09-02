@@ -13,7 +13,7 @@ version is installed. Example: `pip install tensorflow==2.1` and `pip install te
 
 - gazebo_ros_pkgs
 ``` console
-sudo apt-get install ros-kinetic-gazebo-ros-pkgs ros-kinetic-gazebo-ros-control
+sudo apt-get install ros-melodic-gazebo-ros-pkgs ros-melodic-gazebo-ros-control
 ```
 - [Create a catkin workspace](http://wiki.ros.org/catkin/Tutorials/create_a_workspace), assume your workspace is at `~/ros_ws/`
 - Clone this repo to your catkin workspace
@@ -22,18 +22,20 @@ cd ~/ros_ws/src
 git clone https://github.com/linZHank/two_loggers.git
 ```
 - Build ROS packages (`loggers_description`, `loggers_gazebo`, `loggers_control`)
-> [Catkin Command Line Tools](https://catkin-tools.readthedocs.io/en/latest/) is recommanded to build the packages
 
 ``` console
 cd ~/ros_ws/
-catkin build
+catkin_make
 source devel/setup.bash
 ```
+> [Catkin Command Line Tools](https://catkin-tools.readthedocs.io/en/latest/) is a substitution to `catkin_make`.
+
 - make sure following two lines are in your `~/.bashrc` file.
 ``` bash
-source /opt/ros/kinetic/setup.bash
+source /opt/ros/melodic/setup.bash
 source /home/linzhank/ros_ws/devel/setup.bash
 ```
+> Replace `melodic` with `kinetic` in the lines above if you are using ROS-Kinetic.
 ## Environments
 Two environments are available right now: `this_repo/loggers_control/scripts/envs/se.py` and `this_repo/loggers_control/scripts/envs/de.py` both are with discrete action space.
 
@@ -67,6 +69,7 @@ Two DQN agents are available and tested:
 2. [PPO](https://arxiv.org/abs/1707.06347)
 
 Location: `this_repo/loggers_control/scripts/agents`
+
 **Usage**
 
 Open a terminal and enter the following commands to launch the simulation.
