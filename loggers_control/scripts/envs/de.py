@@ -88,7 +88,7 @@ class DoubleEscape:
         rospy.logdebug("\nStart Environment Reset")
         self.step_counter = 0
         # set init pose
-        # self.resetWorld()
+        self.resetWorld()
         obs = self._set_pose(init_pose)
         self.y = np.array([obs[0,1], obs[1,1]])
         self.prev_y = self.y.copy()
@@ -127,7 +127,7 @@ class DoubleEscape:
         double_logger_pose.model_name = "double_logger"
         # logger_pose.reference_frame = "world"
         double_logger_pose.pose.position.z = 0.09
-        if pose==None: # random pose
+        if pose is None: # random pose
             x = random.uniform(-4, 4)
             y = random.uniform(-4, 4)
             th = random.uniform(-pi, pi)
@@ -140,7 +140,7 @@ class DoubleEscape:
             rospy.logdebug("Set model pose @ {}".format((x,y,th)))
             # (x, y, theta, th0, th1) = generate_random_pose()
         else: # inialize accordingly
-            assert pose.shaep==(3,)
+            assert pose.shape==(3,)
             assert pose[0] <= 4.5
             assert pose[1] <= 4.5
             assert -pi<=pose[2]<= pi # theta within [-pi,pi]
@@ -148,7 +148,8 @@ class DoubleEscape:
             assert np.abs(pose[1] - 2*np.cos(pose[2])) <= 4.8
             x = pose[0]
             y = pose[1]
-            quat = tf.transformations.quaternion_from_euler(0, 0, pose[2])
+            th = pose[2]
+            quat = tf.transformations.quaternion_from_euler(0, 0, th)
             rospy.logdebug("Set model pose @ {}".format(pose))
 
         double_logger_pose.pose.position.x = x
@@ -159,16 +160,21 @@ class DoubleEscape:
         self.unpausePhysics()
         obs = self._get_observation()
         zero_vel = np.zeros((2,2))
-        while any([
-                any(obs[:,2]>1e-3),
-                any(obs[:,3]>1e-3),
-                any(obs[:,-1]>1e-3),
-                np.abs(obs[0,0]-x)>1e-3,
-                np.abs(obs[0,1]-y)>1e-3
-        ]):
-            self._take_action(zero_vel)
-            self.setModelState(model_state=double_logger_pose)
-            obs = self._get_observation()
+        # while any([
+        #         any(obs[:,2]>1e-3),
+        #         any(obs[:,3]>1e-3),
+        #         any(obs[:,-1]>1e-3),
+        #         np.abs(obs[0,0]-x)>1e-3,
+        #         np.abs(obs[0,1]-y)>1e-3,
+        #         np.abs(obs[0,-2]-th)>1e-3
+        # ]):
+        #     self._take_action(zero_vel)
+        #     self.setModelState(model_state=double_logger_pose)
+        #     obs = self._get_observation()
+        self._take_action(zero_vel)
+        self.setModelState(model_state=double_logger_pose)
+        self._take_action(zero_vel)
+        obs = self._get_observation()
         self.pausePhysics()
         rospy.logdebug("\nEnd setting model pose")
 

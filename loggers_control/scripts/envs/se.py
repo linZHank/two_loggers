@@ -143,16 +143,20 @@ class SoloEscape:
         self.unpausePhysics()
         obs = self._get_observation()
         zero_vel = np.zeros(2)
-        while any([
-                obs[2]>1e-3, 
-                obs[3]>1e-3, 
-                obs[-1]>1e-3,
-                np.abs(obs[0]-x)>1e-3,
-                np.abs(obs[1]-y)>1e-3
-        ]):
-            self._take_action(zero_vel)
-            self.setModelState(model_state=logger_pose)
-            obs = self._get_observation()
+        # while any([
+        #         obs[2]>1e-3, 
+        #         obs[3]>1e-3, 
+        #         obs[-1]>1e-3,
+        #         np.abs(obs[0]-x)>1e-3,
+        #         np.abs(obs[1]-y)>1e-3
+        # ]):
+        #     self._take_action(zero_vel)
+        #     self.setModelState(model_state=logger_pose)
+        #     obs = self._get_observation()
+        self._take_action(zero_vel)
+        self.setModelState(model_state=logger_pose)
+        self._take_action(zero_vel)
+        obs = self._get_observation()
         self.pausePhysics()
         rospy.logdebug("\nEND setting pose...")
 
