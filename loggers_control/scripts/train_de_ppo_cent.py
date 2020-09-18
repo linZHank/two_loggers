@@ -22,7 +22,8 @@ if __name__=='__main__':
     agent = ProximalPolicyOptimization(
         env_type = env.env_type,
         dim_obs=dim_obs,
-        dim_act=dim_act
+        dim_act=dim_act,
+        lr_critic=1e-3
     )
     replay_buffer = PPOBuffer(dim_obs=dim_obs, dim_act=1, size=5000, gamma=0.99, lam=0.97)
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
@@ -36,7 +37,7 @@ if __name__=='__main__':
     # Prepare for interaction with environment
     obs, ep_ret, ep_len = env.reset(), 0, 0
     epoch_counter, episode_counter, step_counter, success_counter = 0, 0, 0, 0
-    stepwise_rewards, episodic_returns, sedimentary_returns = [], [], []
+    episodic_returns, sedimentary_returns = [], []
     episodic_steps = []
     start_time = time.time()
     # main loop
@@ -49,13 +50,12 @@ if __name__=='__main__':
         rew = np.sum(rew)
         ep_ret += rew
         ep_len += 1
-        stepwise_rewards.append(rew)
         step_counter += 1
         rospy.logdebug(
             "\nepisode: {}, step: {} \nstate: {} \naction: {} \nreward: {} \ndone: {} \nn_state: {}".format(episode_counter+1, ep_len, obs, act, rew, done, n_obs)
         )
         replay_buffer.store(state, act, rew, val, logp)
-        obs = n_obs # SUPER CRITICAL!!!
+        obs = n_obs.copy() # SUPER CRITICAL!!!
         # handel terminal
         timeout = (ep_len==env.max_episode_steps)
         terminal = done or timeout
@@ -83,24 +83,24 @@ if __name__=='__main__':
                 loss_pi, loss_v, loss_info = agent.train(replay_buffer.get(), iter_a, iter_c)
                 epoch_counter += 1
                 rospy.loginfo("\n====\nEpoch: {} \nStep: {} \nAveReturn: {} \nSucceeded: {} \nLossPi: {} \nLossV: {} \nKLDivergence: {} \nEntropy: {} \nTimeElapsed: {}\n====\n".format(epoch_counter, step_counter, sedimentary_returns[-1], success_counter, loss_pi, loss_v, loss_info['kl'], loss_info['ent'], time.time()-start_time))
-            # Save model
-            if not episode_counter%save_freq or (epoch_counter==epochs):
-                # save logits_net
-                logits_net_path = os.path.join(model_dir, 'logits_net', str(epoch_counter))
-                if not os.path.exists(os.path.dirname(logits_net_path)):
-                    os.makedirs(os.path.dirname(logits_net_path))
-                agent.actor.logits_net.save(logits_net_path)
-                # save val_net
-                val_net_path = os.path.join(model_dir, 'val_net', str(epoch_counter))
-                if not os.path.exists(os.path.dirname(val_net_path)):
-                    os.makedirs(os.path.dirname(val_net_path))
-                agent.critic.val_net.save(val_net_path)
-                # Save returns 
-                np.save(os.path.join(model_dir, 'episodic_returns.npy'), episodic_returns)
-                np.save(os.path.join(model_dir, 'sedimentary_returns.npy'), sedimentary_returns)
-                np.save(os.path.join(model_dir, 'episodic_steps.npy'), episodic_steps)
-                with open(os.path.join(model_dir, 'training_time.txt'), 'w') as f:
-                    f.write("{}".format(time.time()-start_time))
+                # Save model
+                if not epoch_counter%save_freq or (epoch_counter==epochs):
+                    # save logits_net
+                    logits_net_path = os.path.join(model_dir, 'logits_net', str(epoch_counter))
+                    if not os.path.exists(os.path.dirname(logits_net_path)):
+                        os.makedirs(os.path.dirname(logits_net_path))
+                    agent.actor.logits_net.save(logits_net_path)
+                    # save val_net
+                    val_net_path = os.path.join(model_dir, 'val_net', str(epoch_counter))
+                    if not os.path.exists(os.path.dirname(val_net_path)):
+                        os.makedirs(os.path.dirname(val_net_path))
+                    agent.critic.val_net.save(val_net_path)
+                    # Save returns 
+                    np.save(os.path.join(model_dir, 'episodic_returns.npy'), episodic_returns)
+                    np.save(os.path.join(model_dir, 'sedimentary_returns.npy'), sedimentary_returns)
+                    np.save(os.path.join(model_dir, 'episodic_steps.npy'), episodic_steps)
+                    with open(os.path.join(model_dir, 'training_time.txt'), 'w') as f:
+                        f.write("{}".format(time.time()-start_time))
             # reset episode
             obs, ep_ret, ep_len = env.reset(), 0, 0
 

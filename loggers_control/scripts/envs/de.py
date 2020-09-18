@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Task environment of double_logger cooperatively escaping: discrete action space.
+Doubld escape environment with discrete action space
 """
 from __future__ import absolute_import, division, print_function
 
@@ -25,7 +25,7 @@ class DoubleEscape:
     def __init__(self):
         self.env_type = 'discrete'
         self.name = 'double_escape_discrete'
-        rospy.init_node(self.name, anonymous=True, log_level=rospy.DEBUG)
+        rospy.init_node(self.name, anonymous=True, log_level=rospy.INFO)
         # env properties
         self.rate = rospy.Rate(1000)
         self.max_episode_steps = 1000
@@ -34,7 +34,8 @@ class DoubleEscape:
         self.action_reservoir = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
         # robot properties
         self.model_states = ModelStates()
-        # self.link_states = ModelStates()
+        self.obs = np.zeros(self.observation_space_shape)
+        self.prev_obs = np.zeros(self.observation_space_shape)
         self.status = ['deactivated']*2
         self.world_name = rospy.get_param('/world_name')
         self.exit_width = rospy.get_param('/exit_width')
@@ -86,15 +87,16 @@ class DoubleEscape:
             obs = env.reset()
         """
         rospy.logdebug("\nStart Environment Reset")
-        self.step_counter = 0
         # set init pose
         self.resetWorld()
-        obs = self._set_pose(init_pose)
-        self.y = np.array([obs[0,1], obs[1,1]])
-        self.prev_y = self.y.copy()
+        self.obs = self._set_pose(init_pose)
+        self.prev_obs = self.obs.copy()
+        self.step_counter = 0
+        # self.y = np.array([obs[0,1], obs[1,1]])
+        # self.prev_y = self.y.copy()
         rospy.logerr("\nEnvironment Reset!!!\n")
 
-        return obs
+        return self.obs
 
     def step(self, action_indices):
         """
@@ -107,16 +109,17 @@ class DoubleEscape:
         actions[0] = self.action_reservoir[action_indices[0]]
         actions[1] = self.action_reservoir[action_indices[1]]
         self._take_action(actions)
-        obs = self._get_observation()
-        self.y = np.array([obs[0,1], obs[1,1]])
+        self._get_observation()
         # update status
         reward, done = self._compute_reward()
-        self.prev_y = self.y.copy()
+        self.prev_obs = self.obs.copy() # make sure this happened after reward computing
         info = self.status
         self.step_counter += 1
+        if self.step_counter>=self.max_episode_steps:
+            rospy.logwarn("Step: {}, \nMax step reached...".format(self.step_counter))
         rospy.logdebug("End environment step\n")
 
-        return obs, reward, done, info
+        return self.obs, reward, done, info
 
     def _set_pose(self, pose=None):
         """
@@ -138,7 +141,6 @@ class DoubleEscape:
                 th = random.uniform(-pi, pi)
             quat = tf.transformations.quaternion_from_euler(0, 0, th)
             rospy.logdebug("Set model pose @ {}".format((x,y,th)))
-            # (x, y, theta, th0, th1) = generate_random_pose()
         else: # inialize accordingly
             assert pose.shape==(3,)
             assert pose[0] <= 4.5
@@ -158,27 +160,15 @@ class DoubleEscape:
         double_logger_pose.pose.orientation.w = quat[3]
         # set pose until on spot
         self.unpausePhysics()
-        obs = self._get_observation()
         zero_vel = np.zeros((2,2))
-        # while any([
-        #         any(obs[:,2]>1e-3),
-        #         any(obs[:,3]>1e-3),
-        #         any(obs[:,-1]>1e-3),
-        #         np.abs(obs[0,0]-x)>1e-3,
-        #         np.abs(obs[0,1]-y)>1e-3,
-        #         np.abs(obs[0,-2]-th)>1e-3
-        # ]):
-        #     self._take_action(zero_vel)
-        #     self.setModelState(model_state=double_logger_pose)
-        #     obs = self._get_observation()
         self._take_action(zero_vel)
         self.setModelState(model_state=double_logger_pose)
         self._take_action(zero_vel)
-        obs = self._get_observation()
+        self._get_observation()
         self.pausePhysics()
         rospy.logdebug("\nEnd setting model pose")
 
-        return obs
+        return self.obs
 
     def _get_observation(self):
         """
@@ -187,7 +177,7 @@ class DoubleEscape:
         Returns:
             obs: array([...pose+vel0...,pose+vell...pose+vel1...])
         """
-        def extract_link_obs(link_id):
+        def extract_link_state(link_id):
             link_obs = np.zeros(6)
             pose = self.link_states.pose[link_id]
             twist = self.link_states.twist[link_id]
@@ -202,54 +192,52 @@ class DoubleEscape:
             return link_obs
         
         rospy.logdebug("\nStart getting observation")
-        # compute obs from link_states
-        obs = np.zeros(self.observation_space_shape)
         # identify index of logger0, log, logger1
         id_logger0 = self.link_states.name.index("double_logger::logger0-chassis")
         id_log = self.link_states.name.index("double_logger::log")
         id_logger1 = self.link_states.name.index("double_logger::logger1-chassis")
-        # extract observation of interested links
-        logger0_obs = extract_link_obs(id_logger0)
-        log_obs = extract_link_obs(id_log)
-        logger1_obs = extract_link_obs(id_logger1)
-        obs[0] = logger0_obs
-        obs[1] = logger1_obs
-        obs[-1] = log_obs
+        # extract states of interested links
+        logger0_obs = extract_link_state(id_logger0)
+        log_obs = extract_link_state(id_log)
+        logger1_obs = extract_link_state(id_logger1)
+        self.obs[0] = logger0_obs
+        self.obs[1] = logger1_obs
+        self.obs[-1] = log_obs
         # compute logger0's status
-        if obs[0,0] > 4.7:
+        if self.obs[0,0] > 4.7:
             self.status[0] = 'east'
-        elif obs[0,0] < -4.7:
+        elif self.obs[0,0] < -4.7:
             self.status[0] = 'west'
-        elif obs[0,1] > 4.7:
+        elif self.obs[0,1] > 4.7:
             self.status[0] = 'north'
-        elif -6<=obs[0,1]<-4.7:
-            if np.absolute(obs[0,0])>self.exit_width/2.:
+        elif -6<=self.obs[0,1]<-4.7:
+            if np.absolute(self.obs[0,0])>self.exit_width/2.:
                 self.status[0] = 'south'
             else:
-                if np.absolute(obs[0,0])>(self.exit_width/2.-0.255): # robot_radius=0.25
+                if np.absolute(self.obs[0,0])>(self.exit_width/2.-0.255): # robot_radius=0.25
                     self.status[0] = 'door' # stuck at door
                 else:
                     self.status[0] = 'trapped' # through door
-        elif obs[0,1] < -6.25:
+        elif self.obs[0,1] < -6.25:
             self.status[0] = 'escaped'
         else:
             self.status[0] = 'trapped'
         # compute logger1's status
-        if obs[1,0] > 4.7:
+        if self.obs[1,0] > 4.7:
             self.status[1] = 'east'
-        elif obs[1,0] < -4.7:
+        elif self.obs[1,0] < -4.7:
             self.status[1] = 'west'
-        elif obs[1,1] > 4.7:
+        elif self.obs[1,1] > 4.7:
             self.status[1] = 'north'
-        elif -6<=obs[1,1]<-4.7:
-            if np.absolute(obs[1,0])>self.exit_width/2.:
+        elif -6<=self.obs[1,1]<-4.7:
+            if np.absolute(self.obs[1,0])>self.exit_width/2.:
                 self.status[1] = 'south'
             else:
-                if np.absolute(obs[1,0])>(self.exit_width/2.-0.255): # robot_radius=0.25
+                if np.absolute(self.obs[1,0])>(self.exit_width/2.-0.255): # robot_radius=0.25
                     self.status[1] = 'door' # stuck at door
                 else:
                     self.status[1] = 'trapped' # through door
-        elif obs[1,1] < -6.25:
+        elif self.obs[1,1] < -6.25:
             self.status[1] = 'escaped'
         else:
             self.status[1] = 'trapped'
@@ -259,8 +247,6 @@ class DoubleEscape:
         if self.link_states.pose[id_logger1].position.z > 0.1 or self.link_states.pose[id_logger1].position.z < 0.080:
             self.status[1] = 'blown'
         rospy.logdebug("\nEnd getting observation")
-
-        return obs
 
     def _take_action(self, actions):
         """
@@ -293,35 +279,33 @@ class DoubleEscape:
             done
         """
         rospy.logdebug("\nStart Computing Reward")
-        reward, done = np.zeros(2), False
-        if self.status.count('escaped')==2:
+        reward, done = -.1*np.ones(2), False
+        if any([
+                'north' in self.status,
+                'south' in self.status,
+                'west' in self.status,
+                'east' in self.status,
+                'door' in self.status,
+                'blown' in self.status
+        ]):
+            reward = -100*np.ones(2)
+            done = True
+        elif self.status.count('escaped')==2:
             reward = 100*np.ones(2)
             done = True
             rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
         else:
-            reward = 10*(self.prev_y - self.y) - 0.1
-            if any([
-                    'north' in self.status,
-                    'south' in self.status,
-                    'west' in self.status,
-                    'east' in self.status,
-                    'door' in self.status,
-                    'blown' in self.status
-            ]):
-                reward = -100.
-                done = True
-        # check if steps out of range
-        if self.step_counter>=self.max_episode_steps-1:
-            rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.step_counter))
+            if self.obs[0,1]<-5:
+                reward[0] = 10*(self.prev_obs[0,1]-self.obs[0,1]) - .1
+            if self.obs[1,1]<-5:
+                reward[1] = 10*(self.prev_obs[1,1]-self.obs[1,1]) - .1
+
         rospy.logdebug("End Computing Reward\n")
 
         return reward, done
                 
     def _model_states_callback(self, data):
         self.model_states = data
-
-    def _link_states_callback(self, data):
-        self.link_states = data
 
 
 if __name__ == "__main__":
