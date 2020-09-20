@@ -307,6 +307,8 @@ class DoubleEscape:
     def _model_states_callback(self, data):
         self.model_states = data
 
+    def _link_states_callback(self, data):
+        self.link_states = data
 
 if __name__ == "__main__":
     env = DoubleEscape()
