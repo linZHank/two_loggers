@@ -22,6 +22,8 @@ if __name__=='__main__':
     agent = DeepQNet(
         dim_obs=dim_obs,
         num_act=num_act,
+        lr=1e-3,
+        polyak=0.98
     )
     replay_buffer = ReplayBuffer(dim_obs=dim_obs, size=int(1e6))
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
@@ -31,8 +33,8 @@ if __name__=='__main__':
     summary_writer.set_as_default()
     # params
     batch_size = 128
-    update_freq = 100
-    update_after = 10000
+    train_freq = 100
+    train_after = 20000
     warmup_episodes = 500
     decay_period = 1500
     replay_buffer = ReplayBuffer(dim_obs=agent.dim_obs, size=int(1e6)) 
@@ -65,8 +67,8 @@ if __name__=='__main__':
         obs = n_obs.copy() # SUPER CRITICAL
         step_counter += 1
         # train one batch
-        if not step_counter%update_freq and step_counter>update_after:
-            for _ in range(update_freq):
+        if not step_counter%train_freq and step_counter>train_after:
+            for _ in range(train_freq):
                 minibatch = replay_buffer.sample_batch(batch_size=batch_size)
                 loss_q = agent.train_one_batch(data=minibatch)
                 print("\nloss_q: {}".format(loss_q))
