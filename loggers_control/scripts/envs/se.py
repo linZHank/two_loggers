@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Solo escape environment
+Solo escape environment with discrete action space
 """
 
 from __future__ import absolute_import, division, print_function
@@ -10,13 +10,12 @@ import os
 import numpy as np
 from numpy import pi
 from numpy import random
-import time
 
 import rospy
 import tf
 from std_srvs.srv import Empty
 from gazebo_msgs.srv import SetModelState, GetModelState
-from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
+from gazebo_msgs.msg import ModelState, ModelStates
 from geometry_msgs.msg import Pose, Twist
 
 
@@ -33,8 +32,9 @@ class SoloEscape:
         self.action_space_shape = ()
         self.action_reservoir = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
         # robot properties
-        self.spawning_pool = np.array([np.inf]*3)
         self.model_states = ModelStates()
+        self.obs = np.zeros(self.observation_space_shape)
+        self.prev_obs = np.zeros(self.observation_space_shape)
         self.status = 'deactivated'
         self.world_name = rospy.get_param('/world_name')
         self.exit_width = rospy.get_param('/exit_width')
@@ -85,13 +85,16 @@ class SoloEscape:
             obs = env.reset()
         """
         rospy.logdebug("\nStart environment reset")
+        # set init pose
+        self.resetWorld()
+        self.obs = self._set_pose(init_pose)
+        self.prev_obs = self.obs.copy()
         self.step_counter = 0
-        obs = self._set_pose(init_pose)
-        self.y = obs[1]
-        self.prev_y = obs[1]
+        # self.y = obs[1]
+        # self.prev_y = obs[1]
         rospy.logerr("\nEnvironment reset!!!")
 
-        return obs
+        return self.obs
 
     def step(self, action_index):
         """
@@ -101,16 +104,17 @@ class SoloEscape:
         rospy.logdebug("\nStart Environment Step")
         action = self.action_reservoir[action_index]
         self._take_action(action)
-        obs = self._get_observation()
-        self.y = obs[1]
+        self._get_observation()
         # compute reward and done
         reward, done = self._compute_reward()
-        self.prev_y = self.y.copy()
+        self.prev_obs = self.obs.copy()
         info = self.status
         self.step_counter += 1 # make sure inc step counter before compute reward
+        if self.step_counter>=self.max_episode_steps:
+            rospy.logwarn("Step: {}, \nMax step reached...".format(self.step_counter))
         rospy.logdebug("End Environment Step\n")
 
-        return obs, reward, done, info
+        return self.obs, reward, done, info
 
     def _set_pose(self, pose=None):
         """
@@ -124,10 +128,10 @@ class SoloEscape:
         logger_pose.model_name = "logger"
         logger_pose.reference_frame = "world"
         logger_pose.pose.position.z = 0.1
-        if pose==None: # random pose
+        if pose is None: # random pose
             x = random.uniform(-4, 4)
             y = random.uniform(-4, 4)
-            quat = tf.transformations.quaternion_from_euler(0, 0, random.uniform(-pi, pi))
+            th = random.uniform(-pi, pi)
         else: # inialize accordingly
             assert pose.shape==(3,)
             assert pose[0] <= 4.5
@@ -135,30 +139,23 @@ class SoloEscape:
             assert -pi<=pose[2]<= pi # theta within [-pi,pi]
             x = pose[0]
             y = pose[1]
-            quat = tf.transformations.quaternion_from_euler(0, 0, pose[2])
-
+            th = pose[2]
+        quat = tf.transformations.quaternion_from_euler(0, 0, th)
         logger_pose.pose.position.x = x
         logger_pose.pose.position.y = y
         logger_pose.pose.orientation.z = quat[2]
         logger_pose.pose.orientation.w = quat[3]
         # set pose until on spot
         self.unpausePhysics()
-        obs = self._get_observation()
         zero_vel = np.zeros(2)
-        while any([
-                obs[2]>1e-3, 
-                obs[3]>1e-3, 
-                obs[-1]>1e-3,
-                np.abs(obs[0]-x)>1e-3,
-                np.abs(obs[1]-y)>1e-3
-        ]):
-            self._take_action(zero_vel)
-            self.setModelState(model_state=logger_pose)
-            obs = self._get_observation()
+        self._take_action(zero_vel)
+        self.setModelState(model_state=logger_pose)
+        self._take_action(zero_vel)
+        self._get_observation()
         self.pausePhysics()
         rospy.logdebug("\nEND setting pose...")
 
-        return obs
+        return self.obs
 
     def _get_observation(self):
         """
@@ -167,7 +164,6 @@ class SoloEscape:
         Returns:
             obs: array([x,y,xdot,ydot,theta,thetadot])
         """
-        obs = np.zeros(self.observation_space_shape[0])
         id_logger = self.model_states.name.index("logger")
         logger_pose = self.model_states.pose[id_logger]
         logger_twist = self.model_states.twist[id_logger]
@@ -178,33 +174,31 @@ class SoloEscape:
             logger_pose.orientation.w
         ]
         euler = tf.transformations.euler_from_quaternion(quat)
-        obs[0] = logger_pose.position.x
-        obs[1] = logger_pose.position.y
-        obs[2] = logger_twist.linear.x
-        obs[3] = logger_twist.linear.y
-        obs[4] = euler[2]
-        obs[5] = logger_twist.angular.z
+        self.obs[0] = logger_pose.position.x
+        self.obs[1] = logger_pose.position.y
+        self.obs[2] = logger_twist.linear.x
+        self.obs[3] = logger_twist.linear.y
+        self.obs[4] = euler[2]
+        self.obs[5] = logger_twist.angular.z
         # update status
-        if obs[0] > 4.7:
+        if self.obs[0] > 4.7:
             self.status = "east"
-        elif obs[0] < -4.7:
+        elif self.obs[0] < -4.7:
             self.status = "west"
-        elif obs[1] > 4.7:
+        elif self.obs[1] > 4.7:
             self.status = "north"
-        elif -6<=obs[1]<=-4.7:
-            if np.absolute(obs[0]) > self.exit_width/2.:
+        elif -6<=self.obs[1]<=-4.7:
+            if np.absolute(self.obs[0]) > self.exit_width/2.:
                 self.status = "south"
             else:
-                if np.absolute(obs[0]) > (self.exit_width/2.-0.255): # robot_radius=0.25
+                if np.absolute(self.obs[0]) > (self.exit_width/2.-0.255): # robot_radius=0.25
                     self.status = 'door' # stuck at door
                 else:
                     self.status = "trapped" # tunneling through door
-        elif obs[1] < -6.25:
+        elif self.obs[1] < -6.25:
             self.status = "escaped"
         else:
             self.status = "trapped"
-
-        return obs
 
     def _take_action(self, action):
         """
@@ -233,21 +227,18 @@ class SoloEscape:
             done
         """
         rospy.logdebug("\nStart Computing Reward")
-        reward, done = 0, False
+        reward, done = -.1, False
         if self.status == 'escaped':
             reward = 100.
             done = True
             rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
         else:
-            reward =  10*(self.prev_y - self.y) - 0.1
             if self.status == 'trapped':
-                reward = 10*(self.prev_y - self.y) - 0.1
+                if self.obs[1]<-5:
+                    reward = 10*(self.prev_obs[1] - self.obs[1]) - 0.1
             else:
                 reward = -100.
                 done = True
-        # check if steps out of range
-        if self.step_counter>=self.max_episode_steps-1:
-            rospy.logwarn("Step: {}, \nMax step reached, env will reset...".format(self.step_counter))
         rospy.logdebug("End Computing Reward\n")
 
         return reward, done
