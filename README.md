@@ -36,6 +36,8 @@ source /opt/ros/melodic/setup.bash
 source /home/linzhank/ros_ws/devel/setup.bash
 ```
 > Replace `melodic` with `kinetic` in the lines above if you are using ROS-Kinetic.
+> You may want to copy all the contents in `two_loggers/loggers_gazebo/models/grey_wall_10/grew_wall` to `~/.gazebo/models/` if using Ubuntu 16.04 and ROS-Kinetic. e.g. `cp -a ~/ros_ws/src/two_loggers/loggers_gazebo/models/grey_wall_10/ ~/.gazebo/models/`
+
 ## Environments
 Two environments are available right now: `this_repo/loggers_control/scripts/envs/se.py` and `this_repo/loggers_control/scripts/envs/de.py` both are with discrete action space.
 
