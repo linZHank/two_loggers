@@ -28,7 +28,6 @@ if __name__=='__main__':
     replay_buffer = ReplayBuffer(dim_obs=dim_obs, size=int(1e6))
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
     # tensorboard
-    train_loss = tf.keras.metrics.Mean('train_loss', dtype=tf.float32)
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()
     # params
@@ -37,7 +36,7 @@ if __name__=='__main__':
     train_after = 20000
     warmup_episodes = 500
     decay_period = 1500
-    replay_buffer = ReplayBuffer(dim_obs=agent.dim_obs, size=int(1e6)) 
+    replay_buffer = ReplayBuffer(dim_obs=agent.dim_obs, size=int(1e6))
     total_steps = int(5e6)
     episodic_returns = []
     sedimentary_returns = []
@@ -50,7 +49,7 @@ if __name__=='__main__':
     start_time = time.time()
     # start training
     while step_counter <= total_steps:
-        while 'blown' in env.status: 
+        while 'blown' in env.status:
             obs, ep_ret, ep_len = env.reset(), 0, 0
         s0 = obs[[0,-1]].flatten()
         s1 = obs[[1,-1]].flatten()
@@ -88,14 +87,14 @@ if __name__=='__main__':
                 if not os.path.exists(os.path.dirname(model_path)):
                     os.makedirs(os.path.dirname(model_path))
                 agent.q.q_net.save(model_path)
-                # Save returns 
+                # Save returns
                 np.save(os.path.join(model_dir, 'episodic_returns.npy'), episodic_returns)
                 np.save(os.path.join(model_dir, 'sedimentary_returns.npy'), sedimentary_returns)
                 np.save(os.path.join(model_dir, 'episodic_steps.npy'), episodic_steps)
                 with open(os.path.join(model_dir, 'training_time.txt'), 'w') as f:
                     f.write("{}".format(time.time()-start_time))
             # reset env
-            obs, done, ep_ret, ep_len = env.reset(), False, 0, 0 
+            obs, done, ep_ret, ep_len = env.reset(), False, 0, 0
             agent.linear_epsilon_decay(episode_counter, decay_period, warmup_episodes)
 
     # plot returns
@@ -103,5 +102,3 @@ if __name__=='__main__':
     fig.suptitle('Averaged Returns')
     ax.plot(sedimentary_returns)
     plt.show()
-
-

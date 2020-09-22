@@ -9,6 +9,7 @@ import time
 from datetime import datetime
 import matplotlib.pyplot as plt
 import rospy
+import tensorflow as tf
 
 from envs.de import DoubleEscape
 from agents.ppo import PPOBuffer, ProximalPolicyOptimization
@@ -27,6 +28,10 @@ if __name__=='__main__':
     )
     replay_buffer = PPOBuffer(dim_obs=dim_obs, dim_act=1, size=5000, gamma=0.99, lam=0.97)
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
+    # tensorboard
+    train_loss = tf.keras.metrics.Mean('train_loss', dtype=tf.float32)
+    summary_writer = tf.summary.create_file_writer(model_dir)
+    summary_writer.set_as_default()
     # paramas
     steps_per_epoch = replay_buffer.max_size
     epochs = 400
@@ -78,6 +83,7 @@ if __name__=='__main__':
             rospy.loginfo(
                 "\n----\nTotalSteps: {} Episode: {}, EpReturn: {}, EpLength: {}, Succeeded: {}\n----\n".format(step_counter, episode_counter, ep_ret, ep_len, success_counter)
             )
+            tf.summary.scalar("episode return", ep_ret, step=episode_counter)
             # update actor-critic
             if epoch_ended:
                 loss_pi, loss_v, loss_info = agent.train(replay_buffer.get(), iter_a, iter_c)
@@ -95,7 +101,7 @@ if __name__=='__main__':
                     if not os.path.exists(os.path.dirname(val_net_path)):
                         os.makedirs(os.path.dirname(val_net_path))
                     agent.critic.val_net.save(val_net_path)
-                    # Save returns 
+                    # Save returns
                     np.save(os.path.join(model_dir, 'episodic_returns.npy'), episodic_returns)
                     np.save(os.path.join(model_dir, 'sedimentary_returns.npy'), sedimentary_returns)
                     np.save(os.path.join(model_dir, 'episodic_steps.npy'), episodic_steps)
@@ -109,4 +115,3 @@ if __name__=='__main__':
     fig.suptitle('Averaged Returns')
     ax.plot(sedimentary_returns)
     plt.show()
-

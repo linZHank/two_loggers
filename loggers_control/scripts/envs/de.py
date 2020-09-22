@@ -29,7 +29,7 @@ class DoubleEscape:
         # env properties
         self.rate = rospy.Rate(1000)
         self.max_episode_steps = 1000
-        self.observation_space_shape = (3,6) # {r1, r2, s}: x, y, x_d, y_d, th, th_d 
+        self.observation_space_shape = (3,6) # {r1, r2, s}: x, y, x_d, y_d, th, th_d
         self.action_space_shape = ()
         self.action_reservoir = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
         # robot properties
@@ -190,7 +190,7 @@ class DoubleEscape:
             link_obs[4] = euler[2]
             link_obs[5] = twist.angular.z
             return link_obs
-        
+
         rospy.logdebug("\nStart getting observation")
         # identify index of logger0, log, logger1
         id_logger0 = self.link_states.name.index("double_logger::logger0-chassis")
@@ -263,7 +263,7 @@ class DoubleEscape:
         cmd_vel1.linear.x = actions[1,0]
         cmd_vel1.angular.z = actions[1,1]
         self.unpausePhysics()
-        for _ in range(50): 
+        for _ in range(50):
             self.cmd_vel0_pub.publish(cmd_vel0)
             self.cmd_vel1_pub.publish(cmd_vel1)
             self.rate.sleep()
@@ -286,7 +286,6 @@ class DoubleEscape:
                 'west' in self.status,
                 'east' in self.status,
                 'door' in self.status,
-                'blown' in self.status
         ]):
             reward = -100*np.ones(2)
             done = True
@@ -303,7 +302,7 @@ class DoubleEscape:
         rospy.logdebug("End Computing Reward\n")
 
         return reward, done
-                
+
     def _model_states_callback(self, data):
         self.model_states = data
 
