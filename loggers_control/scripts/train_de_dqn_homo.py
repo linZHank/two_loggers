@@ -36,7 +36,6 @@ if __name__=='__main__':
     train_after = 20000
     warmup_episodes = 500
     decay_period = 1500
-    replay_buffer = ReplayBuffer(dim_obs=agent.dim_obs, size=int(1e6))
     total_steps = int(5e6)
     episodic_returns = []
     sedimentary_returns = []

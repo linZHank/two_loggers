@@ -36,7 +36,7 @@ if __name__=='__main__':
     )
     replay_buffer_0 = ReplayBuffer(dim_obs=dim_obs, size=int(1e6))
     replay_buffer_1 = ReplayBuffer(dim_obs=dim_obs, size=int(1e6))
-    model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
+    model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent_0.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
     # tensorboard
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()
@@ -46,7 +46,6 @@ if __name__=='__main__':
     train_after = 20000
     warmup_episodes = 500
     decay_period = 1500
-    replay_buffer = ReplayBuffer(dim_obs=agent.dim_obs, size=int(1e6)) 
     total_steps = int(5e6)
     episodic_returns = []
     sedimentary_returns = []
@@ -112,7 +111,8 @@ if __name__=='__main__':
                     f.write("{}".format(time.time()-start_time))
             # reset env
             obs, done, ep_ret, ep_len = env.reset(), False, 0, 0 
-            agent.linear_epsilon_decay(episode_counter, decay_period, warmup_episodes)
+            agent_0.linear_epsilon_decay(episode_counter, decay_period, warmup_episodes)
+            agent_1.linear_epsilon_decay(episode_counter, decay_period, warmup_episodes)
 
     # plot returns
     fig, ax = plt.subplots(figsize=(8, 6))
