@@ -20,7 +20,7 @@ from gazebo_msgs.msg import ModelState, LinkState, ModelStates, LinkStates
 from geometry_msgs.msg import Pose, Twist
 
 
-class DoubleEscape:
+class DoubleEscape(object):
 
     def __init__(self):
         self.env_type = 'discrete'
