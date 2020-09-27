@@ -23,7 +23,7 @@ if __name__=='__main__':
         dim_obs=dim_obs,
         num_act=num_act,
         lr=1e-3,
-        polyak=0.98
+        polyak=0.99
     )
     replay_buffer = ReplayBuffer(dim_obs=dim_obs, size=int(1e6))
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
