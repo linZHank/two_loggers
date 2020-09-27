@@ -22,21 +22,21 @@ if __name__=='__main__':
     agent = DeepQNet(
         dim_obs=dim_obs,
         num_act=num_act,
-        lr=1e-3,
-        polyak=0.99
+        lr=1e-4,
+        polyak=-1,
     )
-    replay_buffer = ReplayBuffer(dim_obs=dim_obs, size=int(1e6))
+    replay_buffer = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
     # tensorboard
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()
     # params
-    batch_size = 128
+    batch_size = 1024
     train_freq = 100
     train_after = 20000
     warmup_episodes = 500
     decay_period = 1500
-    total_steps = int(5e6)
+    total_steps = int(3e6)
     episodic_returns = []
     sedimentary_returns = []
     episodic_steps = []

@@ -79,13 +79,14 @@ class Critic(tf.keras.Model):
 
 class DeepQNet(tf.keras.Model):
 
-    def __init__(self, dim_obs, num_act, activation='relu', gamma = 0.99, lr=3e-4, polyak=0.995, **kwargs):
+    def __init__(self, dim_obs, num_act, activation='relu', gamma=0.99, lr=3e-4, polyak=0.995, update_freq=8000, **kwargs):
         super(DeepQNet, self).__init__(name='dqn', **kwargs)
         # params
         self.dim_obs = dim_obs
         self.num_act = num_act
         self.gamma = gamma # discount rate
         self.polyak = polyak
+        self.update_freq = update_freq
         self.init_eps = 1.
         self.final_eps = .1
         # model
@@ -94,6 +95,7 @@ class DeepQNet(tf.keras.Model):
         self.optimizer = tf.keras.optimizers.Adam(lr=lr)
         # variable
         self.epsilon = self.init_eps
+        self.update_counter = 0
 
     def linear_epsilon_decay(self, episode, decay_period, warmup_episodes):
         episodes_left = decay_period + warmup_episodes - episode
@@ -117,13 +119,19 @@ class DeepQNet(tf.keras.Model):
             loss_q = tf.keras.losses.MSE(y_true=targ_qval, y_pred=pred_qval)
         grads = tape.gradient(loss_q, self.q.trainable_weights)
         self.optimizer.apply_gradients(zip(grads, self.q.trainable_weights))
-        # Polyak average update target Q-nets
-        q_weights_update = []
-        for w_q, w_targ_q in zip(self.q.get_weights(), self.targ_q.get_weights()):
-            w_q_upd = self.polyak*w_targ_q
-            w_q_upd = w_q_upd + (1 - self.polyak)*w_q
-            q_weights_update.append(w_q_upd)
-        self.targ_q.set_weights(q_weights_update)
+        self.update_counter += 1
+        if self.polyak > 0:
+            # Polyak average update target Q-nets
+            q_weights_update = []
+            for w_q, w_targ_q in zip(self.q.get_weights(), self.targ_q.get_weights()):
+                w_q_upd = self.polyak*w_targ_q
+                w_q_upd = w_q_upd + (1 - self.polyak)*w_q
+                q_weights_update.append(w_q_upd)
+            self.targ_q.set_weights(q_weights_update)
+        else:
+            if not self.update_counter%self.update_freq:
+                self.targ_q.set_weights(self.q.get_weights())
+                print("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTarget Q-net updated\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
 
         return loss_q
 
