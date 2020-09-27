@@ -18,7 +18,7 @@ if __name__=='__main__':
         dim_obs=dim_obs,
         num_act=num_act
     )
-    q_net_path = './saved_models/double_escape_discrete/dqn/2020-09-14-14-00/25000'
+    q_net_path = './saved_models/double_escape_discrete/dqn/2020-09-21-21-10/20000'
     # load models
     agent.q.q_net = tf.keras.models.load_model(q_net_path)
     agent.epsilon = 0

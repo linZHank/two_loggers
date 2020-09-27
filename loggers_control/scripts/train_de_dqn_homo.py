@@ -22,8 +22,7 @@ if __name__=='__main__':
     agent = DeepQNet(
         dim_obs=dim_obs,
         num_act=num_act,
-        lr=1e-4,
-        polyak=-1,
+        lr=5e-5,
     )
     replay_buffer = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
@@ -31,12 +30,12 @@ if __name__=='__main__':
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()
     # params
-    batch_size = 1024
+    batch_size = 8192
     train_freq = 100
     train_after = 20000
     warmup_episodes = 500
     decay_period = 1500
-    total_steps = int(3e6)
+    total_steps = int(4e6)
     episodic_returns = []
     sedimentary_returns = []
     episodic_steps = []
@@ -81,7 +80,7 @@ if __name__=='__main__':
             rospy.loginfo("\n====\nEpisode: {} \nEpisodeLength: {} \nTotalSteps: {} \nEpisodeReturn: {} \nSucceeded: {} \nSedimentaryReturn: {} \nTimeElapsed: {} \n====\n".format(episode_counter, ep_len, step_counter, ep_ret, success_counter, sedimentary_returns[-1], time.time()-start_time))
             tf.summary.scalar("episode return", ep_ret, step=episode_counter)
             # save model
-            if not episode_counter%save_freq or step_counter==total_steps:
+            if not episode_counter%save_freq:
                 model_path = os.path.join(model_dir, str(episode_counter))
                 if not os.path.exists(os.path.dirname(model_path)):
                     os.makedirs(os.path.dirname(model_path))
@@ -92,9 +91,22 @@ if __name__=='__main__':
                 np.save(os.path.join(model_dir, 'episodic_steps.npy'), episodic_steps)
                 with open(os.path.join(model_dir, 'training_time.txt'), 'w') as f:
                     f.write("{}".format(time.time()-start_time))
+            if sedimentary_returns[-1]>150:
+                print("\nSolved at episode {}, total step {}: average reward: {:.2f}!".format(episode_counter, step_counter, sedimentary_returns[-1]))
+                break
             # reset env
             obs, done, ep_ret, ep_len = env.reset(), False, 0, 0
             agent.linear_epsilon_decay(episode_counter, decay_period, warmup_episodes)
+
+    # save final results
+    model_path = os.path.join(model_dir, str(episode_counter))
+    agent.q.q_net.save(model_path)
+    # Save returns
+    np.save(os.path.join(model_dir, 'episodic_returns.npy'), episodic_returns)
+    np.save(os.path.join(model_dir, 'sedimentary_returns.npy'), sedimentary_returns)
+    np.save(os.path.join(model_dir, 'episodic_steps.npy'), episodic_steps)
+    with open(os.path.join(model_dir, 'training_time.txt'), 'w') as f:
+        f.write("{}".format(time.time()-start_time))
 
     # plot returns
     fig, ax = plt.subplots(figsize=(8, 6))

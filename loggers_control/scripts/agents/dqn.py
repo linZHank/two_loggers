@@ -130,7 +130,7 @@ class DeepQNet(tf.keras.Model):
             self.targ_q.set_weights(q_weights_update)
         else:
             if not self.update_counter%self.update_freq:
-                self.targ_q.set_weights(self.q.get_weights())
+                self.targ_q.q_net.set_weights(self.q.q_net.get_weights())
                 print("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTarget Q-net updated\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
 
         return loss_q
