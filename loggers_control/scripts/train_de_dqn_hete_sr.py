@@ -25,28 +25,28 @@ if __name__=='__main__':
     agent_0 = DeepQNet(
         dim_obs=dim_obs,
         num_act=num_act,
-        lr=5e-4,
-        polyak=0.99
+        lr=5e-5,
     )
     agent_1 = DeepQNet(
         dim_obs=dim_obs,
         num_act=num_act,
-        lr=5e-4,
-        polyak=0.99
+        lr=5e-5,
     )
-    replay_buffer_0 = ReplayBuffer(dim_obs=dim_obs, size=int(1e6))
-    replay_buffer_1 = ReplayBuffer(dim_obs=dim_obs, size=int(1e6))
+    replay_buffer_0 = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
+    replay_buffer_1 = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent_0.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
     # tensorboard
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()
     # params
-    batch_size = 1024
+    batch_size = 8192
+    switch_flag = False # this is hete unique
+    switch_freq = 10 # this is hete unique
     train_freq = 100
     train_after = 20000
     warmup_episodes = 500
     decay_period = 1500
-    total_steps = int(5e6)
+    total_steps = int(4e6)
     episodic_returns = []
     sedimentary_returns = []
     episodic_steps = []
@@ -76,13 +76,18 @@ if __name__=='__main__':
         step_counter += 1
         # train one batch
         if not step_counter%train_freq and step_counter>train_after:
-            for _ in range(train_freq):
-                minibatch_0 = replay_buffer_0.sample_batch(batch_size=batch_size)
-                loss_q_0 = agent_0.train_one_batch(data=minibatch_0)
-                print("\nloss_q0: {}".format(loss_q_0))
-                minibatch_1 = replay_buffer_1.sample_batch(batch_size=batch_size)
-                loss_q_1 = agent_1.train_one_batch(data=minibatch_1)
-                print("\nloss_q1: {}".format(loss_q_1))
+            if not step_counter%(train_freq*switch_freq):
+                switch_flag = not switch_flag
+            if switch_flag:
+                for _ in range(train_freq):
+                    minibatch_0 = replay_buffer_0.sample_batch(batch_size=batch_size)
+                    loss_q_0 = agent_0.train_one_batch(data=minibatch_0)
+                    print("\nloss_q0: {}".format(loss_q_0))
+            else:
+                for _ in range(train_freq):
+                    minibatch_1 = replay_buffer_1.sample_batch(batch_size=batch_size)
+                    loss_q_1 = agent_1.train_one_batch(data=minibatch_1)
+                    print("\nloss_q1: {}".format(loss_q_1))
         # handle episode termination
         if done or (ep_len==env.max_episode_steps):
             episode_counter +=1
@@ -109,10 +114,24 @@ if __name__=='__main__':
                 np.save(os.path.join(model_dir, 'episodic_steps.npy'), episodic_steps)
                 with open(os.path.join(model_dir, 'training_time.txt'), 'w') as f:
                     f.write("{}".format(time.time()-start_time))
+            if sedimentary_returns[-1]>150:
+                print("\nSolved at episode {}, total step {}: average reward: {:.2f}!".format(episode_counter, step_counter, sedimentary_returns[-1]))
+                break
             # reset env
             obs, done, ep_ret, ep_len = env.reset(), False, 0, 0 
             agent_0.linear_epsilon_decay(episode_counter, decay_period, warmup_episodes)
             agent_1.linear_epsilon_decay(episode_counter, decay_period, warmup_episodes)
+
+    # save final results
+    model_path_0 = os.path.join(model_dir, 'agent_0', str(episode_counter))
+    agent_0.q.q_net.save(model_path_0)
+    model_path_1 = os.path.join(model_dir, 'agent_1', str(episode_counter))
+    agent_1.q.q_net.save(model_path_1)
+    np.save(os.path.join(model_dir, 'episodic_returns.npy'), episodic_returns)
+    np.save(os.path.join(model_dir, 'sedimentary_returns.npy'), sedimentary_returns)
+    np.save(os.path.join(model_dir, 'episodic_steps.npy'), episodic_steps)
+    with open(os.path.join(model_dir, 'training_time.txt'), 'w') as f:
+        f.write("{}".format(time.time()-start_time))
 
     # plot returns
     fig, ax = plt.subplots(figsize=(8, 6))
