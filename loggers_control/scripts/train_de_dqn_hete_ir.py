@@ -25,12 +25,12 @@ if __name__=='__main__':
     agent_0 = DeepQNet(
         dim_obs=dim_obs,
         num_act=num_act,
-        lr=5e-5,
+        lr=1e-4,
     )
     agent_1 = DeepQNet(
         dim_obs=dim_obs,
         num_act=num_act,
-        lr=5e-5,
+        lr=1e-4,
     )
     replay_buffer_0 = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
     replay_buffer_1 = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
@@ -39,7 +39,7 @@ if __name__=='__main__':
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()
     # params
-    batch_size = 8192
+    batch_size = 1024
     switch_flag = False # this is hete unique
     switch_freq = 10 # this is hete unique
     train_freq = 100
@@ -60,13 +60,13 @@ if __name__=='__main__':
     while step_counter <= total_steps:
         while 'blown' in env.status: 
             obs, ep_ret, ep_len = env.reset(), np.zeros(2), 0
-        s0 = obs[[0,-1]].flatten()
-        s1 = obs[[1,-1]].flatten()
+        s0 = obs[[0,1]].flatten()
+        s1 = obs[[1,0]].flatten()
         a0 = np.squeeze(agent_0.act(np.expand_dims(s0, axis=0)))
         a1 = np.squeeze(agent_1.act(np.expand_dims(s1, axis=0)))
         n_obs, rew, done, info = env.step(np.array([int(a0), int(a1)]))
-        n_s0 = n_obs[[0,-1]].flatten()
-        n_s1 = n_obs[[1,-1]].flatten()
+        n_s0 = n_obs[[0,1]].flatten()
+        n_s1 = n_obs[[1,0]].flatten()
         rospy.logdebug("\nstate: {} \naction: {} \nreward: {} \ndone: {} \nn_state: {}".format(obs, (a0, a1), rew, done, n_obs))
         ep_ret += rew
         ep_len += 1
@@ -75,9 +75,8 @@ if __name__=='__main__':
         obs = n_obs.copy() # SUPER CRITICAL
         step_counter += 1
         # train one batch
-        if not step_counter%train_freq and step_counter>train_after:
-            if not step_counter%(train_freq*switch_freq):
-                switch_flag = not switch_flag
+        if step_counter>train_after:
+            switch_flag = not switch_flag
             if switch_flag:
                 for _ in range(train_freq):
                     minibatch_0 = replay_buffer_0.sample_batch(batch_size=batch_size)
