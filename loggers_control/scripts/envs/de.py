@@ -22,10 +22,13 @@ from geometry_msgs.msg import Pose, Twist
 
 class DoubleEscape(object):
 
-    def __init__(self):
+    def __init__(self, debug=False):
         self.env_type = 'discrete'
         self.name = 'double_escape_discrete'
-        rospy.init_node(self.name, anonymous=True, log_level=rospy.INFO)
+        if debug:
+            rospy.init_node(self.name, anonymous=True, log_level=rospy.DEBUG)
+        else:
+            rospy.init_node(self.name, anonymous=True, log_level=rospy.INFO)
         # env properties
         self.rate = rospy.Rate(1000)
         self.max_episode_steps = 1000
@@ -316,11 +319,16 @@ if __name__ == "__main__":
     ep, st = 0, 0
     o = env.reset()
     for t in range(num_steps):
+        s0 = o[[0,1]].flatten()
+        s1 = o[[1,0]].flatten()
         a = np.random.randint(0,4,2)
-        o, r, d, i = env.step(a)
+        o_, r, d, i = env.step(a)
+        s0_ = o_[[0,1]].flatten()
+        s1_ = o_[[1,0]].flatten()
         st += 1
-        rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, act: {}, reward: {}, done: {}, info: {}".format(ep+1, st, o, a, r, d, i))
+        rospy.loginfo("\n-\nepisode: {}, step: {} \nobs: {}, act: {}, reward: {}, done: {}, info: {} \nstate_0: {} \nstate_1: {} \nstate_0_: {} \nstate_1_: {}".format(ep+1, st, o, a, r, d, i, s0, s1, s0_, s1_))
+        o = o_.copy()
         if d:
             ep += 1
             st = 0
-            obs = env.reset()
+            o = env.reset()
