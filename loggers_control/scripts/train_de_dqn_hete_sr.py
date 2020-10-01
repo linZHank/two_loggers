@@ -75,7 +75,7 @@ if __name__=='__main__':
         obs = n_obs.copy() # SUPER CRITICAL
         step_counter += 1
         # train one batch
-        if step_counter>train_after:
+        if not step_counter%train_freq and step_counter>train_after:
             switch_flag = not switch_flag
             if switch_flag:
                 for _ in range(train_freq):
