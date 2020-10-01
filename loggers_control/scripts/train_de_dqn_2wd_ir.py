@@ -89,7 +89,7 @@ if __name__=='__main__':
                     loss_q_1 = agent_1.train_one_batch(data=minibatch_1)
                     print("\nloss_q1: {}".format(loss_q_1))
         # handle episode termination
-        if done or (ep_len==env.max_episode_steps):
+        if any([done, ep_len==env.max_episode_steps, 'blown' in env.status]):
             episode_counter += 1
             episodic_returns.append(ep_ret)
             sedimentary_returns.append(np.sum(np.array(episodic_returns), axis=0)/episode_counter)
