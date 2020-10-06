@@ -25,7 +25,7 @@ if __name__=='__main__':
         lr=5e-5,
     )
     replay_buffer = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
-    model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
+    model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, 'homo', datetime.now().strftime("%Y-%m-%d-%H-%M"))
     # tensorboard
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()

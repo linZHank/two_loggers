@@ -34,7 +34,7 @@ if __name__=='__main__':
     )
     replay_buffer_0 = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
     replay_buffer_1 = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
-    model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent_0.name, datetime.now().strftime("%Y-%m-%d-%H-%M"))
+    model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent_0.name, 'hete_ir', datetime.now().strftime("%Y-%m-%d-%H-%M"))
     # tensorboard
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()
@@ -88,7 +88,7 @@ if __name__=='__main__':
                     loss_q_1 = agent_1.train_one_batch(data=minibatch_1)
                     print("\nloss_q1: {}".format(loss_q_1))
         # handle episode termination
-        if done or (ep_len==env.max_episode_steps):
+        if any([done, ep_len==env.max_episode_steps, 'blown' in env.status]):
             episode_counter += 1
             episodic_returns.append(ep_ret)
             sedimentary_returns.append(np.sum(np.array(episodic_returns), axis=0)/episode_counter)
