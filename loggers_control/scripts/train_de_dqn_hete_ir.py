@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-Train identical loggers in double_escape env using heterogeneous DQN with shared reward
+Train identical loggers in double_escape env using heterogeneous DQN with independent reward
 """
 
 from __future__ import absolute_import, division, print_function

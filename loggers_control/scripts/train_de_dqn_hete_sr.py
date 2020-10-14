@@ -32,14 +32,14 @@ if __name__=='__main__':
         num_act=num_act,
         lr=1e-4,
     )
-    replay_buffer_0 = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
-    replay_buffer_1 = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
+    replay_buffer_0 = ReplayBuffer(dim_obs=dim_obs, size=int(3e6))
+    replay_buffer_1 = ReplayBuffer(dim_obs=dim_obs, size=int(3e6))
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent_0.name, 'hete_sr', datetime.now().strftime("%Y-%m-%d-%H-%M"))
     # tensorboard
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()
     # params
-    batch_size = 1024
+    batch_size = 4096
     switch_flag = False # this is hete unique
     switch_freq = 10 # this is hete unique
     train_freq = 100
