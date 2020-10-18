@@ -26,12 +26,12 @@ if __name__=='__main__':
     agent_0 = DeepQNet(
         dim_obs=dim_obs_0,
         num_act=num_act,
-        lr=5e-5,
+        lr=1e-4,
     )
     agent_1 = DeepQNet(
         dim_obs=dim_obs_1,
         num_act=num_act,
-        lr=5e-5,
+        lr=1e-4,
     )
     replay_buffer_0 = ReplayBuffer(dim_obs=dim_obs_0, size=int(2e6))
     replay_buffer_1 = ReplayBuffer(dim_obs=dim_obs_1, size=int(2e6))
