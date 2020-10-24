@@ -12,19 +12,26 @@ from agents.dqn import DeepQNet
 
 if __name__=='__main__':
     env = DoubleEscape()
-    dim_obs = env.observation_space_shape[1]*2
+    dim_obs_0 = env.observation_space_shape[1]*2
+    dim_obs_1 = env.observation_space_shape[1]
     num_act = env.action_reservoir.shape[0]
-    agent = DeepQNet(
-        dim_obs=dim_obs,
+    agent_0 = DeepQNet(
+        dim_obs=dim_obs_0,
         num_act=num_act
     )
-    q_net_path = './saved_models/double_escape_discrete/dqn/homo/2020-09-21-21-10/27000'
+    agent_1 = DeepQNet(
+        dim_obs=dim_obs_1,
+        num_act=num_act
+    )
     # load models
-    agent.q.q_net = tf.keras.models.load_model(q_net_path)
-    agent.epsilon = 0
+    q_net_path_0 = './saved_models/double_escape_discrete/dqn/asyn_ir/2020-10-06-00-52/agent_0/23000'
+    q_net_path_1 = './saved_models/double_escape_discrete/dqn/asyn_ir/2020-10-06-00-52/agent_1/23000'
+    agent_0.q.q_net = tf.keras.models.load_model(q_net_path_0)
+    agent_1.q.q_net = tf.keras.models.load_model(q_net_path_1)
+    agent_0.epsilon = 0
+    agent_1.epsilon = 0
     num_episodes = 1000
     ep = 0
-    blown_counter = 0
     success_counter = 0
     lead_counter = np.zeros(2)
     qvals_mae = np.zeros(num_episodes)
@@ -33,21 +40,19 @@ if __name__=='__main__':
     while ep < num_episodes: 
         while 'blown' in env.status: 
             o, d, t = env.reset(), False, 0
-        s0 = o[[0,-1]].flatten()
-        s1 = o[[1,-1]].flatten()
-        a0 = np.squeeze(agent.act(np.expand_dims(s0, axis=0)))
-        a1 = np.squeeze(agent.act(np.expand_dims(s1, axis=0)))
-        qval0 = np.max(agent.q.q_net(np.expand_dims(s0,axis=0)))
-        qval1 = np.max(agent.q.q_net(np.expand_dims(s1,axis=0)))
+        s0 = o[[0,1]].flatten()
+        s1 = o[[1]].flatten()
+        a0 = np.squeeze(agent_0.act(np.expand_dims(s0, axis=0)))
+        a1 = np.squeeze(agent_1.act(np.expand_dims(s1, axis=0)))
+        qval0 = np.max(agent_0.q.q_net(np.expand_dims(s0,axis=0)))
+        qval1 = np.max(agent_1.q.q_net(np.expand_dims(s1,axis=0)))
         qvals_diff.append(np.absolute(qval0-qval1))
         n_o, r, d, i = env.step(np.array([int(a0), int(a1)]))
-        n_s0 = n_o[[0,-1]].flatten()
-        n_s1 = n_o[[1,-1]].flatten()
+        n_s0 = n_o[[0,1]].flatten()
+        n_s1 = n_o[[1]].flatten()
         t += 1
         o = n_o.copy()
         if any([d, t==env.max_episode_steps, 'blown' in env.status]):
-            if t==1:
-                blown_counter += 1
             if i.count('escaped')==2:
                 success_counter += 1
                 if o[0,1] < o[1,1]:
@@ -62,4 +67,4 @@ if __name__=='__main__':
     qvals_mae_mean = np.mean(qvals_mae)
     qvals_mae_std = np.std(qvals_mae)
     print("MeanQValMAE: {}, StdQValMAE: {}".format(qvals_mae_mean, qvals_mae_std))
-    print("blown at the beginning: {} episodes".format(blown_counter))
+
