@@ -31,6 +31,7 @@ if __name__=='__main__':
     agent_1.epsilon = 0
     num_episodes = 1000
     ep = 0
+    blown_counter = 0
     success_counter = 0
     lead_counter = np.zeros(2)
     qvals_mae = np.zeros(num_episodes)
@@ -52,6 +53,8 @@ if __name__=='__main__':
         t += 1
         o = n_o.copy()
         if any([d, t==env.max_episode_steps, 'blown' in env.status]):
+            if t==1:
+                blown_counter += 1
             if i.count('escaped')==2:
                 success_counter += 1
                 if o[0,1] < o[1,1]:
@@ -66,4 +69,5 @@ if __name__=='__main__':
     qvals_mae_mean = np.mean(qvals_mae)
     qvals_mae_std = np.std(qvals_mae)
     print("MeanQValMAE: {}, StdQValMAE: {}".format(qvals_mae_mean, qvals_mae_std))
+    print("blown at the beginning: {} episodes".format(blown_counter))
 
