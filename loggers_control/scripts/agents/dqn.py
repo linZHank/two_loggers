@@ -4,6 +4,7 @@ A DQN agent class
 """
 import tensorflow as tf
 import numpy as np
+import logging
 
 ################################################################
 """
@@ -27,9 +28,12 @@ if gpus:
     except RuntimeError as e:
         # Visible devices must be set before GPUs have been initialized
         print(e)
+# set log level
+logging.basicConfig(format='%(asctime)s %(message)s',level=logging.DEBUG)
 ################################################################
 
-class ReplayBuffer:
+################################################################
+class OffPolicyBuffer:
     """
     An off-policy replay buffer for DQN agent
     """
@@ -61,6 +65,15 @@ class ReplayBuffer:
         )
 
         return batch
+################################################################
+
+def mlp(dim_inputs, dim_outputs, activation, output_activation=None):
+    inputs = tf.keras.Input(shape=(dim_inputs,), name='input')
+    features = tf.keras.layers.Dense(128, activation=activation)(inputs)
+    features = tf.keras.layers.Dense(128, activation=activation)(features)
+    outputs = tf.keras.layers.Dense(dim_outputs, activation=output_activation)(features)
+
+    return tf.keras.Model(inputs=inputs, outputs=outputs)
 
 class Critic(tf.keras.Model):
     
@@ -68,11 +81,9 @@ class Critic(tf.keras.Model):
         super(Critic, self).__init__(name='critic', **kwargs)
         inputs = tf.keras.Input(shape=dim_obs, name='inputs')
         # image features
-        feature = tf.keras.layers.Dense(256, activation=activation)(inputs)
-        feature = tf.keras.layers.Dense(256, activation=activation)(feature)
-        outputs = tf.keras.layers.Dense(num_act, activation=None, name='Q_values')(feature)
-        self.q_net = tf.keras.Model(inputs=inputs, outputs=outputs)
+        self.q_net = mlp(dim_inputs=dim_obs, dim_outputs=num_act, activation=activation)
         
+    @tf.function
     def call(self, obs):
         return self.q_net(obs)
         # return tf.squeeze(qval, axis=-1)
@@ -117,6 +128,7 @@ class DeepQNet(tf.keras.Model):
             pred_qval = tf.math.reduce_sum(self.q(data['obs']) * tf.one_hot(data['act'], self.num_act), axis=-1)
             targ_qval = data['rew'] + self.gamma*(1-data['done'])*tf.math.reduce_sum(self.targ_q(data['nobs'])*tf.one_hot(tf.math.argmax(self.q(data['nobs']),axis=1), self.num_act),axis=1) # double DQN trick
             loss_q = tf.keras.losses.MSE(y_true=targ_qval, y_pred=pred_qval)
+        logging.debug("q loss: {}".format(loss_q))
         grads = tape.gradient(loss_q, self.q.trainable_weights)
         self.optimizer.apply_gradients(zip(grads, self.q.trainable_weights))
         self.update_counter += 1
