@@ -1,11 +1,10 @@
-#!/usr/bin/env python
 """ 
-A PPO agent class 
+Proximal Policy Optimization agent and on-policy replay buffer
 """
-import rospy
-import tensorflow as tf
+import logging
 import numpy as np
 import scipy.signal
+import tensorflow as tf
 import tensorflow_probability as tfp
 tfd = tfp.distributions
 
@@ -31,6 +30,8 @@ if gpus:
     except RuntimeError as e:
         # Visible devices must be set before GPUs have been initialized
         print(e)
+# set log level
+logging.basicConfig(format='%(asctime)s %(message)s',level=logging.DEBUG)
 ################################################################
 
 
@@ -53,7 +54,7 @@ def discount_cumsum(x, discount):
     """
     return scipy.signal.lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
 
-class PPOBuffer:
+class OnPolicyBuffer:
 
     def __init__(self, dim_obs, dim_act, size, gamma=0.99, lam=0.95):
         self.obs_buf = np.zeros((size, dim_obs), dtype=np.float32)
@@ -90,7 +91,7 @@ class PPOBuffer:
     def get(self):
         assert self.ptr == self.max_size    # buffer has to be full before you can get
         self.ptr, self.path_start_idx = 0, 0
-        # the next two lines implement the advantage normalization trick
+        # the next three lines implement the advantage normalization trick
         adv_mean = np.mean(self.adv_buf)
         adv_std = np.std(self.adv_buf)
         self.adv_buf = (self.adv_buf - adv_mean) / adv_std
@@ -101,8 +102,8 @@ class PPOBuffer:
 
 def mlp(dim_inputs, dim_outputs, activation, output_activation=None):
     inputs = tf.keras.Input(shape=(dim_inputs,), name='input')
-    features = tf.keras.layers.Dense(256, activation=activation)(inputs)
-    features = tf.keras.layers.Dense(256, activation=activation)(features)
+    features = tf.keras.layers.Dense(128, activation=activation)(inputs)
+    features = tf.keras.layers.Dense(128, activation=activation)(features)
     outputs = tf.keras.layers.Dense(dim_outputs, activation=output_activation)(features)
 
     return tf.keras.Model(inputs=inputs, outputs=outputs)
@@ -121,7 +122,7 @@ class CategoricalActor(tf.keras.Model):
     def _log_prob_from_distribution(self, pi, act):
         return pi.log_prob(act)
 
-    def __call__(self, obs, act=None):
+    def call(self, obs, act=None):
         pi = self._distribution(obs)
         logp_a = None
         if act is not None:
@@ -133,8 +134,8 @@ class GaussianActor(tf.keras.Model):
 
     def __init__(self, dim_obs, dim_act, **kwargs):
         super(GaussianActor, self).__init__(name='gaussian_actor', **kwargs)
-        self.log_std = tf.Variable(initial_value=-0.5*np.ones(dim_act, dtype=np.float32))
         self.mu_net = mlp(dim_inputs=dim_obs, dim_outputs=dim_act, activation='relu')
+        self.log_std = tf.Variable(initial_value=-0.5*np.ones(dim_act, dtype=np.float32))
 
     def _distribution(self, obs):
         mu = tf.squeeze(self.mu_net(obs))
@@ -145,7 +146,7 @@ class GaussianActor(tf.keras.Model):
     def _log_prob_from_distribution(self, pi, act):
         return tf.math.reduce_sum(pi.log_prob(act), axis=-1)
 
-    def __call__(self, obs, act=None):
+    def call(self, obs, act=None):
         pi = self._distribution(obs)
         logp_a = None
         if act is not None:
@@ -159,13 +160,14 @@ class Critic(tf.keras.Model):
         super(Critic, self).__init__(name='critic', **kwargs)
         self.val_net = mlp(dim_inputs=dim_obs, dim_outputs=1, activation='relu')
 
-    def __call__(self, obs):
+    @tf.function
+    def call(self, obs):
         return tf.squeeze(self.val_net(obs), axis=-1)
 
-class ProximalPolicyOptimization(tf.keras.Model):
+class PPOAgent(tf.keras.Model):
 
     def __init__(self, env_type, dim_obs, dim_act, clip_ratio=0.2, lr_actor=1e-4,
-                 lr_critic=3e-4, beta=0., target_kl=0.01, **kwargs):
+                 lr_critic=1e-4, beta=0., target_kl=0.01, **kwargs):
         super(ProximalPolicyOptimization, self).__init__(name='ppo', **kwargs)
         self.env_type = env_type
         self.dim_obs = dim_obs
@@ -177,10 +179,8 @@ class ProximalPolicyOptimization(tf.keras.Model):
         self.critic = Critic(dim_obs)
         self.actor_optimizer = tf.keras.optimizers.Adam(learning_rate=lr_actor)
         self.critic_optimizer = tf.keras.optimizers.Adam(learning_rate=lr_critic)
-        self.actor_loss_metric = tf.keras.metrics.Mean()
-        self.critic_loss_metric = tf.keras.metrics.Mean()
         self.clip_ratio = clip_ratio
-        self.beta = beta
+        self.beta = beta # entropy weight
         self.target_kl = target_kl
 
     def pi_of_a_given_s(self, obs):
@@ -193,10 +193,10 @@ class ProximalPolicyOptimization(tf.keras.Model):
 
         return act.numpy(), val.numpy(), logp_a.numpy()
 
-    def train(self, data, iter_a, iter_c):
+    def train(self, data, actor_iters, critic_iters):
         # update actor
-        for i in range(iter_a):
-            rospy.logdebug("Staring actor epoch: {}".format(i+1))
+        for ai in range(actor_iters):
+            logging.debug("Staring actor epoch: {}".format(i+1))
             ep_kl = tf.convert_to_tensor([]) 
             ep_ent = tf.convert_to_tensor([]) 
             with tf.GradientTape() as tape:
@@ -217,19 +217,19 @@ class ProximalPolicyOptimization(tf.keras.Model):
             # log epoch
             kl = tf.math.reduce_mean(ep_kl)
             entropy = tf.math.reduce_mean(ep_ent)
-            print("Epoch :{} \nLoss: {} \nEntropy: {} \nKLDivergence: {}".format(
-                i+1,
+            logging.debug("Epoch :{} \nLoss: {} \nEntropy: {} \nKLDivergence: {}".format(
+                ai+1,
                 loss_pi,
                 entropy,
                 kl
             ))
             # early cutoff due to large kl-divergence
             if kl > 1.5*self.target_kl:
-                rospy.logwarn("Early stopping at epoch {} due to reaching max kl-divergence.".format(i+1))
+                logging.warning("Early stopping at epoch {} due to reaching max kl-divergence.".format(i+1))
                 break
         # update critic
-        for i in range(iter_c):
-            rospy.logdebug("Starting critic epoch: {}".format(i))
+        for ci in range(critic_iters):
+            logging.debug("Starting critic epoch: {}".format(i))
             with tf.GradientTape() as tape:
                 tape.watch(self.critic.trainable_variables)
                 loss_v = tf.keras.losses.MSE(data['ret'], self.critic(data['obs']))
@@ -237,8 +237,8 @@ class ProximalPolicyOptimization(tf.keras.Model):
             grads_critic = tape.gradient(loss_v, self.critic.trainable_variables)
             self.critic_optimizer.apply_gradients(zip(grads_critic, self.critic.trainable_variables))
             # log epoch
-            print("Epoch :{} \nLoss: {}".format(
-                i+1,
+            logging.debug("Epoch :{} \nLoss: {}".format(
+                ci+1,
                 loss_v
             ))
 
