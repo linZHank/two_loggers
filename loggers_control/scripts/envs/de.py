@@ -34,7 +34,7 @@ class DoubleEscape(object):
         self.max_episode_steps = 1000
         self.observation_space_shape = (3,6) # {r1, r2, s}: x, y, x_d, y_d, th, th_d
         self.action_space_shape = ()
-        self.action_reservoir = np.array([[1.5,pi/3], [1.5,-pi/3], [-1.5,pi/3], [-1.5,-pi/3]])
+        self.action_reservoir = np.array([[3,pi/2], [3,-pi/2], [-3,pi/2], [-3,-pi/2]])
         # robot properties
         self.model_states = ModelStates()
         self.obs = np.zeros(self.observation_space_shape)
@@ -290,7 +290,7 @@ class DoubleEscape(object):
                 'east' in self.status,
                 'door' in self.status,
         ]):
-            reward = -100*np.ones(2)
+            # reward = -100*np.ones(2)
             done = True
         elif self.status.count('escaped')==2:
             reward = 100*np.ones(2)
