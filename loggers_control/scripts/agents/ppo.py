@@ -1,7 +1,6 @@
 """ 
 Proximal Policy Optimization agent and on-policy replay buffer
 """
-import logging
 import numpy as np
 import scipy.signal
 import tensorflow as tf
@@ -30,8 +29,6 @@ if gpus:
     except RuntimeError as e:
         # Visible devices must be set before GPUs have been initialized
         print(e)
-# set log level
-logging.basicConfig(format='%(asctime)s %(message)s',level=logging.DEBUG)
 ################################################################
 
 
@@ -167,8 +164,8 @@ class Critic(tf.keras.Model):
 class PPOAgent(tf.keras.Model):
 
     def __init__(self, env_type, dim_obs, dim_act, clip_ratio=0.2, lr_actor=1e-4,
-                 lr_critic=1e-4, beta=0., target_kl=0.01, **kwargs):
-        super(ProximalPolicyOptimization, self).__init__(name='ppo', **kwargs)
+                 lr_critic=3e-4, beta=0., target_kl=0.01, **kwargs):
+        super(PPOAgent, self).__init__(name='ppo', **kwargs)
         self.env_type = env_type
         self.dim_obs = dim_obs
         self.dim_act = dim_act
@@ -196,7 +193,7 @@ class PPOAgent(tf.keras.Model):
     def train(self, data, actor_iters, critic_iters):
         # update actor
         for ai in range(actor_iters):
-            logging.debug("Staring actor epoch: {}".format(i+1))
+            print("Staring actor epoch: {}".format(ai+1))
             ep_kl = tf.convert_to_tensor([]) 
             ep_ent = tf.convert_to_tensor([]) 
             with tf.GradientTape() as tape:
@@ -217,7 +214,7 @@ class PPOAgent(tf.keras.Model):
             # log epoch
             kl = tf.math.reduce_mean(ep_kl)
             entropy = tf.math.reduce_mean(ep_ent)
-            logging.debug("Epoch :{} \nLoss: {} \nEntropy: {} \nKLDivergence: {}".format(
+            print("Epoch :{} \nLoss: {} \nEntropy: {} \nKLDivergence: {}".format(
                 ai+1,
                 loss_pi,
                 entropy,
@@ -225,11 +222,11 @@ class PPOAgent(tf.keras.Model):
             ))
             # early cutoff due to large kl-divergence
             if kl > 1.5*self.target_kl:
-                logging.warning("Early stopping at epoch {} due to reaching max kl-divergence.".format(i+1))
+                print("Early stopping at epoch {} due to reaching max kl-divergence.".format(ai+1))
                 break
         # update critic
         for ci in range(critic_iters):
-            logging.debug("Starting critic epoch: {}".format(i))
+            print("Starting critic epoch: {}".format(ci))
             with tf.GradientTape() as tape:
                 tape.watch(self.critic.trainable_variables)
                 loss_v = tf.keras.losses.MSE(data['ret'], self.critic(data['obs']))
@@ -237,7 +234,7 @@ class PPOAgent(tf.keras.Model):
             grads_critic = tape.gradient(loss_v, self.critic.trainable_variables)
             self.critic_optimizer.apply_gradients(zip(grads_critic, self.critic.trainable_variables))
             # log epoch
-            logging.debug("Epoch :{} \nLoss: {}".format(
+            print("Epoch :{} \nLoss: {}".format(
                 ci+1,
                 loss_v
             ))

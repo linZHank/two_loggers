@@ -88,10 +88,10 @@ class Critic(tf.keras.Model):
         return self.q_net(obs)
         # return tf.squeeze(qval, axis=-1)
 
-class DeepQNet(tf.keras.Model):
+class DQNAgent(tf.keras.Model):
 
     def __init__(self, dim_obs, num_act, activation='relu', gamma=0.99, lr=3e-4, polyak=0.995, update_freq=8000, **kwargs):
-        super(DeepQNet, self).__init__(name='dqn', **kwargs)
+        super(DQNAgent, self).__init__(name='dqn', **kwargs)
         # params
         self.dim_obs = dim_obs
         self.num_act = num_act

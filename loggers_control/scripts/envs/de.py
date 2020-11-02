@@ -289,6 +289,7 @@ class DoubleEscape(object):
                 'west' in self.status,
                 'east' in self.status,
                 'door' in self.status,
+                'blown' in self.status,
         ]):
             # reward = -100*np.ones(2)
             done = True
@@ -298,7 +299,7 @@ class DoubleEscape(object):
             rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
         else:
             reward[0] = 100*(self.prev_obs[0,1]-self.obs[0,1] + abs(self.prev_obs[0,0])-abs(self.obs[0,0]))
-            reward[0] = 100*(self.prev_obs[1,1]-self.obs[1,1] + abs(self.prev_obs[1,0])-abs(self.obs[1,0]))
+            reward[1] = 100*(self.prev_obs[1,1]-self.obs[1,1] + abs(self.prev_obs[1,0])-abs(self.obs[1,0]))
             # if self.obs[0,1]<-5:
             #     reward[0] = 10*(self.prev_obs[0,1]-self.obs[0,1]) - .1
             # if self.obs[1,1]<-5:
@@ -320,10 +321,10 @@ if __name__ == "__main__":
     obs = env.reset()
     ep, st = 0, 0
     o = env.reset()
+    a = np.random.randint(0,4,2)
     for t in range(num_steps):
         s0 = o[[0,1]].flatten()
         s1 = o[[1,0]].flatten()
-        a = np.random.randint(0,4,2)
         o_, r, d, i = env.step(a)
         s0_ = o_[[0,1]].flatten()
         s1_ = o_[[1,0]].flatten()
@@ -334,3 +335,4 @@ if __name__ == "__main__":
             ep += 1
             st = 0
             o = env.reset()
+            a = np.random.randint(0,4,2)
