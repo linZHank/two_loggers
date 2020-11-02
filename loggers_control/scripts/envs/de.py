@@ -297,10 +297,12 @@ class DoubleEscape(object):
             done = True
             rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
         else:
-            if self.obs[0,1]<-5:
-                reward[0] = 10*(self.prev_obs[0,1]-self.obs[0,1]) - .1
-            if self.obs[1,1]<-5:
-                reward[1] = 10*(self.prev_obs[1,1]-self.obs[1,1]) - .1
+            reward[0] = 100*(self.prev_obs[0,1]-self.obs[0,1] + abs(self.prev_obs[0,0])-abs(self.obs[0,0]))
+            reward[0] = 100*(self.prev_obs[1,1]-self.obs[1,1] + abs(self.prev_obs[1,0])-abs(self.obs[1,0]))
+            # if self.obs[0,1]<-5:
+            #     reward[0] = 10*(self.prev_obs[0,1]-self.obs[0,1]) - .1
+            # if self.obs[1,1]<-5:
+            #     reward[1] = 10*(self.prev_obs[1,1]-self.obs[1,1]) - .1
 
         rospy.logdebug("End Computing Reward\n")
 
@@ -314,7 +316,7 @@ class DoubleEscape(object):
 
 if __name__ == "__main__":
     env = DoubleEscape()
-    num_steps = env.max_episode_steps
+    num_steps = 4*env.max_episode_steps
     obs = env.reset()
     ep, st = 0, 0
     o = env.reset()

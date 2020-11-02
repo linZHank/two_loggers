@@ -43,9 +43,9 @@
         </link>
         <gazebo reference="${model_name}-chassis">
             <material>Gazebo/White</material>
-            <dampingFactor>0.02</dampingFactor>
-            <maxVel>0.1</maxVel>
-            <minDepth>0.01</minDepth>
+            <dampingFactor>0.01</dampingFactor>
+            <maxVel>50</maxVel>
+            <minDepth>0.005</minDepth>
             <selfCollide>true</selfCollide>
             <mu1>0.99</mu1>
             <mu2>0.99</mu2>
@@ -92,9 +92,9 @@
         </link>
         <gazebo reference="${model_name}-caster">
             <material>Gazebo/Grey</material>
-            <dampingFactor>0.02</dampingFactor>
-            <maxVel>0.1</maxVel>
-            <minDepth>0.01</minDepth>
+            <dampingFactor>0.01</dampingFactor>
+            <maxVel>50</maxVel>
+            <minDepth>0.005</minDepth>
             <selfCollide>true</selfCollide>
             <mu1>0.0</mu1>
             <mu2>0.0</mu2>
@@ -129,9 +129,9 @@
         </link>
         <gazebo reference="${model_name}-left_wheel">
             <material>Gazebo/Wood</material>
-            <dampingFactor>0.02</dampingFactor>
-            <maxVel>100</maxVel>
-            <minDepth>0.01</minDepth>
+            <dampingFactor>0.01</dampingFactor>
+            <maxVel>50</maxVel>
+            <minDepth>0.005</minDepth>
             <selfCollide>true</selfCollide>
             <mu1>0.99</mu1>
             <mu2>0.99</mu2>
@@ -166,9 +166,9 @@
         </link>
         <gazebo reference="${model_name}-right_wheel">
             <material>Gazebo/Wood</material>
-            <dampingFactor>0.02</dampingFactor>
-            <maxVel>100</maxVel>
-            <minDepth>0.01</minDepth>
+            <dampingFactor>0.01</dampingFactor>
+            <maxVel>50</maxVel>
+            <minDepth>0.005</minDepth>
             <selfCollide>true</selfCollide>
             <mu1>0.99</mu1>
             <mu2>0.99</mu2>
@@ -203,9 +203,9 @@
         </link>
         <gazebo reference="${model_name}-hat">
             <material>Gazebo/Red</material>
-            <dampingFactor>0.02</dampingFactor>
-            <maxVel>0.1</maxVel>
-            <minDepth>0.01</minDepth>
+            <dampingFactor>0.01</dampingFactor>
+            <maxVel>50</maxVel>
+            <minDepth>0.005</minDepth>
             <selfCollide>true</selfCollide>
             <mu1>0.99</mu1>
             <mu2>0.99</mu2>
