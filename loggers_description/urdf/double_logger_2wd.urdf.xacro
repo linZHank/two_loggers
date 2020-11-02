@@ -8,7 +8,7 @@
 
     <!-- Included URDF Files -->
     <xacro:include filename="$(find loggers_description)/urdf/logger.urdf.xacro" />
-    <xacro:include filename="$(find loggers_description)/urdf/logger_copy.urdf.xacro" />
+    <xacro:include filename="$(find loggers_description)/urdf/logger_copy_fixedhat.urdf.xacro" />
 
     <!-- Instantiate logger_base_macro once (has no parameters atm) -->
     <xacro:logger_macro model_name="logger0"/>
@@ -59,13 +59,9 @@
         </inertial>
     </link>
     <gazebo reference="log">
+        <mu1>0</mu1>
+        <mu2>0</mu2>
         <material>Gazebo/Wood</material>
-        <dampingFactor>0.02</dampingFactor>
-        <maxVel>0.1</maxVel>
-        <minDepth>0.01</minDepth>
-        <selfCollide>true</selfCollide>
-        <mu1>0.99</mu1>
-        <mu2>0.99</mu2>
     </gazebo>
 
     <!-- Instantiate logger_base_macro once (has no parameters atm) -->

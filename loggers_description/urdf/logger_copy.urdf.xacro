@@ -53,9 +53,13 @@
             </inertial>
         </link>
         <gazebo reference="${model_name}-hat">
-            <mu1>0</mu1>
-            <mu2>0</mu2>
             <material>Gazebo/Red</material>
+            <dampingFactor>0.02</dampingFactor>
+            <maxVel>0.1</maxVel>
+            <minDepth>0.01</minDepth>
+            <selfCollide>true</selfCollide>
+            <mu1>0.99</mu1>
+            <mu2>0.99</mu2>
         </gazebo>
 
         <joint name="${model_name}-hat2chassis" type="continuous">
@@ -86,9 +90,13 @@
             </inertial>
         </link>
         <gazebo reference="${model_name}-chassis">
-            <mu1>0.5</mu1>
-            <mu2>0.5</mu2>
             <material>Gazebo/Black</material>
+            <dampingFactor>0.02</dampingFactor>
+            <maxVel>0.1</maxVel>
+            <minDepth>0.01</minDepth>
+            <selfCollide>true</selfCollide>
+            <mu1>0.99</mu1>
+            <mu2>0.99</mu2>
         </gazebo>
 
 
@@ -119,9 +127,13 @@
             </inertial>
         </link>
         <gazebo reference="${model_name}-caster">
+            <material>Gazebo/Grey</material>
+            <dampingFactor>0.02</dampingFactor>
+            <maxVel>0.1</maxVel>
+            <minDepth>0.01</minDepth>
+            <selfCollide>true</selfCollide>
             <mu1>0.0</mu1>
             <mu2>0.0</mu2>
-            <material>Gazebo/Grey</material>
         </gazebo>
 
         <joint name="${model_name}-chassis2left_wheel" type="continuous">
@@ -152,9 +164,13 @@
             </inertial>
         </link>
         <gazebo reference="${model_name}-left_wheel">
+            <material>Gazebo/Wood</material>
+            <dampingFactor>0.02</dampingFactor>
+            <maxVel>100</maxVel>
+            <minDepth>0.01</minDepth>
+            <selfCollide>true</selfCollide>
             <mu1>0.99</mu1>
             <mu2>0.99</mu2>
-            <material>Gazebo/Wood</material>
         </gazebo>
 
         <joint name="${model_name}-chassis2right_wheel" type="continuous">
@@ -185,9 +201,13 @@
             </inertial>
         </link>
         <gazebo reference="${model_name}-right_wheel">
+            <material>Gazebo/Wood</material>
+            <dampingFactor>0.02</dampingFactor>
+            <maxVel>100</maxVel>
+            <minDepth>0.01</minDepth>
+            <selfCollide>true</selfCollide>
             <mu1>0.99</mu1>
             <mu2>0.99</mu2>
-            <material>Gazebo/Wood</material>
         </gazebo>
 
     </xacro:macro>

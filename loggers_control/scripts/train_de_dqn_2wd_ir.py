@@ -26,12 +26,12 @@ if __name__=='__main__':
     agent_0 = DeepQNet(
         dim_obs=dim_obs,
         num_act=num_act_0,
-        lr=1e-4,
+        lr=1e-5,
     )
     agent_1 = DeepQNet(
         dim_obs=dim_obs,
         num_act=num_act_1,
-        lr=1e-4,
+        lr=1e-5,
     )
     replay_buffer_0 = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
     replay_buffer_1 = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
@@ -40,8 +40,9 @@ if __name__=='__main__':
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()
     # params
-    batch_size = 1024
-    switch_flag = False # this is hete unique
+    batch_size = 4096
+    train_counter = 0
+    # switch_flag = False # this is hete unique
     # switch_freq = 10 # this is hete unique
     train_freq = 100 # steps
     train_after = 20000 # steps
@@ -77,8 +78,7 @@ if __name__=='__main__':
         step_counter += 1
         # train one batch
         if not step_counter%train_freq and step_counter>train_after:
-            switch_flag = not switch_flag
-            if switch_flag:
+            if train_counter%3:
                 for _ in range(train_freq):
                     minibatch_0 = replay_buffer_0.sample_batch(batch_size=batch_size)
                     loss_q_0 = agent_0.train_one_batch(data=minibatch_0)
@@ -88,6 +88,7 @@ if __name__=='__main__':
                     minibatch_1 = replay_buffer_1.sample_batch(batch_size=batch_size)
                     loss_q_1 = agent_1.train_one_batch(data=minibatch_1)
                     print("\nloss_q1: {}".format(loss_q_1))
+            train_counter += 1
         # handle episode termination
         if any([done, ep_len==env.max_episode_steps, 'blown' in env.status]):
             episode_counter += 1
