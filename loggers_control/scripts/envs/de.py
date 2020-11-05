@@ -298,8 +298,8 @@ class DoubleEscape(object):
             done = True
             rospy.logerr("\n!!!!!!!!!!!!!!!!\nLogger Escaped !\n!!!!!!!!!!!!!!!!")
         else:
-            reward[0] = 100*(self.prev_obs[0,1]-self.obs[0,1] + abs(self.prev_obs[0,0])-abs(self.obs[0,0]))
-            reward[1] = 100*(self.prev_obs[1,1]-self.obs[1,1] + abs(self.prev_obs[1,0])-abs(self.obs[1,0]))
+            reward[0] = 10*(self.prev_obs[0,1]-self.obs[0,1] + abs(self.prev_obs[0,0])-abs(self.obs[0,0])) - .1
+            reward[1] = 10*(self.prev_obs[1,1]-self.obs[1,1] + abs(self.prev_obs[1,0])-abs(self.obs[1,0])) - .1
             # if self.obs[0,1]<-5:
             #     reward[0] = 10*(self.prev_obs[0,1]-self.obs[0,1]) - .1
             # if self.obs[1,1]<-5:

@@ -23,8 +23,8 @@ if __name__=='__main__':
         dim_obs=dim_obs,
         dim_act=num_act,
     )
-    replay_buffer0 = OnPolicyBuffer(dim_obs=dim_obs, dim_act=1, size=2000, gamma=.99, lam=.97)
-    replay_buffer1 = OnPolicyBuffer(dim_obs=dim_obs, dim_act=1, size=2000, gamma=.99, lam=.97)
+    replay_buffer0 = OnPolicyBuffer(dim_obs=dim_obs, dim_act=1, size=4000, gamma=.99, lam=.97)
+    replay_buffer1 = OnPolicyBuffer(dim_obs=dim_obs, dim_act=1, size=4000, gamma=.99, lam=.97)
     assert replay_buffer0.max_size==replay_buffer1.max_size
     model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, 'homo', datetime.now().strftime("%Y-%m-%d-%H-%M"))
     # tensorboard
@@ -32,9 +32,9 @@ if __name__=='__main__':
     summary_writer.set_as_default()
     # paramas
     steps_per_epoch = replay_buffer0.max_size
-    num_epochs = 2
-    actor_iters = 100
-    critic_iters = 100
+    num_epochs = 400
+    actor_iters = 200
+    critic_iters = 200
     save_freq=10
     # get ready
     obs, done, ep_ret, ep_len = env.reset(), False, 0, 0

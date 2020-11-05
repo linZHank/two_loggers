@@ -21,11 +21,11 @@ if __name__=='__main__':
     num_act = env.action_reservoir.shape[0]
     agent = DeepQNet(
         dim_obs=dim_obs,
-        num_act=num_act,
-        lr=5e-5,
+        num_act=num_act**2,
+        lr=1e-4,
     )
-    replay_buffer = ReplayBuffer(dim_obs=dim_obs, size=int(2e6))
-    model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, 'homo', datetime.now().strftime("%Y-%m-%d-%H-%M"))
+    replay_buffer = ReplayBuffer(dim_obs=dim_obs, size=int(4e6))
+    model_dir = os.path.join(sys.path[0], 'saved_models', env.name, agent.name, 'cent', datetime.now().strftime("%Y-%m-%d-%H-%M"))
     # tensorboard
     summary_writer = tf.summary.create_file_writer(model_dir)
     summary_writer.set_as_default()
@@ -49,18 +49,14 @@ if __name__=='__main__':
     while step_counter <= total_steps:
         while 'blown' in env.status:
             obs, ep_ret, ep_len = env.reset(), 0, 0
-        s0 = obs[[0,1]].flatten()
-        s1 = obs[[1,0]].flatten()
-        a0 = np.squeeze(agent.act(np.expand_dims(s0, axis=0)))
-        a1 = np.squeeze(agent.act(np.expand_dims(s1, axis=0)))
-        n_obs, rew, done, info = env.step(np.array([int(a0), int(a1)]))
-        n_s0 = n_obs[[0,1]].flatten()
-        n_s1 = n_obs[[1,0]].flatten()
-        rospy.logdebug("\nstate: {} \naction: {} \nreward: {} \ndone: {} \nn_state: {}".format(obs, (a0, a1), rew, done, n_obs))
+        s = obs[[0,1]].flatten()
+        a = np.squeeze(agent.act(np.expand_dims(s, axis=0)))
+        n_obs, rew, done, info = env.step(np.array([int(a/num_act), int(a%num_act)]))
+        n_s = n_obs[[0,1]].flatten()
+        rospy.logdebug("\nstate: {} \naction: {} \nreward: {} \ndone: {} \nn_state: {}".format(obs, a, rew, done, n_obs))
         ep_ret += np.sum(rew)
         ep_len += 1
-        replay_buffer.store(s0, a0, np.sum(rew), done, n_s0)
-        replay_buffer.store(s1, a1, np.sum(rew), done, n_s1)
+        replay_buffer.store(s, a, np.sum(rew), done, n_s)
         obs = n_obs.copy() # SUPER CRITICAL
         step_counter += 1
         # train one batch
